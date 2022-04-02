@@ -57,5 +57,11 @@ setup(
             "pylint~=2.9",
         ],
         "format": ["black~=22.3"],
+        "docs": [
+            "mkdocs~=1.3",
+            "mkdocs-material~=8.2",
+            "plantuml-markdown~=3.5",
+            "mkdocs-same-dir~=0.1",
+        ],
     },
 )
