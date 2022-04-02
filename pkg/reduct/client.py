@@ -26,7 +26,7 @@ class BucketSettings(BaseModel):
 
 class Bucket:
 
-    def __init__(self, 
+    def __init__(self,
                  bucket_url: AnyHttpUrl,
                  bucket_name: str,
                  settings: Optional[BucketSettings] = None):
@@ -41,7 +41,6 @@ class Bucket:
                                    params=params) as response:
                 return await response.text()
 
-
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
         params = {"ts": timestamp}
         async with aiohttp.ClientSession() as session:
@@ -50,29 +49,25 @@ class Bucket:
                 if response.status != 200:
                     logger.error("error response from server: %n", response.status)
 
-
     async def list(self, entry_name: str, start: float, stop: float) -> List[Tuple[float, int]]:
-        params =  {"start": start, "stop": stop}
+        params = {"start": start, "stop": stop}
         async with aiohttp.ClientSession() as session:
             async with session.get(f'{self.bucket_url}/b/{self.bucket_name}/{entry_name}/list',
-                                    params=params) as response:
+                                   params=params) as response:
                 if response.status == 200:
                     records = json.loads(await response.text())["records"]
                     items = [(record["ts"], record["size"]) for record in records]
                     return items
                 elif response.status == 422:
                     logger.error("timestamps are bad - start: %d, stop: %d", start, stop)
-                else: 
+                else:
                     logger.error("unexpected status: %d", response.status)
-
-
 
     async def walk(self, entry_name: str, start: float, stop: float) -> AsyncIterator[bytes]:
         items = await self.list(entry_name, start, stop)
         for timestamp, _ in items:
             data = await self.read(entry_name, timestamp)
             yield data
-
 
     async def remove(self):
         """not implemented in API yet?"""
@@ -91,51 +86,47 @@ class Client:
 
     async def info(self) -> Optional[ServerInfo]:
         async with aiohttp.ClientSession() as session:
-                async with session.get(f'{self.url}/info') as response:
+            async with session.get(f'{self.url}/info') as response:
 
-                    logger.debug("Status: %s", response.status)
+                logger.debug("Status: %s", response.status)
 
-                    if response.status == 200:
-                        info = json.loads(await response.text())
-                        server_info = ServerInfo(**info)
-                        logger.debug(server_info)
-                        return server_info
-                    else:
-                        logger.error('error: status code: %d', response.status)
-                        return None
-
+                if response.status == 200:
+                    info = json.loads(await response.text())
+                    server_info = ServerInfo(**info)
+                    logger.debug(server_info)
+                    return server_info
+                else:
+                    logger.error('error: status code: %d', response.status)
+                    return None
 
     async def get_bucket(self, name: str) -> Bucket:
         async with aiohttp.ClientSession() as session:
-                async with session.get(f'{self.url}/b/{name}') as response:
+            async with session.get(f'{self.url}/b/{name}') as response:
+                logger.debug("Status: %d", response.status)
 
-                    logger.debug("Status: %d", response.status)
-
-                    if response.status == 200:
-                        resp = json.loads(await response.text())
-                        print(resp)
-                        return Bucket(self.url, name)
-
+                if response.status == 200:
+                    resp = json.loads(await response.text())
+                    print(resp)
+                    return Bucket(self.url, name)
 
     async def create_bucket(self, name: str, settings: Optional[BucketSettings] = None) -> Bucket:
         async with aiohttp.ClientSession() as session:
-                async with session.post(f'{self.url}/b/{name}') as response:
-                    logger.debug(response)
-                    if response.status == 200:
-                        return Bucket(self.url, name, settings)
-                    if response.status == 409:
-                        logger.error('bucket already exists')
-                        return Bucket(self.url, name, settings)
-
+            async with session.post(f'{self.url}/b/{name}') as response:
+                logger.debug(response)
+                if response.status == 200:
+                    return Bucket(self.url, name, settings)
+                if response.status == 409:
+                    logger.error('bucket already exists')
+                    return Bucket(self.url, name, settings)
 
     async def delete_bucket(self, name: str) -> bool:
         async with aiohttp.ClientSession() as session:
-                async with session.delete(f'{self.url}/b/{name}') as response:
-                    logger.debug(response)
-                    if response.status == 200:
-                        return True
-                    if response.status == 404:
-                        return False
+            async with session.delete(f'{self.url}/b/{name}') as response:
+                logger.debug(response)
+                if response.status == 200:
+                    return True
+                if response.status == 404:
+                    return False
 
     async def update_bucket(self, settings: BucketSettings) -> bool:
         pass

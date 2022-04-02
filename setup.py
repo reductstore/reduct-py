@@ -38,10 +38,10 @@ def get_long_description(base_path: Path):
 setup(
     name=PACKAGE_NAME,
     version=build_version(),
-    description="Reduct Storage Client SDK for C++",
+    description="Reduct Storage Client SDK for Python",
     long_description=get_long_description(HERE),
     long_description_content_type="text/markdown",
-    url="https://github.com/reduct-storage/reduct-cpp",
+    url="https://github.com/reduct-storage/reduct-py",
     author="Alexey Timin, Ciaran Moyne",
     author_email="atimin@gmai.com",
     package_dir={"": "pkg"},
@@ -55,7 +55,9 @@ setup(
         ],
         "lint": [
             "pylint~=2.9",
-            "black~=21.0"
         ],
+        "formatter": [
+            "black~=22.3"
+        ]
     },
 )
