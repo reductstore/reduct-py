@@ -58,3 +58,8 @@ markdown_extensions:
 plugins:
   - same-dir
   - mkdocstrings
+
+extra:
+  analytics:
+    provider: google
+    property: G-3VXRKVYKGG
