@@ -1,3 +1,3 @@
 # Client
 
-::: reduct.client.Client
+::: pkg.reduct.client.Client

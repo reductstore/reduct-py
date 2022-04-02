@@ -1,3 +1,3 @@
 # Bucket
 
-::: reduct.client.Bucket
+::: pkg.reduct.client.Bucket
