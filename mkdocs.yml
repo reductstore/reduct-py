@@ -2,7 +2,9 @@ site_name: Reduct Client SDK for Python
 docs_dir: .
 nav:
   - Home: README.md
-
+  - API Reference:
+      Client: docs/client.md
+      Bucket: docs/bucket.md
 
 # Configuration
 theme:
@@ -55,3 +57,4 @@ markdown_extensions:
 
 plugins:
   - same-dir
+  - mkdocstrings
