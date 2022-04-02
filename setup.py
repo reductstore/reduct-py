@@ -56,7 +56,7 @@ setup(
         "lint": [
             "pylint~=2.9",
         ],
-        "formatter": [
+        "format": [
             "black~=22.3"
         ]
     },

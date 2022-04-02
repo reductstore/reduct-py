@@ -6,6 +6,19 @@ on:
     branches: [ main ]
     
 jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Update pip
+      run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
+
+    - name: Install dependencies
+      run: pip3 install .[format]
+
+    - name: Check PEP8 with black
+      run: black . --check
+
   build:
     runs-on: ubuntu-latest
     steps:
