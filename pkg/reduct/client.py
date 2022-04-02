@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 
 class QuotaType(Enum):
     """determines if database has fixed size"""
+
     NONE = "NONE"
     FIFO = "FIFO"
 
 
 class BucketSettings(BaseModel):
     """configuration for the currently connected db"""
+
     max_block_size: Optional[int]
     quota_type: Optional[QuotaType]
     quota_size: Optional[int]
@@ -29,6 +31,7 @@ class BucketSettings(BaseModel):
 
 class Bucket:
     """top level storage object"""
+
     def __init__(
         self,
         bucket_url: AnyHttpUrl,
@@ -45,7 +48,7 @@ class Bucket:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
-                                  ) as response:
+            ) as response:
                 return await response.text()
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
@@ -56,7 +59,7 @@ class Bucket:
                 f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}",
                 params=params,
                 data=data,
-                                   ) as response:
+            ) as response:
                 if response.status != 200:
                     logger.error("error response from server: %d", response.status)
 
@@ -96,12 +99,14 @@ class Bucket:
 
 class ServerInfo(BaseModel):
     """server stats"""
+
     version: str
     bucket_count: int
 
 
 class Client:
     """main connection to client"""
+
     def __init__(self, url: AnyHttpUrl):
         self.url = url
 
