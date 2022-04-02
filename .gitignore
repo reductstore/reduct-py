@@ -1,2 +1,3 @@
 build/
 pkg/reduct/VERSION
+*.egg-info
