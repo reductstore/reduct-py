@@ -1,0 +1,66 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update pip
+        run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
+
+      - name: Install dependencies
+        run: pip3 install .
+
+      - name: Build package
+        run: python3 setup.py bdist_wheel
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+      - name: Install package
+        run:  python3 -m pip install dist/*
+
+      - name: Install dependencies
+        run: pip3 install .[test]
+
+      - name: Run Tests
+        run: PYTHONPATH=. pytest tests
+
+  pylint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@master
+        with:
+          name: package
+          path: ./dist
+
+      - name: Install package
+        run:  python3 -m pip install dist/*
+
+      - name: Install dependencies
+        run: pip3 install .[test,lint]
+
+      - name: Lint main
+        run: pylint ./pkg/
+
+      - name: Lint tests
+        run: pylint ./tests
