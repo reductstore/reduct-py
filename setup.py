@@ -38,11 +38,11 @@ def get_long_description(base_path: Path):
 setup(
     name=PACKAGE_NAME,
     version=build_version(),
-    description="Python Implementation of Reduct Storage HTTP API",
+    description="Reduct Storage Client SDK for Python",
     long_description=get_long_description(HERE),
     long_description_content_type="text/markdown",
-    url="https://github.com/2read-online/pydantic-mongodb",
-    author="Alexey Timin",
+    url="https://github.com/reduct-storage/reduct-py",
+    author="Alexey Timin, Ciaran Moyne",
     author_email="atimin@gmai.com",
     package_dir={"": "pkg"},
     package_data={"": ["VERSION"]},
@@ -55,7 +55,7 @@ setup(
         ],
         "lint": [
             "pylint~=2.9",
-            "black~=21.0"
         ],
+        "format": ["black~=22.3"],
     },
 )
