@@ -77,7 +77,7 @@ class Bucket:
                     records = json.loads(await response.text())["records"]
                     items = [(record["ts"], record["size"]) for record in records]
                     return items
-                elif response.status == 422:
+                if response.status == 422:
                     logger.error(
                         "timestamps are bad - start: %d, stop: %d", start, stop
                     )
@@ -122,9 +122,8 @@ class Client:
                     server_info = ServerInfo(**info)
                     logger.debug(server_info)
                     return server_info
-                else:
-                    logger.error("error: status code: %d", response.status)
-                    return None
+                logger.error("error: status code: %d", response.status)
+                return None
 
     async def get_bucket(self, name: str) -> Bucket:
         """load a bucket to work with"""
