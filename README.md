@@ -10,23 +10,21 @@ Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) writte
 ## Example
 
 ```python
+import time
 import asyncio
 from reduct import Client, Bucket
 
-client = Client('http://127.0.0.1:8383')
+async def main():
+    client = Client('http://127.0.0.1:8383')
+    bucket: Bucket = await client.create_bucket("my-bucket")
 
-async def read_data():
-    bucket: Bucket = await client.get_bucket('my-bucket')
-    msg = await bucket.read('entry-1')  # read the last record in record
-    print(msg)
-
-async def write_data(msg: bytes):
-    bucket: Bucket = await client.get_bucket('my-bucket')
-    await bucket.write('entry-1', msg)
+    ts = time.time()
+    await bucket.write("entry-1", b"Hey!!", ts)
+    data = await bucket.read("entry-1", ts)
+    print(data)
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(write_data(b"hello!"))
-loop.run_until_complete(read_data())
+loop.run_until_complete(main())
 ```
 
 ## References
