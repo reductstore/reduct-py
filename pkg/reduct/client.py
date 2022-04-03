@@ -90,8 +90,7 @@ class Bucket:
                     return items
                 if response.status == 422:
                     raise ReductError(response.status, "cannot list - bad timestamps")
-                else:
-                    raise ReductError(response.status, "cannot list - unknown error")
+                raise ReductError(response.status, "cannot list - unknown error")
 
     async def walk(
         self, entry_name: str, start: float, stop: float
