@@ -3,15 +3,21 @@
 # (c) 2022 Alexey Timin
 import json
 import time
-import logging
 from enum import Enum
 from typing import Optional, List, Tuple, AsyncIterator
 
 import aiohttp
 from pydantic import AnyHttpUrl, BaseModel
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
+class ReductError(Exception):
+    """general exception for all errors"""
+
+    def __init__(self, code, detail):
+        self._code = code
+        self._detail = detail
+        self.message = f"server error: {self._detail} - code: {self._code}"
+        super().__init__(self.message)
 
 
 class QuotaType(Enum):
@@ -49,7 +55,12 @@ class Bucket:
             async with session.get(
                 f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
             ) as response:
-                return await response.text()
+                if response.ok:
+                    return await response.text()
+                if response.status == 404:
+                    raise ReductError(response.status, "cannot get - entry not found")
+                if response.status == 422:
+                    raise ReductError(response.status, "cannot get - bad timestamps")
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
         """write an object to db"""
@@ -60,8 +71,8 @@ class Bucket:
                 params=params,
                 data=data,
             ) as response:
-                if response.status != 200:
-                    logger.error("error response from server: %d", response.status)
+                if not response.ok:
+                    raise ReductError(response.status, "could not write")
 
     async def list(
         self, entry_name: str, start: float, stop: float
@@ -78,11 +89,9 @@ class Bucket:
                     items = [(record["ts"], record["size"]) for record in records]
                     return items
                 if response.status == 422:
-                    logger.error(
-                        "timestamps are bad - start: %d, stop: %d", start, stop
-                    )
+                    raise ReductError(response.status, "cannot list - bad timestamps")
                 else:
-                    logger.error("unexpected status: %d", response.status)
+                    raise ReductError(response.status, "cannot list - unknown error")
 
     async def walk(
         self, entry_name: str, start: float, stop: float
@@ -110,31 +119,24 @@ class Client:
     def __init__(self, url: AnyHttpUrl):
         self.url = url
 
-    async def info(self) -> Optional[ServerInfo]:
+    async def info(self) -> ServerInfo:
         """get high level server info"""
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/info") as response:
 
-                logger.debug("Status: %s", response.status)
-
-                if response.status == 200:
+                if response.ok:
                     info = json.loads(await response.text())
                     server_info = ServerInfo(**info)
-                    logger.debug(server_info)
                     return server_info
-                logger.error("error: status code: %d", response.status)
-                return None
+                raise ReductError(response.status, "cannot retrieve server info")
 
     async def get_bucket(self, name: str) -> Bucket:
         """load a bucket to work with"""
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/b/{name}") as response:
-                logger.debug("Status: %d", response.status)
-
-                if response.status == 200:
-                    resp = json.loads(await response.text())
-                    print(resp)
+                if response.ok:
                     return Bucket(self.url, name)
+                raise ReductError(response.status, "cannot get bucket")
 
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
@@ -142,22 +144,23 @@ class Client:
         """create a new bucket"""
         async with aiohttp.ClientSession() as session:
             async with session.post(f"{self.url}/b/{name}") as response:
-                logger.debug(response)
-                if response.status == 200:
+                if response.ok:
                     return Bucket(self.url, name, settings)
                 if response.status == 409:
-                    logger.error("bucket already exists")
-                    return Bucket(self.url, name, settings)
+                    raise ReductError(
+                        response.status, "cannot create bucket - already exists"
+                    )
+                if response.status == 422:
+                    raise ReductError(
+                        response.status, "cannot create bucket - bad JSON"
+                    )
 
-    async def delete_bucket(self, name: str) -> bool:
+    async def delete_bucket(self, name: str):
         """remove a bucket"""
         async with aiohttp.ClientSession() as session:
             async with session.delete(f"{self.url}/b/{name}") as response:
-                logger.debug(response)
-                if response.status == 200:
-                    return True
-                if response.status == 404:
-                    return False
+                if not response.ok:
+                    raise ReductError(response.status, "cannot delete bucket")
 
     async def update_bucket(self, settings: BucketSettings) -> bool:
         """update bucket settings"""
