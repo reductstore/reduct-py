@@ -6,6 +6,11 @@ nav:
       Client: docs/client.md
       Bucket: docs/bucket.md
 
+repo_name: reduct-storage/reduct-py
+repo_url: https://github.com/reduct-storage/reduct-py
+edit_uri: edit/main/docs
+
+
 # Configuration
 theme:
   name: material
