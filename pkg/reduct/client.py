@@ -117,7 +117,7 @@ class Client:
     """main connection to client"""
 
     def __init__(self, url: AnyHttpUrl):
-        self.url = url
+        self.url = url.rstrip("/")
 
     async def info(self) -> ServerInfo:
         """get high level server info"""
