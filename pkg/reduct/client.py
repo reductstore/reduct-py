@@ -13,10 +13,10 @@ from pydantic import AnyHttpUrl, BaseModel
 class ReductError(Exception):
     """general exception for all errors"""
 
-    def __init__(self, code, detail):
+    def __init__(self, code, message):
         self._code = code
-        self._detail = detail
-        self.message = f"server error: {self._detail} - code: {self._code}"
+        self._detail = message
+        self.message = json.loads(message)["detail"]
         super().__init__(self.message)
 
 
@@ -57,10 +57,7 @@ class Bucket:
             ) as response:
                 if response.ok:
                     return await response.text()
-                if response.status == 404:
-                    raise ReductError(response.status, "cannot get - entry not found")
-                if response.status == 422:
-                    raise ReductError(response.status, "cannot get - bad timestamps")
+                raise ReductError(response.status, response.content.read_nowait())
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
         """write an object to db"""
@@ -72,7 +69,7 @@ class Bucket:
                 data=data,
             ) as response:
                 if not response.ok:
-                    raise ReductError(response.status, "could not write")
+                    raise ReductError(response.status, response.content.read_nowait())
 
     async def list(
         self, entry_name: str, start: float, stop: float
@@ -84,13 +81,11 @@ class Bucket:
                 f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}/list",
                 params=params,
             ) as response:
-                if response.status == 200:
+                if response.ok:
                     records = json.loads(await response.text())["records"]
                     items = [(record["ts"], record["size"]) for record in records]
                     return items
-                if response.status == 422:
-                    raise ReductError(response.status, "cannot list - bad timestamps")
-                raise ReductError(response.status, "cannot list - unknown error")
+                raise ReductError(response.status, response.content.read_nowait())
 
     async def walk(
         self, entry_name: str, start: float, stop: float
@@ -135,7 +130,7 @@ class Client:
             async with session.get(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name)
-                raise ReductError(response.status, "cannot get bucket")
+                raise ReductError(response.status, response.content.read_nowait())
 
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
@@ -145,21 +140,14 @@ class Client:
             async with session.post(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name, settings)
-                if response.status == 409:
-                    raise ReductError(
-                        response.status, "cannot create bucket - already exists"
-                    )
-                if response.status == 422:
-                    raise ReductError(
-                        response.status, "cannot create bucket - bad JSON"
-                    )
+                raise ReductError(response.status, response.content.read_nowait())
 
     async def delete_bucket(self, name: str):
         """remove a bucket"""
         async with aiohttp.ClientSession() as session:
             async with session.delete(f"{self.url}/b/{name}") as response:
                 if not response.ok:
-                    raise ReductError(response.status, "cannot delete bucket")
+                    raise ReductError(response.status, response.content.read_nowait())
 
     async def update_bucket(self, settings: BucketSettings) -> bool:
         """update bucket settings"""
