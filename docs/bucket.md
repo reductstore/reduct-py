@@ -1,4 +1,4 @@
 # Bucket
 
-::: reduct.client.Bucket
+::: reduct.Bucket
     handler: python
