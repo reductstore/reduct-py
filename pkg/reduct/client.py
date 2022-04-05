@@ -168,7 +168,7 @@ class Client:
         Get high level server info
         :returns statistics about the storage
         :rtype ServerInfo
-        :raises ReductError: if there is a HTTP error
+        :raises ReductError: if there is an HTTP error
         """
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/info") as response:
