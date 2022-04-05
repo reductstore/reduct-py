@@ -10,13 +10,19 @@ import aiohttp
 from pydantic import AnyHttpUrl, BaseModel
 
 
+class ServerError(BaseModel):
+    """sent from the server"""
+
+    detail: str
+
+
 class ReductError(Exception):
     """general exception for all errors"""
 
     def __init__(self, code, message):
         self._code = code
         self._detail = message
-        self.message = json.loads(message)["detail"]
+        self.message = ServerError.parse_raw(message)
         super().__init__(self.message)
 
 
@@ -57,7 +63,7 @@ class Bucket:
             ) as response:
                 if response.ok:
                     return await response.text()
-                raise ReductError(response.status, response.content.read_nowait())
+                raise ReductError(response.status, await response.read())
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
         """write an object to db"""
@@ -69,7 +75,7 @@ class Bucket:
                 data=data,
             ) as response:
                 if not response.ok:
-                    raise ReductError(response.status, response.content.read_nowait())
+                    raise ReductError(response.status, await response.read())
 
     async def list(
         self, entry_name: str, start: float, stop: float
@@ -85,7 +91,7 @@ class Bucket:
                     records = json.loads(await response.text())["records"]
                     items = [(record["ts"], record["size"]) for record in records]
                     return items
-                raise ReductError(response.status, response.content.read_nowait())
+                raise ReductError(response.status, await response.read())
 
     async def walk(
         self, entry_name: str, start: float, stop: float
@@ -105,6 +111,26 @@ class ServerInfo(BaseModel):
 
     version: str
     bucket_count: int
+    usage: int
+    uptime: int
+    oldest_record: int
+    latest_record: int
+
+
+class BucketInfo(BaseModel):
+    """returned by '/list' endpoint - info about each bucket"""
+
+    name: str
+    entry_count: int
+    size: int
+    oldest_record: int
+    latest_record: int
+
+
+class BucketList(BaseModel):
+    """multiple buckets"""
+
+    buckets: List[BucketInfo]
 
 
 class Client:
@@ -119,10 +145,19 @@ class Client:
             async with session.get(f"{self.url}/info") as response:
 
                 if response.ok:
-                    info = json.loads(await response.text())
-                    server_info = ServerInfo(**info)
-                    return server_info
-                raise ReductError(response.status, "cannot retrieve server info")
+                    info = ServerInfo.parse_raw(await response.text())
+                    return info
+                raise ReductError(response.status, await response.read())
+
+    async def list(self) -> BucketList:
+        """return a list of all buckets on server"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.url}/list") as response:
+
+                if response.ok:
+                    buckets = BucketList.parse_raw(await response.text())
+                    return buckets
+                raise ReductError(response.status, await response.read())
 
     async def get_bucket(self, name: str) -> Bucket:
         """load a bucket to work with"""
@@ -130,7 +165,7 @@ class Client:
             async with session.get(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name)
-                raise ReductError(response.status, response.content.read_nowait())
+                raise ReductError(response.status, await response.read())
 
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
@@ -140,14 +175,14 @@ class Client:
             async with session.post(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name, settings)
-                raise ReductError(response.status, response.content.read_nowait())
+                raise ReductError(response.status, await response.read())
 
     async def delete_bucket(self, name: str):
         """remove a bucket"""
         async with aiohttp.ClientSession() as session:
             async with session.delete(f"{self.url}/b/{name}") as response:
                 if not response.ok:
-                    raise ReductError(response.status, response.content.read_nowait())
+                    raise ReductError(response.status, await response.read())
 
     async def update_bucket(self, settings: BucketSettings) -> bool:
         """update bucket settings"""
