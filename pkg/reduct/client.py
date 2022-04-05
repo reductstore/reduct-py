@@ -153,13 +153,23 @@ class Bucket:
 
 
 class Client:
-    """main connection to client"""
+    """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(self, url: AnyHttpUrl):
+        """
+        Constructor
+        :param url: HTTP URL to the server
+        :type url: AnyHttpUrl
+        """
         self.url = url.rstrip("/")
 
     async def info(self) -> ServerInfo:
-        """get high level server info"""
+        """
+        Get high level server info
+        :returns statistics about the storage
+        :rtype ServerInfo
+        :raises ReductError: if there is a HTTP error
+        """
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/info") as response:
 
