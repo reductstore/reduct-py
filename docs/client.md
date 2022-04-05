@@ -1,9 +1,11 @@
 # Client
 
-::: reduct.client.Client
+::: reduct.Client
+    show_source: false
     show_root_heading: false
 
 ## ServerInfo
 
-::: reduct.client.ServerInfo
+::: reduct.ServerInfo
+    show_source: false
     show_root_heading: false
