@@ -1,4 +1,9 @@
 # Client
 
 ::: reduct.client.Client
-    handler: python
+    show_root_heading: false
+
+## ServerInfo
+
+::: reduct.client.ServerInfo
+    show_root_heading: false
