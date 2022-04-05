@@ -41,6 +41,52 @@ class BucketSettings(BaseModel):
     quota_size: Optional[int]
 
 
+class Entry(BaseModel):
+    """single object with internal times"""
+
+    name: str
+    size: int
+    block_count: int
+    record_count: int
+    oldest_record: int
+    latest_record: int
+
+
+class ServerInfo(BaseModel):
+    """server stats"""
+
+    version: str
+    bucket_count: int
+    usage: int
+    uptime: int
+    oldest_record: int
+    latest_record: int
+
+
+class BucketInfo(BaseModel):
+    """returned by '/list' endpoint - info about each bucket"""
+
+    name: str
+    entry_count: int
+    size: int
+    oldest_record: int
+    latest_record: int
+
+
+class BucketList(BaseModel):
+    """multiple buckets"""
+
+    buckets: List[BucketInfo]
+
+
+class BucketEntries(BaseModel):
+    """information about bucket and contained entries"""
+
+    settings: BucketSettings
+    info: BucketInfo
+    entries: List[Entry]
+
+
 class Bucket:
     """top level storage object"""
 
@@ -106,33 +152,6 @@ class Bucket:
         """not implemented in API yet?"""
 
 
-class ServerInfo(BaseModel):
-    """server stats"""
-
-    version: str
-    bucket_count: int
-    usage: int
-    uptime: int
-    oldest_record: int
-    latest_record: int
-
-
-class BucketInfo(BaseModel):
-    """returned by '/list' endpoint - info about each bucket"""
-
-    name: str
-    entry_count: int
-    size: int
-    oldest_record: int
-    latest_record: int
-
-
-class BucketList(BaseModel):
-    """multiple buckets"""
-
-    buckets: List[BucketInfo]
-
-
 class Client:
     """main connection to client"""
 
@@ -162,9 +181,17 @@ class Client:
     async def get_bucket(self, name: str) -> Bucket:
         """load a bucket to work with"""
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.url}/b/{name}") as response:
+            async with session.head(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name)
+                raise ReductError(response.status, await response.read())
+
+    async def get_bucket_entries(self, name: str) -> BucketEntries:
+        """load a bucket to work with"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.url}/b/{name}") as response:
+                if response.ok:
+                    return BucketEntries.parse_raw(await response.text())
                 raise ReductError(response.status, await response.read())
 
     async def create_bucket(
@@ -184,5 +211,10 @@ class Client:
                 if not response.ok:
                     raise ReductError(response.status, await response.read())
 
-    async def update_bucket(self, settings: BucketSettings) -> bool:
+    async def update_bucket(self, name: str, settings: BucketSettings) -> bool:
         """update bucket settings"""
+        async with aiohttp.ClientSession() as session:
+            async with session.put(f"{self.url}/b/{name}") as response:
+                if response.ok:
+                    return Bucket(self.url, name, settings)
+                raise ReductError(response.status, await response.read())
