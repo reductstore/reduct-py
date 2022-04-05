@@ -53,14 +53,20 @@ class Entry(BaseModel):
 
 
 class ServerInfo(BaseModel):
-    """server stats"""
+    """Server stats"""
 
     version: str
+    """version of the storage in x.y.z format"""
     bucket_count: int
+    """number of buckets in the storage"""
     usage: int
+    """stored data in bytes"""
     uptime: int
+    """storage uptime in seconds"""
     oldest_record: int
+    """UNIX timestamp of the oldest record in microseconds"""
     latest_record: int
+    """UNIX timestamp of the latest record in microseconds"""
 
 
 class BucketInfo(BaseModel):
@@ -158,21 +164,34 @@ class Client:
     def __init__(self, url: AnyHttpUrl):
         """
         Constructor
-        :param url: HTTP URL to the server
-        :type url: AnyHttpUrl
+
+        Args:
+            url: URL to connect to the storage
+
+        Examples:
+            >>> client = Client("http://127.0.0.1:8383")
+            >>> info = await client.info()
+            {
+                "version": "0.5.0",
+                "bucket_count": 2,
+                "size": 1231825381,
+                ...
+            }
         """
         self.url = url.rstrip("/")
 
     async def info(self) -> ServerInfo:
         """
         Get high level server info
-        :returns statistics about the storage
-        :rtype ServerInfo
-        :raises ReductError: if there is an HTTP error
+
+        Returns:
+            ServerInfo:
+
+        Raises:
+            ReductError: if there is an HTTP error
         """
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/info") as response:
-
                 if response.ok:
                     return ServerInfo.parse_raw(await response.text())
                 raise ReductError(response.status, await response.read())
@@ -181,7 +200,6 @@ class Client:
         """return a list of all buckets on server"""
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/list") as response:
-
                 if response.ok:
                     return BucketList.parse_raw(await response.text())
                 raise ReductError(response.status, await response.read())
