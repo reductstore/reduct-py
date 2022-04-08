@@ -166,7 +166,7 @@ class Bucket:
 class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
-    def __init__(self, url: AnyHttpUrl):
+    def __init__(self, url: str):
         """
         Constructor
 

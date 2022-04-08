@@ -50,9 +50,7 @@ setup(
     python_requires=">=3.8",
     install_requires=["aiohttp~=3.8", "pydantic~=1.9"],
     extras_require={
-        "test": [
-            "pytest~=6.2",
-        ],
+        "test": ["pytest~=6.2", "pytest-asyncio~=0.18"],
         "lint": [
             "pylint~=2.9",
         ],
