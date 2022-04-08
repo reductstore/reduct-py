@@ -1,2 +1,10 @@
 """docstring for pylint"""
-from .client import Client, QuotaType, Bucket, ServerInfo, ReductError
+from .client import (
+    Client,
+    QuotaType,
+    Bucket,
+    ServerInfo,
+    ReductError,
+    BucketInfo,
+    BucketList,
+)
