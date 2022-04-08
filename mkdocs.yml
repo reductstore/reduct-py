@@ -7,6 +7,7 @@ nav:
       - Bucket: docs/api/bucket.md
       - ReductError: docs/api/reduct_error.md
       - ServerInfo: docs/api/server_info.md
+      - BucketInfo: docs/api/bucket_info.md
 
 repo_name: reduct-storage/reduct-py
 repo_url: https://github.com/reduct-storage/reduct-py

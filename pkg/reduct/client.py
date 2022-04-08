@@ -62,30 +62,44 @@ class ServerInfo(BaseModel):
 
     version: str
     """version of the storage in x.y.z format"""
+
     bucket_count: int
     """number of buckets in the storage"""
+
     usage: int
     """stored data in bytes"""
+
     uptime: int
     """storage uptime in seconds"""
+
     oldest_record: int
     """UNIX timestamp of the oldest record in microseconds"""
+
     latest_record: int
     """UNIX timestamp of the latest record in microseconds"""
 
 
 class BucketInfo(BaseModel):
-    """returned by '/list' endpoint - info about each bucket"""
+    """Information about each bucket"""
 
     name: str
+    """name of bucket"""
+
     entry_count: int
+    """number of entries in the bucket"""
+
     size: int
+    """size of bucket data in bytes"""
+
     oldest_record: int
+    """UNIX timestamp of the oldest record in microseconds"""
+
     latest_record: int
+    """UNIX timestamp of the latest record in microseconds"""
 
 
 class BucketList(BaseModel):
-    """multiple buckets"""
+    """List of buckets"""
 
     buckets: List[BucketInfo]
 
@@ -119,8 +133,8 @@ class Bucket:
                 f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
             ) as response:
                 if response.ok:
-                    return await response.text()
-                raise ReductError(response.status, await response.read())
+                    return await response.read()
+                raise ReductError(response.status, await response.text())
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
         """write an object to db"""
@@ -196,7 +210,14 @@ class Client:
                 raise ReductError(response.status, await response.read())
 
     async def list(self) -> BucketList:
-        """return a list of all buckets on server"""
+        """
+        Return a list of all buckets on server
+
+        Returns:
+            BucketList
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{self.url}/list") as response:
                 if response.ok:
