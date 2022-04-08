@@ -70,10 +70,11 @@ plugins:
       handlers:
         python:
           rendering:
-            show_root_heading: false
+            show_root_heading: true
+            show_bases: false
             show_source: false
-      selection:
-        docstring_style: google
+          selection:
+            docstring_style: google
   - autorefs
 
 
