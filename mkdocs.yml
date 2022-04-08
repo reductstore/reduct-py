@@ -3,8 +3,10 @@ docs_dir: .
 nav:
   - Home: README.md
   - API Reference:
-      Client: docs/client.md
-      Bucket: docs/bucket.md
+      Client: docs/api/client.md
+      Bucket: docs/api/bucket.md
+      ReductError: docs/api/reduct_error.md
+      ServerInfo: docs/api/server_info.md
 
 repo_name: reduct-storage/reduct-py
 repo_url: https://github.com/reduct-storage/reduct-py
@@ -63,6 +65,13 @@ markdown_extensions:
 plugins:
   - same-dir
   - mkdocstrings:
+      default_handler: python
+      enable_inventory: false
+      handlers:
+        python:
+          rendering:
+            show_root_heading: false
+            show_source: false
       selection:
         docstring_style: google
   - autorefs

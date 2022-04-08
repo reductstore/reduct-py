@@ -1,0 +1,3 @@
+## ReductError
+
+::: reduct.ReductError
