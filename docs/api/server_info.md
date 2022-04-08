@@ -1,3 +1,1 @@
-## ServerInfo
-
 ::: reduct.ServerInfo
