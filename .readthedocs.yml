@@ -12,8 +12,8 @@ python:
       path: .
       extra_requirements:
         - docs
-    - method: setuptools
-      path: .
+#    - method: setuptools
+#      path: .
 
 # Build documentation with MkDocs
 mkdocs:

@@ -3,10 +3,10 @@ docs_dir: .
 nav:
   - Home: README.md
   - API Reference:
-      Client: docs/api/client.md
-      Bucket: docs/api/bucket.md
-      ReductError: docs/api/reduct_error.md
-      ServerInfo: docs/api/server_info.md
+      - Client: docs/api/client.md
+      - Bucket: docs/api/bucket.md
+      - ReductError: docs/api/reduct_error.md
+      - ServerInfo: docs/api/server_info.md
 
 repo_name: reduct-storage/reduct-py
 repo_url: https://github.com/reduct-storage/reduct-py
