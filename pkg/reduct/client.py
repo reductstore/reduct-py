@@ -17,13 +17,18 @@ class ServerError(BaseModel):
 
 
 class ReductError(Exception):
-    """general exception for all errors"""
+    """General exception for all HTTP errors"""
 
-    def __init__(self, code, message):
+    def __init__(self, code: int, message: str):
         self._code = code
         self._detail = message
         self.message = ServerError.parse_raw(message)
         super().__init__(self.message)
+
+    @property
+    def status_code(self):
+        """Return HTTP status code"""
+        return self._code
 
 
 class QuotaType(Enum):
@@ -171,12 +176,6 @@ class Client:
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
-            {
-                "version": "0.5.0",
-                "bucket_count": 2,
-                "size": 1231825381,
-                ...
-            }
         """
         self.url = url.rstrip("/")
 
