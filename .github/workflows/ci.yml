@@ -54,6 +54,9 @@ jobs:
       - name: Install dependencies
         run: pip3 install .[test]
 
+      - name: Run Reduct Storage
+        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d ghcr.io/reduct-storage/reduct-storage:latest
+
       - name: Run Tests
         run: PYTHONPATH=. pytest tests
 
@@ -78,25 +81,3 @@ jobs:
 
       - name: Lint tests
         run: pylint ./tests
-
-  pytest:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@master
-        with:
-          name: package
-          path: ./dist
-
-      - name: Install package
-        run: python3 -m pip install dist/*
-
-      - name: Install dependencies
-        run: pip3 install .[test]
-
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d ghcr.io/reduct-storage/reduct-storage:latest
-
-      - name: Run tests
-        run: pytest tests
