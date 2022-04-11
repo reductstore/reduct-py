@@ -164,8 +164,7 @@ class Client:
             async with session.get(f"{self.url}/info") as response:
 
                 if response.ok:
-                    info = ServerInfo.parse_raw(await response.text())
-                    return info
+                    return ServerInfo.parse_raw(await response.text())
                 raise ReductError(response.status, await response.read())
 
     async def list(self) -> BucketList:
@@ -174,8 +173,7 @@ class Client:
             async with session.get(f"{self.url}/list") as response:
 
                 if response.ok:
-                    buckets = BucketList.parse_raw(await response.text())
-                    return buckets
+                    return BucketList.parse_raw(await response.text())
                 raise ReductError(response.status, await response.read())
 
     async def get_bucket(self, name: str) -> Bucket:
@@ -199,7 +197,9 @@ class Client:
     ) -> Bucket:
         """create a new bucket"""
         async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.url}/b/{name}") as response:
+            async with session.post(
+                f"{self.url}/b/{name}", data=settings.json()
+            ) as response:
                 if response.ok:
                     return Bucket(self.url, name, settings)
                 raise ReductError(response.status, await response.read())
@@ -214,7 +214,9 @@ class Client:
     async def update_bucket(self, name: str, settings: BucketSettings) -> bool:
         """update bucket settings"""
         async with aiohttp.ClientSession() as session:
-            async with session.put(f"{self.url}/b/{name}") as response:
+            async with session.put(
+                f"{self.url}/b/{name}", data=settings.json()
+            ) as response:
                 if response.ok:
                     return Bucket(self.url, name, settings)
                 raise ReductError(response.status, await response.read())
