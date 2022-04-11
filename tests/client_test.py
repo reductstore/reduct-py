@@ -70,6 +70,7 @@ async def test__create_bucket_with_error(client, bucket_name):
 
 @pytest.mark.asyncio
 async def test__get_bucket(client, bucket_name):
+    """Should get a bucket by name"""
     await client.create_bucket(bucket_name)
 
     bucket = await client.get_bucket(bucket_name)
