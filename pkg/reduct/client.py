@@ -22,7 +22,7 @@ class ReductError(Exception):
     def __init__(self, code: int, message: str):
         self._code = code
         self._detail = message
-        self.message = ServerError.parse_raw(message)
+        self.message = ServerError.parse_raw(message) if message else ""
         super().__init__(self.message)
 
     @property
@@ -227,12 +227,20 @@ class Client:
                 raise ReductError(response.status, await response.read())
 
     async def get_bucket(self, name: str) -> Bucket:
-        """load a bucket to work with"""
+        """
+        Load a bucket to work with
+        Args:
+            name: name of the bucket
+        Returns:
+            Bucket
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         async with aiohttp.ClientSession() as session:
             async with session.head(f"{self.url}/b/{name}") as response:
                 if response.ok:
                     return Bucket(self.url, name)
-                raise ReductError(response.status, await response.read())
+                raise ReductError(response.status, await response.text())
 
     async def get_bucket_entries(self, name: str) -> BucketEntries:
         """load a bucket to work with"""
@@ -245,7 +253,17 @@ class Client:
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
     ) -> Bucket:
-        """create a new bucket"""
+        """
+        Create a new bucket
+        Args:
+            name: a name for the bucket
+            settings: settings for the bucket If None, the server
+            default settings is used.
+        Returns:
+            Bucket: created bucket
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         async with aiohttp.ClientSession() as session:
             async with session.post(f"{self.url}/b/{name}") as response:
                 if response.ok:
