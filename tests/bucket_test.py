@@ -32,3 +32,16 @@ async def test__set_settings(bucket_1):
         "quota_size": None,
         "quota_type": None,
     }  # actually bug
+
+
+@pytest.mark.asyncio
+async def test__get_info(bucket_2):
+    """Should get info about bucket"""
+    info = await bucket_2.info()
+    assert info.dict() == {
+        "entry_count": 1,
+        "latest_record": 6000000,
+        "name": "bucket-2",
+        "oldest_record": 5000000,
+        "size": 22,
+    }

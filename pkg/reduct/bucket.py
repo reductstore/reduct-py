@@ -94,9 +94,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return BucketFullInfo.parse_raw(
-            await request("GET", f"{self.server_url}/b/{self.name}")
-        ).settings
+        return (await self.__get_full_info()).settings
 
     async def set_settings(self, settings: BucketSettings):
         """Update bucket settings
@@ -107,8 +105,14 @@ class Bucket:
         """
         await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
 
-    async def info(self):
-        """stub"""
+    async def info(self) -> BucketInfo:
+        """Get statistics about bucket
+        Returns:
+           BucketInfo:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return (await self.__get_full_info()).info
 
     async def get_entry_list(self):
         """stub"""
@@ -153,3 +157,8 @@ class Bucket:
         records = json.loads(data)["records"]
         items = [(record["ts"], record["size"]) for record in records]
         return items
+
+    async def __get_full_info(self) -> BucketFullInfo:
+        return BucketFullInfo.parse_raw(
+            await request("GET", f"{self.server_url}/b/{self.name}")
+        )

@@ -35,26 +35,13 @@ async def test__info(client):
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("bucket_1", "bucket_2")
-async def test__list(client):
+async def test__list(client, bucket_1, bucket_2):
     """Should browse buckets"""
     buckets: List[BucketInfo] = await client.list()
 
     assert len(buckets) == 2
-    assert buckets[0].dict() == dict(
-        name="bucket-1",
-        entry_count=2,
-        size=44,
-        oldest_record=1_000_000,
-        latest_record=4_000_000,
-    )
-    assert buckets[1].dict() == dict(
-        name="bucket-2",
-        entry_count=1,
-        size=22,
-        oldest_record=5_000_000,
-        latest_record=6_000_000,
-    )
+    assert buckets[0] == await bucket_1.info()
+    assert buckets[1] == await bucket_2.info()
 
 
 @pytest.mark.asyncio
