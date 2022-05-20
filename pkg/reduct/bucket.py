@@ -6,7 +6,7 @@ import time
 
 from pydantic import BaseModel
 
-from reduct.http import request
+from reduct.http import HttpClient
 
 
 class QuotaType(Enum):
@@ -17,11 +17,16 @@ class QuotaType(Enum):
 
 
 class BucketSettings(BaseModel):
-    """configuration for the currently connected db"""
+    """Configuration for a bucket"""
 
     max_block_size: Optional[int]
+    """max block size in bytes"""
+
     quota_type: Optional[QuotaType]
+    """quota type"""
+
     quota_size: Optional[int]
+    """quota size in bytes"""
 
 
 class BucketInfo(BaseModel):
@@ -43,73 +48,155 @@ class BucketInfo(BaseModel):
     """UNIX timestamp of the latest record in microseconds"""
 
 
-class Entry(BaseModel):
-    """single object with internal times"""
+class EntryInfo(BaseModel):
+    """Entry of bucket"""
 
     name: str
+    """name of entry"""
+
     size: int
+    """size of stored data in bytes"""
+
     block_count: int
+    """number of blocks"""
+
     record_count: int
+    """number of records"""
     oldest_record: int
+
+    """UNIX timestamp of the oldest record in microseconds"""
+
     latest_record: int
+    """UNIX timestamp of the latest record in microseconds"""
 
 
-class BucketEntries(BaseModel):
-    """information about bucket and contained entries"""
+class BucketFullInfo(BaseModel):
+    """Information about bucket and contained entries"""
+
+    info: BucketInfo
+    """statistics about bucket"""
 
     settings: BucketSettings
-    info: BucketInfo
-    entries: List[Entry]
+    """settings of bucket"""
 
-
-def _us(timestamp: float) -> int:
-    return int(timestamp * 1_000_000)
+    entries: List[EntryInfo]
+    """information about entries of bucket"""
 
 
 class Bucket:
-    """top level storage object"""
+    """A bucket of data in Reduct Storage"""
 
-    def __init__(
-        self,
-        bucket_url: str,
-        bucket_name: str,
-        settings: Optional[BucketSettings] = None,
-    ):
-        self.bucket_url = bucket_url
-        self.bucket_name = bucket_name
-        self.settings = settings
+    def __init__(self, name: str, http: HttpClient):
+        self._http = http
+        self.name = name
 
-    async def read(self, entry_name: str, timestamp: float) -> bytes:
-        """read an object from the db"""
-        params = {"ts": _us(timestamp)}
-        return await request(
-            "GET", f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
+    async def get_settings(self) -> BucketSettings:
+        """
+        Get current settings of bucket
+        Returns:
+             BucketSettings:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return (await self.__get_full_info()).settings
+
+    async def set_settings(self, settings: BucketSettings):
+        """
+        Update bucket settings
+        Args:
+            settings: new settings
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request("PUT", f"/b/{self.name}", data=settings.json())
+
+    async def info(self) -> BucketInfo:
+        """
+        Get statistics about bucket
+        Returns:
+           BucketInfo:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return (await self.__get_full_info()).info
+
+    async def get_entry_list(self) -> List[EntryInfo]:
+        """
+        Get list of entries with its stats
+        Returns:
+            List[EntryInfo]
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return (await self.__get_full_info()).entries
+
+    async def remove(self):
+        """
+        Remove bucket
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request("DELETE", f"/b/{self.name}")
+
+    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
+        """
+        Read a record from entry
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: UNIX timestamp in microseconds if None get the latest record
+        Returns:
+            bytes:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        params = {"ts": timestamp} if timestamp else None
+        return await self._http.request(
+            "GET", f"/b/{self.name}/{entry_name}", params=params
         )
 
-    async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
-        """write an object to db"""
-        params = {"ts": _us(timestamp)}
+    async def write(
+        self, entry_name: str, data: bytes, timestamp: Optional[int] = None
+    ):
+        """
+        Write a record to entry
+        Args:
+            entry_name: name of entry in the bucket
+            data: data to write
+            timestamp: UNIX timestamp in microseconds. Current time if it's None
+        Raises:
+            ReductError: if there is an HTTP error
 
-        await request(
+        """
+        params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
+
+        await self._http.request(
             "POST",
-            f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}",
+            f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
         )
 
     async def list(
-        self, entry_name: str, start: float, stop: float
-    ) -> List[Tuple[float, int]]:
-        """list all objects in bucket"""
-        params = {"start": _us(start), "stop": _us(stop)}
-        data = await request(
+        self, entry_name: str, start: int, stop: int
+    ) -> List[Tuple[int, int]]:
+        """
+        Get list of records in entry for time interval
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning of the time interval
+            stop: the end of the time interval
+        """
+        params = {"start": start, "stop": stop}
+        data = await self._http.request(
             "GET",
-            f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}/list",
+            f"/b/{self.name}/{entry_name}/list",
             params=params,
         )
         records = json.loads(data)["records"]
-        items = [(record["ts"], record["size"]) for record in records]
+        items = [(int(record["ts"]), int(record["size"])) for record in records]
         return items
 
-    async def remove(self):
-        """not implemented in API yet?"""
+    async def __get_full_info(self) -> BucketFullInfo:
+        return BucketFullInfo.parse_raw(
+            await self._http.request("GET", f"/b/{self.name}")
+        )

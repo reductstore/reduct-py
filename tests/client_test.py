@@ -1,24 +1,18 @@
-"""Just stub for pipline"""
-import random
+"""Tests for Client"""
+from asyncio import sleep
+from typing import List
 
 import pytest
 from aiohttp import ClientConnectionError
-from reduct import Client, ServerInfo, BucketList, ReductError
 
-
-@pytest.fixture(name="url")
-def _url() -> str:
-    return "http://127.0.0.1:8383"
-
-
-@pytest.fixture(name="bucket_name")
-def _gen_bucket_name() -> str:
-    return f"bucket_{random.randint(0, 1000000)}"
-
-
-@pytest.fixture(name="client")
-def _make_client(url):
-    return Client(url)
+from reduct import (
+    Client,
+    ServerInfo,
+    ReductError,
+    BucketInfo,
+    QuotaType,
+    BucketSettings,
+)
 
 
 @pytest.mark.asyncio
@@ -31,54 +25,72 @@ async def test__bad_url():
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 async def test__info(client):
     """Should get information about storage"""
+
+    await sleep(1)
+
     info: ServerInfo = await client.info()
-
     assert info.version >= "0.4.0"
+    assert info.uptime >= 1
+    assert info.bucket_count == 2
+    assert info.usage == 66
+    assert info.oldest_record == 1_000_000
+    assert info.latest_record == 6_000_000
 
 
 @pytest.mark.asyncio
-async def test__list(client, bucket_name):
+async def test__list(client, bucket_1, bucket_2):
     """Should browse buckets"""
-    bucket_1 = bucket_name + "1"
-    bucket_2 = bucket_name + "2"
-    await client.create_bucket(bucket_1)
-    await client.create_bucket(bucket_2)
+    buckets: List[BucketInfo] = await client.list()
 
-    ret: BucketList = await client.list()
-
-    assert len(ret.buckets) >= 2
-    assert list(filter(lambda b: b.name == bucket_1, ret.buckets))[0].size == 0
-    assert list(filter(lambda b: b.name == bucket_2, ret.buckets))[0].size == 0
+    assert len(buckets) == 2
+    assert buckets[0] == await bucket_1.info()
+    assert buckets[1] == await bucket_2.info()
 
 
 @pytest.mark.asyncio
-async def test__create_bucket(client, bucket_name):
-    """Should create a new bucket"""
-    bucket = await client.create_bucket(bucket_name)
-    assert bucket.bucket_name == bucket_name
+async def test__create_bucket_default_settings(bucket_1):
+    """Should create a bucket with default settings"""
+    settings = await bucket_1.get_settings()
+    assert settings.dict() == {
+        "max_block_size": 67108864,
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
 
 
 @pytest.mark.asyncio
-async def test__create_bucket_with_error(client, bucket_name):
+async def test__create_bucket_custom_settings(client):
+    """Should create a bucket with custom settings"""
+    bucket = await client.create_bucket("bucket", BucketSettings(max_block_size=10000))
+    settings = await bucket.get_settings()
+    assert settings.dict() == {
+        "max_block_size": 10000,
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1")
+async def test__create_bucket_with_error(client):
     """Should raise an error, if bucket exists"""
-    await client.create_bucket(bucket_name)
     with pytest.raises(ReductError):
-        await client.create_bucket(bucket_name)
+        await client.create_bucket("bucket-1")
 
 
 @pytest.mark.asyncio
-async def test__get_bucket(client, bucket_name):
+@pytest.mark.usefixtures("bucket_1")
+async def test__get_bucket(client):
     """Should get a bucket by name"""
-    await client.create_bucket(bucket_name)
-
-    bucket = await client.get_bucket(bucket_name)
-    assert bucket.bucket_name == bucket_name
+    bucket = await client.get_bucket("bucket-1")
+    assert bucket.name == "bucket-1"
 
 
 @pytest.mark.asyncio
-async def test__get_bucket_with_error(client, bucket_name):
+async def test__get_bucket_with_error(client):
     """Should raise an error, if bucket doesn't exist"""
     with pytest.raises(ReductError):
-        await client.get_bucket(bucket_name)
+        await client.get_bucket("NOTEXIST")
