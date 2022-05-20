@@ -1,14 +1,14 @@
 """Reduct module"""
-from .bucket import (
+from reduct.bucket import (
     QuotaType,
     Bucket,
     BucketInfo,
 )
 
-from .client import (
+from reduct.client import (
     Client,
     ServerInfo,
     BucketList,
 )
 
-from .error import ReductError
+from reduct.error import ReductError

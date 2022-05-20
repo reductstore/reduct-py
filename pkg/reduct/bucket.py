@@ -1,12 +1,11 @@
+"""Bucket API"""
 import json
 from enum import Enum
 from typing import Optional, List, Tuple
 import time
 
-import aiohttp
 from pydantic import BaseModel
 
-from reduct.error import ReductError
 from reduct.http import request
 
 
@@ -63,8 +62,8 @@ class BucketEntries(BaseModel):
     entries: List[Entry]
 
 
-def _us(ts: float) -> int:
-    return int(ts * 1_000_000)
+def _us(timestamp: float) -> int:
+    return int(timestamp * 1_000_000)
 
 
 class Bucket:

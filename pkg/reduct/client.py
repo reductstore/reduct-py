@@ -3,10 +3,8 @@
 # (c) 2022 Alexey Timin
 from typing import Optional, List
 
-import aiohttp
 from pydantic import BaseModel
 
-from reduct.error import ReductError
 from reduct.bucket import BucketInfo, BucketSettings, Bucket, BucketEntries
 from reduct.http import request
 

@@ -1,3 +1,4 @@
+"""Reduct Errors"""
 from pydantic import BaseModel
 
 
