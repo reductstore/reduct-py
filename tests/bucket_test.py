@@ -60,15 +60,26 @@ async def test__get_entries(bucket_1):
         "record_count": 2,
         "size": 22,
     }
-    assert (
-        entries[1].dict()
-        == {
-            "block_count": 1,
-            "latest_record": 4000000,
-            "name": "entry-2",
-            "oldest_record": 3000000,
-            "record_count": 2,
-            "size": 22,
-        }
-        != {}
-    )
+
+    assert entries[1].dict() == {
+        "block_count": 1,
+        "latest_record": 4000000,
+        "name": "entry-2",
+        "oldest_record": 3000000,
+        "record_count": 2,
+        "size": 22,
+    }
+
+
+@pytest.mark.asyncio
+async def test__read_by_timestamp(bucket_1):
+    """Should read a record by time stamp"""
+    data = await bucket_1.read("entry-2", timestamp=3_000_000)
+    assert data == b"some-data-3"
+
+
+@pytest.mark.asyncio
+async def test__read_latest(bucket_1):
+    """Should read the latest record if no timestamp"""
+    data = await bucket_1.read("entry-2")
+    assert data == b"some-data-4"

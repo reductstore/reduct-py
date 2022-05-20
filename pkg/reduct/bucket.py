@@ -143,16 +143,20 @@ class Bucket:
         """
         await request("DELETE", f"{self.server_url}/b/{self.name}")
 
-    async def read(self, entry_name: str, timestamp: float) -> bytes:
-        """read an object from the db"""
-        params = {"ts": _us(timestamp)}
+    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
+        """Read a record from entry
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: UNIX time stamp in microseconds if None get the latest record
+        """
+        params = {"ts": timestamp} if timestamp else None
         return await request(
             "GET", f"{self.server_url}/b/{self.name}/{entry_name}", params=params
         )
 
-    async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
+    async def write(self, entry_name: str, data: bytes, timestamp=Optional[int]):
         """write an object to db"""
-        params = {"ts": _us(timestamp)}
+        params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
 
         await request(
             "POST",

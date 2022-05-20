@@ -22,10 +22,10 @@ async def _make_client(url):
 @pytest.fixture(name="bucket_1")
 async def _bucket_1(client) -> Bucket:
     bucket = await client.create_bucket("bucket-1")
-    await bucket.write("entry-1", b"some-data-1", timestamp=1)
-    await bucket.write("entry-1", b"some-data-2", timestamp=2)
-    await bucket.write("entry-2", b"some-data-3", timestamp=3)
-    await bucket.write("entry-2", b"some-data-4", timestamp=4)
+    await bucket.write("entry-1", b"some-data-1", timestamp=1_000_000)
+    await bucket.write("entry-1", b"some-data-2", timestamp=2_000_000)
+    await bucket.write("entry-2", b"some-data-3", timestamp=3_000_000)
+    await bucket.write("entry-2", b"some-data-4", timestamp=4_000_000)
     yield bucket
     await bucket.remove()
 
@@ -33,7 +33,7 @@ async def _bucket_1(client) -> Bucket:
 @pytest.fixture(name="bucket_2")
 async def _bucket_2(client) -> Bucket:
     bucket = await client.create_bucket("bucket-2")
-    await bucket.write("entry-1", b"some-data-1", timestamp=5)
-    await bucket.write("entry-1", b"some-data-2", timestamp=6)
+    await bucket.write("entry-1", b"some-data-1", timestamp=5_000_000)
+    await bucket.write("entry-1", b"some-data-2", timestamp=6_000_000)
     yield bucket
     await bucket.remove()
