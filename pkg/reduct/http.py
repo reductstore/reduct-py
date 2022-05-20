@@ -8,6 +8,7 @@ import aiohttp
 from reduct.error import ReductError
 
 
+# pylint: disable=too-few-public-methods
 class HttpClient:
     """Wrapper for HTTP calls"""
 
@@ -24,7 +25,8 @@ class HttpClient:
             ) as response:
                 if response.ok:
                     return await response.read()
-                elif response.status == 401:
+
+                if response.status == 401:
                     hasher = hashlib.sha256(bytes(self.api_token, "utf-8"))
                     async with session.post(
                         f"{self.url}/auth/refresh",
