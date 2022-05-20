@@ -8,9 +8,14 @@ def _url() -> str:
 
 
 @pytest.fixture(name="client")
-def _make_client(url):
+async def _make_client(url):
     client = Client(url)
-    return client
+    buckets = await client.list()
+    for info in buckets:
+        bucket = await client.get_bucket(info.name)
+        await bucket.remove()
+
+    yield client
 
 
 @pytest.fixture(name="bucket_1")

@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from reduct.bucket import BucketInfo, BucketSettings, Bucket, BucketEntries
+from reduct.bucket import BucketInfo, BucketSettings, Bucket
 from reduct.http import request
 
 
@@ -89,10 +89,6 @@ class Client:
         await request("HEAD", f"{self.url}/b/{name}")
         return Bucket(self.url, name)
 
-    async def get_bucket_entries(self, name: str) -> BucketEntries:
-        """load a bucket to work with"""
-        return BucketEntries.parse_raw(await request("GET", f"{self.url}/b/{name}"))
-
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
     ) -> Bucket:
@@ -109,4 +105,4 @@ class Client:
         """
         data = settings.json() if settings else None
         await request("POST", f"{self.url}/b/{name}", data=data)
-        return Bucket(self.url, name, settings)
+        return Bucket(self.url, name)

@@ -17,11 +17,16 @@ class QuotaType(Enum):
 
 
 class BucketSettings(BaseModel):
-    """configuration for the currently connected db"""
+    """Configuration for a bucket"""
 
     max_block_size: Optional[int]
+    """max block size in bytes"""
+
     quota_type: Optional[QuotaType]
+    """quota type"""
+
     quota_size: Optional[int]
+    """quota size in bytes"""
 
 
 class BucketInfo(BaseModel):
@@ -54,12 +59,17 @@ class Entry(BaseModel):
     latest_record: int
 
 
-class BucketEntries(BaseModel):
-    """information about bucket and contained entries"""
+class BucketFullInfo(BaseModel):
+    """Information about bucket and contained entries"""
+
+    info: BucketInfo
+    """statistics about bucket"""
 
     settings: BucketSettings
-    info: BucketInfo
+    """settings of bucket"""
+
     entries: List[Entry]
+    """information about entries of bucket"""
 
 
 def _us(timestamp: float) -> int:
@@ -67,24 +77,25 @@ def _us(timestamp: float) -> int:
 
 
 class Bucket:
-    """top level storage object"""
+    """A bucket of data in Reduct Storage"""
 
     def __init__(
         self,
         server_url: str,
         name: str,
-        settings: Optional[BucketSettings] = None,
     ):
         self.server_url = server_url
         self.name = name
-        self.settings = settings
 
     async def get_settings(self) -> BucketSettings:
-        pass
+        """Get current settings of bucket"""
+        return BucketFullInfo.parse_raw(
+            await request("GET", f"{self.server_url}/b/{self.name}")
+        ).settings
 
     async def set_settings(self, settings: BucketSettings):
         """update bucket settings"""
-        await request("PUT", f"{self.url}/b/{self.name}", data=settings.json())
+        await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
 
     async def info(self):
         pass

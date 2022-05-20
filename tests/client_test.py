@@ -4,8 +4,9 @@ from typing import List
 
 import pytest
 from aiohttp import ClientConnectionError
+from reduct.client import BucketSettings
 
-from reduct import Client, ServerInfo, ReductError, BucketInfo
+from reduct import Client, ServerInfo, ReductError, BucketInfo, QuotaType
 
 
 @pytest.mark.asyncio
@@ -53,6 +54,29 @@ async def test__list(client, bucket_1, bucket_2):
         oldest_record=5_000_000,
         latest_record=6_000_000,
     )
+
+
+@pytest.mark.asyncio
+async def test__create_bucket_default_settings(client, bucket_1):
+    """Should create a bucket with default settings"""
+    settings = await bucket_1.get_settings()
+    assert settings.dict() == {
+        "max_block_size": 67108864,
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
+
+
+@pytest.mark.asyncio
+async def test__create_bucket_custom_settings(client):
+    """Should create a bucket with custom settings"""
+    bucket = await client.create_bucket("bucket", BucketSettings(max_block_size=10000))
+    settings = await bucket.get_settings()
+    assert settings.dict() == {
+        "max_block_size": 10000,
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
 
 
 @pytest.mark.asyncio
