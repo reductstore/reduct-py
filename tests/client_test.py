@@ -35,7 +35,8 @@ async def test__info(client):
 
 
 @pytest.mark.asyncio
-async def test__list(client, bucket_1, bucket_2):
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+async def test__list(client):
     """Should browse buckets"""
     buckets: List[BucketInfo] = await client.list()
 
@@ -57,7 +58,7 @@ async def test__list(client, bucket_1, bucket_2):
 
 
 @pytest.mark.asyncio
-async def test__create_bucket_default_settings(client, bucket_1):
+async def test__create_bucket_default_settings(bucket_1):
     """Should create a bucket with default settings"""
     settings = await bucket_1.get_settings()
     assert settings.dict() == {

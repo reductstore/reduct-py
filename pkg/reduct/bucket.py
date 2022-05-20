@@ -88,7 +88,12 @@ class Bucket:
         self.name = name
 
     async def get_settings(self) -> BucketSettings:
-        """Get current settings of bucket"""
+        """Get current settings of bucket
+        Returns:
+             BucketSettings:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         return BucketFullInfo.parse_raw(
             await request("GET", f"{self.server_url}/b/{self.name}")
         ).settings
@@ -98,10 +103,10 @@ class Bucket:
         await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
 
     async def info(self):
-        pass
+        """stub"""
 
     async def get_entry_list(self):
-        pass
+        """stub"""
 
     async def remove(self):
         """

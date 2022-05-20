@@ -1,3 +1,4 @@
+"""Common fixtures"""
 import pytest
 from reduct import Client, Bucket
 
