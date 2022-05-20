@@ -1,4 +1,6 @@
 """Tests for Bucket"""
+import time
+
 import pytest
 
 from reduct import ReductError, BucketSettings
@@ -73,7 +75,7 @@ async def test__get_entries(bucket_1):
 
 @pytest.mark.asyncio
 async def test__read_by_timestamp(bucket_1):
-    """Should read a record by time stamp"""
+    """Should read a record by timestamp"""
     data = await bucket_1.read("entry-2", timestamp=3_000_000)
     assert data == b"some-data-3"
 
@@ -83,3 +85,22 @@ async def test__read_latest(bucket_1):
     """Should read the latest record if no timestamp"""
     data = await bucket_1.read("entry-2")
     assert data == b"some-data-4"
+
+
+@pytest.mark.asyncio
+async def test__write_by_timestamp(bucket_2):
+    """Should write a record by timestamp"""
+    await bucket_2.write("entry-3", b"test-data", timestamp=5_000_000)
+    data = await bucket_2.read("entry-3", timestamp=5_000_000)
+    assert data == b"test-data"
+
+
+@pytest.mark.asyncio
+async def test__write_with_current_time(bucket_2):
+    """Should write a record with current time"""
+    belated_timestamp = int(time.time_ns() / 1000)
+
+    await bucket_2.write("entry-3", b"test-data")
+    await bucket_2.write("entry-3", b"old-data", timestamp=belated_timestamp)
+    data = await bucket_2.read("entry-3")
+    assert data == b"test-data"

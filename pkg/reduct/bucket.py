@@ -99,7 +99,8 @@ class Bucket:
         self.name = name
 
     async def get_settings(self) -> BucketSettings:
-        """Get current settings of bucket
+        """
+        Get current settings of bucket
         Returns:
              BucketSettings:
         Raises:
@@ -108,7 +109,8 @@ class Bucket:
         return (await self.__get_full_info()).settings
 
     async def set_settings(self, settings: BucketSettings):
-        """Update bucket settings
+        """
+        Update bucket settings
         Args:
             settings: new settings
         Raises:
@@ -117,7 +119,8 @@ class Bucket:
         await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
 
     async def info(self) -> BucketInfo:
-        """Get statistics about bucket
+        """
+        Get statistics about bucket
         Returns:
            BucketInfo:
         Raises:
@@ -126,7 +129,8 @@ class Bucket:
         return (await self.__get_full_info()).info
 
     async def get_entry_list(self) -> List[EntryInfo]:
-        """Get list of entries with its stats
+        """
+        Get list of entries with its stats
         Returns:
             List[EntryInfo]
         Raises:
@@ -137,25 +141,40 @@ class Bucket:
     async def remove(self):
         """
         Remove bucket
-
         Raises:
             ReductError: if there is an HTTP error
         """
         await request("DELETE", f"{self.server_url}/b/{self.name}")
 
     async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
-        """Read a record from entry
+        """
+        Read a record from entry
         Args:
             entry_name: name of entry in the bucket
-            timestamp: UNIX time stamp in microseconds if None get the latest record
+            timestamp: UNIX timestamp in microseconds if None get the latest record
+        Returns:
+            bytes:
+        Raises:
+            ReductError: if there is an HTTP error
         """
         params = {"ts": timestamp} if timestamp else None
         return await request(
             "GET", f"{self.server_url}/b/{self.name}/{entry_name}", params=params
         )
 
-    async def write(self, entry_name: str, data: bytes, timestamp=Optional[int]):
-        """write an object to db"""
+    async def write(
+        self, entry_name: str, data: bytes, timestamp: Optional[int] = None
+    ):
+        """
+        Write a record to entry
+        Args:
+            entry_name: name of entry in the bucket
+            data: data to write
+            timestamp: UNIX timestamp in microseconds. Current time if it's None
+        Raises:
+            ReductError: if there is an HTTP error
+
+        """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
 
         await request(
