@@ -1,9 +1,5 @@
 """Reduct module"""
-from reduct.bucket import (
-    QuotaType,
-    Bucket,
-    BucketInfo,
-)
+from reduct.bucket import QuotaType, Bucket, BucketInfo, BucketSettings
 
 from reduct.client import (
     Client,

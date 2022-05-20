@@ -99,7 +99,12 @@ class Bucket:
         ).settings
 
     async def set_settings(self, settings: BucketSettings):
-        """update bucket settings"""
+        """Update bucket settings
+        Args:
+            settings: new settings
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
 
     async def info(self):
