@@ -6,7 +6,7 @@ import time
 
 from pydantic import BaseModel
 
-from reduct.http import request
+from reduct.http import HttpClient
 
 
 class QuotaType(Enum):
@@ -86,12 +86,8 @@ class BucketFullInfo(BaseModel):
 class Bucket:
     """A bucket of data in Reduct Storage"""
 
-    def __init__(
-        self,
-        server_url: str,
-        name: str,
-    ):
-        self.server_url = server_url
+    def __init__(self, name: str, http: HttpClient):
+        self._http = http
         self.name = name
 
     async def get_settings(self) -> BucketSettings:
@@ -112,7 +108,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await request("PUT", f"{self.server_url}/b/{self.name}", data=settings.json())
+        await self._http.request("PUT", f"/b/{self.name}", data=settings.json())
 
     async def info(self) -> BucketInfo:
         """
@@ -140,7 +136,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await request("DELETE", f"{self.server_url}/b/{self.name}")
+        await self._http.request("DELETE", f"/b/{self.name}")
 
     async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
         """
@@ -154,8 +150,8 @@ class Bucket:
             ReductError: if there is an HTTP error
         """
         params = {"ts": timestamp} if timestamp else None
-        return await request(
-            "GET", f"{self.server_url}/b/{self.name}/{entry_name}", params=params
+        return await self._http.request(
+            "GET", f"/b/{self.name}/{entry_name}", params=params
         )
 
     async def write(
@@ -173,9 +169,9 @@ class Bucket:
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
 
-        await request(
+        await self._http.request(
             "POST",
-            f"{self.server_url}/b/{self.name}/{entry_name}",
+            f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
         )
@@ -191,9 +187,9 @@ class Bucket:
             stop: the end of the time interval
         """
         params = {"start": start, "stop": stop}
-        data = await request(
+        data = await self._http.request(
             "GET",
-            f"{self.server_url}/b/{self.name}/{entry_name}/list",
+            f"/b/{self.name}/{entry_name}/list",
             params=params,
         )
         records = json.loads(data)["records"]
@@ -202,5 +198,5 @@ class Bucket:
 
     async def __get_full_info(self) -> BucketFullInfo:
         return BucketFullInfo.parse_raw(
-            await request("GET", f"{self.server_url}/b/{self.name}")
+            await self._http.request("GET", f"/b/{self.name}")
         )

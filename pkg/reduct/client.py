@@ -4,7 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 
 from reduct.bucket import BucketInfo, BucketSettings, Bucket
-from reduct.http import request
+from reduct.http import HttpClient
 
 
 class ServerInfo(BaseModel):
@@ -38,18 +38,19 @@ class BucketList(BaseModel):
 class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, api_token: Optional[str] = None):
         """
         Constructor
 
         Args:
             url: URL to connect to the storage
+            api_token: API token if the storage uses it for autherization
 
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
-        self.url = url.rstrip("/")
+        self._http = HttpClient(url.rstrip("/"), api_token)
 
     async def info(self) -> ServerInfo:
         """
@@ -61,7 +62,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return ServerInfo.parse_raw(await request("GET", f"{self.url}/info"))
+        return ServerInfo.parse_raw(await self._http.request("GET", "/info"))
 
     async def list(self) -> List[BucketInfo]:
         """
@@ -72,7 +73,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return BucketList.parse_raw(await request("GET", f"{self.url}/list")).buckets
+        return BucketList.parse_raw(await self._http.request("GET", "/list")).buckets
 
     async def get_bucket(self, name: str) -> Bucket:
         """
@@ -84,8 +85,8 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await request("HEAD", f"{self.url}/b/{name}")
-        return Bucket(self.url, name)
+        await self._http.request("HEAD", f"/b/{name}")
+        return Bucket(name, self._http)
 
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
@@ -102,5 +103,5 @@ class Client:
             ReductError: if there is an HTTP error
         """
         data = settings.json() if settings else None
-        await request("POST", f"{self.url}/b/{name}", data=data)
-        return Bucket(self.url, name)
+        await self._http.request("POST", f"/b/{name}", data=data)
+        return Bucket(name, self._http)

@@ -1,4 +1,6 @@
 """Common fixtures"""
+import os
+
 import pytest
 from reduct import Client, Bucket
 
@@ -10,7 +12,8 @@ def _url() -> str:
 
 @pytest.fixture(name="client")
 async def _make_client(url):
-    client = Client(url)
+    api_token = os.getenv("RS_API_TOKEN", default=None)
+    client = Client(url, api_token=api_token)
     buckets = await client.list()
     for info in buckets:
         bucket = await client.get_bucket(info.name)
