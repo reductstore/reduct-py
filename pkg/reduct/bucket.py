@@ -48,15 +48,26 @@ class BucketInfo(BaseModel):
     """UNIX timestamp of the latest record in microseconds"""
 
 
-class Entry(BaseModel):
-    """single object with internal times"""
+class EntryInfo(BaseModel):
+    """Entry of bucket"""
 
     name: str
+    """name of entry"""
+
     size: int
+    """size of stored data in bytes"""
+
     block_count: int
+    """number of blocks"""
+
     record_count: int
+    """number of records"""
     oldest_record: int
+
+    """UNIX timestamp of the oldest record in microseconds"""
+
     latest_record: int
+    """UNIX timestamp of the latest record in microseconds"""
 
 
 class BucketFullInfo(BaseModel):
@@ -68,7 +79,7 @@ class BucketFullInfo(BaseModel):
     settings: BucketSettings
     """settings of bucket"""
 
-    entries: List[Entry]
+    entries: List[EntryInfo]
     """information about entries of bucket"""
 
 
@@ -114,8 +125,14 @@ class Bucket:
         """
         return (await self.__get_full_info()).info
 
-    async def get_entry_list(self):
-        """stub"""
+    async def get_entry_list(self) -> List[EntryInfo]:
+        """Get list of entries with its stats
+        Returns:
+            List[EntryInfo]
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return (await self.__get_full_info()).entries
 
     async def remove(self):
         """

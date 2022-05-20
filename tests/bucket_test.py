@@ -45,3 +45,30 @@ async def test__get_info(bucket_2):
         "oldest_record": 5000000,
         "size": 22,
     }
+
+
+@pytest.mark.asyncio
+async def test__get_entries(bucket_1):
+    """Should get list of entries"""
+    entries = await bucket_1.get_entry_list()
+    assert len(entries) == 2
+    assert entries[0].dict() == {
+        "block_count": 1,
+        "latest_record": 2000000,
+        "name": "entry-1",
+        "oldest_record": 1000000,
+        "record_count": 2,
+        "size": 22,
+    }
+    assert (
+        entries[1].dict()
+        == {
+            "block_count": 1,
+            "latest_record": 4000000,
+            "name": "entry-2",
+            "oldest_record": 3000000,
+            "record_count": 2,
+            "size": 22,
+        }
+        != {}
+    )
