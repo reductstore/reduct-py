@@ -15,7 +15,7 @@ import asyncio
 from reduct import Client, Bucket
 
 async def main():
-    client = Client('http://127.0.0.1:8383')
+    client = Client('https://play.reduct-storage.dev')
     bucket: Bucket = await client.create_bucket("my-bucket")
 
     ts = time.time()

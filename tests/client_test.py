@@ -4,9 +4,15 @@ from typing import List
 
 import pytest
 from aiohttp import ClientConnectionError
-from reduct.client import BucketSettings
 
-from reduct import Client, ServerInfo, ReductError, BucketInfo, QuotaType
+from reduct import (
+    Client,
+    ServerInfo,
+    ReductError,
+    BucketInfo,
+    QuotaType,
+    BucketSettings,
+)
 
 
 @pytest.mark.asyncio

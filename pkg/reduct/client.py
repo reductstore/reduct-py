@@ -1,6 +1,4 @@
 """Main client code"""
-# Python implementation of Reduct Storage HTTP API
-# (c) 2022 Alexey Timin
 from typing import Optional, List
 
 from pydantic import BaseModel
