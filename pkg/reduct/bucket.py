@@ -83,10 +83,6 @@ class BucketFullInfo(BaseModel):
     """information about entries of bucket"""
 
 
-def _us(timestamp: float) -> int:
-    return int(timestamp * 1_000_000)
-
-
 class Bucket:
     """A bucket of data in Reduct Storage"""
 
@@ -185,17 +181,23 @@ class Bucket:
         )
 
     async def list(
-        self, entry_name: str, start: float, stop: float
-    ) -> List[Tuple[float, int]]:
-        """list all objects in bucket"""
-        params = {"start": _us(start), "stop": _us(stop)}
+        self, entry_name: str, start: int, stop: int
+    ) -> List[Tuple[int, int]]:
+        """
+        Get list of records in entry for time interval
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning of the time interval
+            stop: the end of the time interval
+        """
+        params = {"start": start, "stop": stop}
         data = await request(
             "GET",
             f"{self.server_url}/b/{self.name}/{entry_name}/list",
             params=params,
         )
         records = json.loads(data)["records"]
-        items = [(record["ts"], record["size"]) for record in records]
+        items = [(int(record["ts"]), int(record["size"])) for record in records]
         return items
 
     async def __get_full_info(self) -> BucketFullInfo:

@@ -104,3 +104,10 @@ async def test__write_with_current_time(bucket_2):
     await bucket_2.write("entry-3", b"old-data", timestamp=belated_timestamp)
     data = await bucket_2.read("entry-3")
     assert data == b"test-data"
+
+
+@pytest.mark.asyncio
+async def test__list(bucket_1):
+    """Should get list of records for time interval"""
+    records = await bucket_1.list("entry-2", start=0, stop=5_000_000)
+    assert records == [(3000000, 11), (4000000, 11)]
