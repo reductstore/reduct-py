@@ -1,10 +1,14 @@
-"""docstring for pylint"""
-from .client import (
-    Client,
+"""Reduct module"""
+from .bucket import (
     QuotaType,
     Bucket,
-    ServerInfo,
-    ReductError,
     BucketInfo,
+)
+
+from .client import (
+    Client,
+    ServerInfo,
     BucketList,
 )
+
+from .error import ReductError

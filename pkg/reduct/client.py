@@ -1,60 +1,14 @@
 """Main client code"""
 # Python implementation of Reduct Storage HTTP API
 # (c) 2022 Alexey Timin
-import json
-import time
-from enum import Enum
-from typing import Optional, List, Tuple, AsyncIterator
+from typing import Optional, List
 
 import aiohttp
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import BaseModel
 
-
-class ServerError(BaseModel):
-    """sent from the server"""
-
-    detail: str
-
-
-class ReductError(Exception):
-    """General exception for all HTTP errors"""
-
-    def __init__(self, code: int, message: str):
-        self._code = code
-        self._detail = message
-        self.message = ServerError.parse_raw(message) if message else ""
-        super().__init__(self.message)
-
-    @property
-    def status_code(self):
-        """Return HTTP status code"""
-        return self._code
-
-
-class QuotaType(Enum):
-    """determines if database has fixed size"""
-
-    NONE = "NONE"
-    FIFO = "FIFO"
-
-
-class BucketSettings(BaseModel):
-    """configuration for the currently connected db"""
-
-    max_block_size: Optional[int]
-    quota_type: Optional[QuotaType]
-    quota_size: Optional[int]
-
-
-class Entry(BaseModel):
-    """single object with internal times"""
-
-    name: str
-    size: int
-    block_count: int
-    record_count: int
-    oldest_record: int
-    latest_record: int
+from reduct.error import ReductError
+from reduct.bucket import BucketInfo, BucketSettings, Bucket, BucketEntries
+from reduct.http import request
 
 
 class ServerInfo(BaseModel):
@@ -79,102 +33,10 @@ class ServerInfo(BaseModel):
     """UNIX timestamp of the latest record in microseconds"""
 
 
-class BucketInfo(BaseModel):
-    """Information about each bucket"""
-
-    name: str
-    """name of bucket"""
-
-    entry_count: int
-    """number of entries in the bucket"""
-
-    size: int
-    """size of bucket data in bytes"""
-
-    oldest_record: int
-    """UNIX timestamp of the oldest record in microseconds"""
-
-    latest_record: int
-    """UNIX timestamp of the latest record in microseconds"""
-
-
 class BucketList(BaseModel):
     """List of buckets"""
 
     buckets: List[BucketInfo]
-
-
-class BucketEntries(BaseModel):
-    """information about bucket and contained entries"""
-
-    settings: BucketSettings
-    info: BucketInfo
-    entries: List[Entry]
-
-
-class Bucket:
-    """top level storage object"""
-
-    def __init__(
-        self,
-        bucket_url: AnyHttpUrl,
-        bucket_name: str,
-        settings: Optional[BucketSettings] = None,
-    ):
-        self.bucket_url = bucket_url
-        self.bucket_name = bucket_name
-        self.settings = settings
-
-    async def read(self, entry_name: str, timestamp: float) -> bytes:
-        """read an object from the db"""
-        params = {"ts": timestamp}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
-            ) as response:
-                if response.ok:
-                    return await response.read()
-                raise ReductError(response.status, await response.text())
-
-    async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
-        """write an object to db"""
-        params = {"ts": timestamp}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}",
-                params=params,
-                data=data,
-            ) as response:
-                if not response.ok:
-                    raise ReductError(response.status, await response.read())
-
-    async def list(
-        self, entry_name: str, start: float, stop: float
-    ) -> List[Tuple[float, int]]:
-        """list all objects in bucket"""
-        params = {"start": start, "stop": stop}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}/list",
-                params=params,
-            ) as response:
-                if response.ok:
-                    records = json.loads(await response.text())["records"]
-                    items = [(record["ts"], record["size"]) for record in records]
-                    return items
-                raise ReductError(response.status, await response.read())
-
-    async def walk(
-        self, entry_name: str, start: float, stop: float
-    ) -> AsyncIterator[bytes]:
-        """step through all objects in a bucket"""
-        items = await self.list(entry_name, start, stop)
-        for timestamp, _ in items:
-            data = await self.read(entry_name, timestamp)
-            yield data
-
-    async def remove(self):
-        """not implemented in API yet?"""
 
 
 class Client:
@@ -203,11 +65,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.url}/info") as response:
-                if response.ok:
-                    return ServerInfo.parse_raw(await response.text())
-                raise ReductError(response.status, await response.read())
+        return ServerInfo.parse_raw(await request("GET", f"{self.url}/info"))
 
     async def list(self) -> BucketList:
         """
@@ -218,11 +76,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.url}/list") as response:
-                if response.ok:
-                    return BucketList.parse_raw(await response.text())
-                raise ReductError(response.status, await response.read())
+        return BucketList.parse_raw(await request("GET", f"{self.url}/list"))
 
     async def get_bucket(self, name: str) -> Bucket:
         """
@@ -234,19 +88,12 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.head(f"{self.url}/b/{name}") as response:
-                if response.ok:
-                    return Bucket(self.url, name)
-                raise ReductError(response.status, await response.text())
+        await request("HEAD", f"{self.url}/b/{name}")
+        return Bucket(self.url, name)
 
     async def get_bucket_entries(self, name: str) -> BucketEntries:
         """load a bucket to work with"""
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.url}/b/{name}") as response:
-                if response.ok:
-                    return BucketEntries.parse_raw(await response.text())
-                raise ReductError(response.status, await response.read())
+        return BucketEntries.parse_raw(await request("GET", f"{self.url}/b/{name}"))
 
     async def create_bucket(
         self, name: str, settings: Optional[BucketSettings] = None
@@ -262,27 +109,14 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.url}/b/{name}", data=settings.json()
-            ) as response:
-                if response.ok:
-                    return Bucket(self.url, name, settings)
-                raise ReductError(response.status, await response.read())
+        data = settings.json() if settings else None
+        await request("POST", f"{self.url}/b/{name}", data=data)
+        return Bucket(self.url, name, settings)
 
     async def delete_bucket(self, name: str):
         """remove a bucket"""
-        async with aiohttp.ClientSession() as session:
-            async with session.delete(f"{self.url}/b/{name}") as response:
-                if not response.ok:
-                    raise ReductError(response.status, await response.read())
+        await request("DELETE", f"{self.url}/b/{name}")
 
-    async def update_bucket(self, name: str, settings: BucketSettings) -> bool:
+    async def update_bucket(self, name: str, settings: BucketSettings):
         """update bucket settings"""
-        async with aiohttp.ClientSession() as session:
-            async with session.put(
-                f"{self.url}/b/{name}", data=settings.json()
-            ) as response:
-                if response.ok:
-                    return Bucket(self.url, name, settings)
-                raise ReductError(response.status, await response.read())
+        await request("PUT", f"{self.url}/b/{name}", data=settings.json())
