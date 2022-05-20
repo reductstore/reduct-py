@@ -65,16 +65,16 @@ class Client:
         """
         return ServerInfo.parse_raw(await request("GET", f"{self.url}/info"))
 
-    async def list(self) -> BucketList:
+    async def list(self) -> List[BucketInfo]:
         """
         Return a list of all buckets on server
 
         Returns:
-            BucketList
+            List[BucketInfo]
         Raises:
             ReductError: if there is an HTTP error
         """
-        return BucketList.parse_raw(await request("GET", f"{self.url}/list"))
+        return BucketList.parse_raw(await request("GET", f"{self.url}/list")).buckets
 
     async def get_bucket(self, name: str) -> Bucket:
         """
@@ -110,11 +110,3 @@ class Client:
         data = settings.json() if settings else None
         await request("POST", f"{self.url}/b/{name}", data=data)
         return Bucket(self.url, name, settings)
-
-    async def delete_bucket(self, name: str):
-        """remove a bucket"""
-        await request("DELETE", f"{self.url}/b/{name}")
-
-    async def update_bucket(self, name: str, settings: BucketSettings):
-        """update bucket settings"""
-        await request("PUT", f"{self.url}/b/{name}", data=settings.json())

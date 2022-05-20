@@ -71,19 +71,41 @@ class Bucket:
 
     def __init__(
         self,
-        bucket_url: str,
-        bucket_name: str,
+        server_url: str,
+        name: str,
         settings: Optional[BucketSettings] = None,
     ):
-        self.bucket_url = bucket_url
-        self.bucket_name = bucket_name
+        self.server_url = server_url
+        self.name = name
         self.settings = settings
+
+    async def get_settings(self) -> BucketSettings:
+        pass
+
+    async def set_settings(self, settings: BucketSettings):
+        """update bucket settings"""
+        await request("PUT", f"{self.url}/b/{self.name}", data=settings.json())
+
+    async def info(self):
+        pass
+
+    async def get_entry_list(self):
+        pass
+
+    async def remove(self):
+        """
+        Remove bucket
+
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await request("DELETE", f"{self.server_url}/b/{self.name}")
 
     async def read(self, entry_name: str, timestamp: float) -> bytes:
         """read an object from the db"""
         params = {"ts": _us(timestamp)}
         return await request(
-            "GET", f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}", params=params
+            "GET", f"{self.server_url}/b/{self.name}/{entry_name}", params=params
         )
 
     async def write(self, entry_name: str, data: bytes, timestamp=time.time()):
@@ -92,7 +114,7 @@ class Bucket:
 
         await request(
             "POST",
-            f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}",
+            f"{self.server_url}/b/{self.name}/{entry_name}",
             params=params,
             data=data,
         )
@@ -104,12 +126,9 @@ class Bucket:
         params = {"start": _us(start), "stop": _us(stop)}
         data = await request(
             "GET",
-            f"{self.bucket_url}/b/{self.bucket_name}/{entry_name}/list",
+            f"{self.server_url}/b/{self.name}/{entry_name}/list",
             params=params,
         )
         records = json.loads(data)["records"]
         items = [(record["ts"], record["size"]) for record in records]
         return items
-
-    async def remove(self):
-        """not implemented in API yet?"""
