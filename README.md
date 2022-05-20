@@ -4,8 +4,14 @@ Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) writte
 
 ## Features
 
-* Support Reduct Storage HTTP API v0.4 (in progress)
+* Support Reduct Storage HTTP API v0.4
 * Based on aiohttp
+
+## Install
+
+```
+pip install reduct-py
+```
 
 ## Example
 
@@ -18,7 +24,7 @@ async def main():
     client = Client('https://play.reduct-storage.dev')
     bucket: Bucket = await client.create_bucket("my-bucket")
 
-    ts = time.time()
+    ts = time.time_ns() / 1000
     await bucket.write("entry-1", b"Hey!!", ts)
     data = await bucket.read("entry-1", ts)
     print(data)
