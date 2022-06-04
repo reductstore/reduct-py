@@ -188,8 +188,8 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         Returns:
-            List[Tuple[int,int]]:  list of tuples, where each tuple has time stamp (first element) of a record
-            and its size in bytes
+            List[Tuple[int,int]]:  list of tuples, where each tuple
+            has time stamp (first element) of a record and its size in bytes
         """
         params = {"start": start, "stop": stop}
         data = await self._http.request(
