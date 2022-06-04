@@ -185,6 +185,11 @@ class Bucket:
             entry_name: name of entry in the bucket
             start: the beginning of the time interval
             stop: the end of the time interval
+        Raises:
+            ReductError: if there is an HTTP error
+        Returns:
+            List[Tuple[int,int]]:  list of tuples, where each tuple has time stamp (first element) of a record
+            and its size in bytes
         """
         params = {"start": start, "stop": stop}
         data = await self._http.request(
