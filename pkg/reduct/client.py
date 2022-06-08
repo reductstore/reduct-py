@@ -98,7 +98,8 @@ class Client:
             name: a name for the bucket
             settings: settings for the bucket If None, the server
             default settings is used.
-            exist_ok: the client raises no exception if the bucket already exists and returns it
+            exist_ok: the client raises no exception if the bucket
+            already exists and returns it
         Returns:
             Bucket: created bucket
         Raises:
