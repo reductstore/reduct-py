@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from reduct.bucket import BucketInfo, BucketSettings, Bucket
 from reduct.http import HttpClient
+from reduct.error import ReductError
 
 
 class ServerInfo(BaseModel):
@@ -89,7 +90,7 @@ class Client:
         return Bucket(name, self._http)
 
     async def create_bucket(
-        self, name: str, settings: Optional[BucketSettings] = None
+        self, name: str, settings: Optional[BucketSettings] = None, exist_ok=False
     ) -> Bucket:
         """
         Create a new bucket
@@ -97,11 +98,17 @@ class Client:
             name: a name for the bucket
             settings: settings for the bucket If None, the server
             default settings is used.
+            exist_ok: the client raises no exception if the bucket already exists and returns it
         Returns:
             Bucket: created bucket
         Raises:
             ReductError: if there is an HTTP error
         """
         data = settings.json() if settings else None
-        await self._http.request("POST", f"/b/{name}", data=data)
+        try:
+            await self._http.request("POST", f"/b/{name}", data=data)
+        except ReductError as err:
+            if err.status_code != 409 or not exist_ok:
+                raise err
+
         return Bucket(name, self._http)
