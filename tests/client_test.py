@@ -62,6 +62,13 @@ async def test__create_bucket_default_settings(bucket_1):
 
 
 @pytest.mark.asyncio
+async def test__creat_bucket_exist_ok(client, bucket_1):
+    """Should raise not raise error, if bucket exists"""
+    bucket = await client.create_bucket(bucket_1.name, exist_ok=True)
+    assert await bucket.info() == await bucket_1.info()
+
+
+@pytest.mark.asyncio
 async def test__create_bucket_custom_settings(client):
     """Should create a bucket with custom settings"""
     bucket = await client.create_bucket("bucket", BucketSettings(max_block_size=10000))
