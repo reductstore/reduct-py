@@ -26,7 +26,7 @@ from reduct import Client, Bucket
 
 async def main():
     client = Client('https://play.reduct-storage.dev')
-    bucket: Bucket = await client.create_bucket("my-bucket")
+    bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
 
     ts = time.time_ns() / 1000
     await bucket.write("entry-1", b"Hey!!", ts)
