@@ -32,12 +32,18 @@ async def test__info(client):
     await sleep(1)
 
     info: ServerInfo = await client.info()
-    assert info.version >= "0.4.0"
+    assert info.version >= "0.5.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
     assert info.usage == 66
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
+
+    assert info.defaults.bucket.dict() == {
+        "max_block_size": 67108864,
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
 
 
 @pytest.mark.asyncio
