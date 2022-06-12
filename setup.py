@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 
 PACKAGE_NAME = "reduct-py"
 MAJOR_VERSION = 0
-MINOR_VERSION = 1
+MINOR_VERSION = 2
 PATCH_VERSION = 0
 
 HERE = Path(__file__).parent.resolve()
