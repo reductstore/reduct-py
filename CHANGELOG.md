@@ -3,6 +3,7 @@
 **Features**:
 
 * Add exist_ok flag to Client.create_bucket, [PR-21](https://github.com/reduct-storage/reduct-py/pull/21)
+* Update to HTTP API v0.5, [PR-22](https://github.com/reduct-storage/reduct-py/pull/22)
 
 **Documentation**:
 
