@@ -8,6 +8,13 @@ from reduct.http import HttpClient
 from reduct.error import ReductError
 
 
+class Defaults(BaseModel):
+    """Default server settings"""
+
+    bucket: BucketSettings
+    """settings for a new bucket"""
+
+
 class ServerInfo(BaseModel):
     """Server stats"""
 
@@ -28,6 +35,9 @@ class ServerInfo(BaseModel):
 
     latest_record: int
     """UNIX timestamp of the latest record in microseconds"""
+
+    defaults: Defaults
+    """Default server settings"""
 
 
 class BucketList(BaseModel):
