@@ -39,5 +39,5 @@ loop.run_until_complete(main())
 
 ## References
 
-* [Documentation](https://reduct-py.rthd.io)
+* [Documentation](http://reduct-py.rtfd.io/)
 * [Reduct Storage HTTP API](https://docs.reduct-storage.dev/http-api)
