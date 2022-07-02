@@ -119,6 +119,8 @@ async def test__write_with_current_time(bucket_2):
 
 @pytest.mark.asyncio
 async def test__write_by_chunks(bucket_2):
+    """Should accept interator for writing by chunks"""
+
     async def sender():
         for chunk in [b"part1", b"part2"]:
             yield chunk
