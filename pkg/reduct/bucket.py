@@ -1,7 +1,7 @@
 """Bucket API"""
 import json
 from enum import Enum
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, AsyncIterator
 import time
 
 from pydantic import BaseModel
@@ -156,6 +156,29 @@ class Bucket:
         return await self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         )
+
+    async def read_by(
+        self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
+    ) -> AsyncIterator[bytes]:
+        """
+        Read a record from entry by chunks
+
+        >>> async for chunk in bucket.read_by("entry-1", chunk_size=1024):
+        >>>     print(chunk)
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: UNIX timestamp in microseconds if None get the latest record
+            chunk_size:
+        Returns:
+            bytes:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        params = {"ts": timestamp} if timestamp else None
+        async for chunk in self._http.request_by(
+            "GET", f"/b/{self.name}/{entry_name}", params=params, chunk_size=chunk_size
+        ):
+            yield chunk
 
     async def write(
         self, entry_name: str, data: bytes, timestamp: Optional[int] = None

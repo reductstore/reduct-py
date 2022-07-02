@@ -89,6 +89,16 @@ async def test__read_latest(bucket_1):
 
 
 @pytest.mark.asyncio
+async def test__read_by_chunks(bucket_1):
+    """Should read by chunks"""
+    data = b""
+    async for chunk in bucket_1.read_by("entry-2", chunk_size=3):
+        data += chunk
+
+    assert data == b"some-data-4"
+
+
+@pytest.mark.asyncio
 async def test__write_by_timestamp(bucket_2):
     """Should write a record by timestamp"""
     await bucket_2.write("entry-3", b"test-data", timestamp=5_000_000)
