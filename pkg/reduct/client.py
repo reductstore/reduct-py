@@ -49,19 +49,22 @@ class BucketList(BaseModel):
 class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
-    def __init__(self, url: str, api_token: Optional[str] = None):
+    def __init__(
+        self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
+    ):
         """
         Constructor
 
         Args:
             url: URL to connect to the storage
             api_token: API token if the storage uses it for autherization
+            timeout: total timout for connection, reqest and responose in seconds
 
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
-        self._http = HttpClient(url.rstrip("/"), api_token)
+        self._http = HttpClient(url.rstrip("/"), api_token, timeout)
 
     async def info(self) -> ServerInfo:
         """

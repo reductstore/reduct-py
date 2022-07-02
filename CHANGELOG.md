@@ -3,6 +3,7 @@
 **Features**:
 
 * Update to HTTP API v0.6, [PR-28](https://github.com/reduct-storage/reduct-py/pull/28)
+* Add timeout for HTTP request, [PR-29](https://github.com/reduct-storage/reduct-py/pull/29)
 
 **Other**:
 
