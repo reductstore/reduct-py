@@ -24,7 +24,7 @@ class HttpClient:
     async def request_by(
         self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
-        """HTTP request with ReductError exception"""
+        """HTTP request with ReductError exception by chunks"""
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.request(
                 method, f"{self.url}{path.strip()}", headers=self.headers, **kwargs
@@ -50,6 +50,7 @@ class HttpClient:
                 raise ReductError(response.status, await response.text())
 
     async def request(self, method: str, path: str = "", **kwargs) -> bytes:
+        """Http request"""
         blob = b""
         async for chunk in self.request_by(method, path, chunk_size=1024, **kwargs):
             blob += chunk
