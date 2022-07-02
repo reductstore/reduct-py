@@ -50,17 +50,25 @@ setup(
     python_requires=">=3.8",
     install_requires=["aiohttp~=3.8", "pydantic~=1.9"],
     extras_require={
-        "test": ["pytest~=6.2", "pytest-asyncio~=0.18"],
+        "test": ["pytest~=7.1", "pytest-asyncio~=0.18"],
         "lint": [
-            "pylint~=2.9",
+            "pylint~=2.14",
         ],
-        "format": ["black~=22.3"],
+        "format": ["black~=22.6"],
         "docs": [
             "mkdocs~=1.3",
-            "mkdocs-material~=8.2",
+            "mkdocs-material~=8.3",
             "plantuml-markdown~=3.5",
             "mkdocs-same-dir~=0.1",
-            "mkdocstrings[python]~=0.18",
+            "mkdocstrings[python]~=0.19",
         ],
+    },
+    project_urls={
+        "ReductStorage": "https://reduct-storage.dev",
+        "Documentation": "https://reduct-py.readthedocs.io/",
+        "Source": "https://github.com/reduct-storage/reduct-py",
+        "Changelog": "https://github.com/reduct-storage/reduct-py/blob/main/CHANGELOG.md",
+        "Twitter": "https://twitter.com/ReductStorage",
+        "Blog": "https://dev.to/reduct-storage",
     },
 )
