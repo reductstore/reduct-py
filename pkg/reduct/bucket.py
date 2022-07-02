@@ -1,7 +1,7 @@
 """Bucket API"""
 import json
 from enum import Enum
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, AsyncIterator, Union
 import time
 
 from pydantic import BaseModel
@@ -152,20 +152,60 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
+        blob = b""
+        async for chunk in self.read_by(entry_name, timestamp):
+            blob += chunk
+
+        return blob
+
+    async def read_by(
+        self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
+    ) -> AsyncIterator[bytes]:
+        """
+        Read a record from entry by chunks
+
+        >>> async for chunk in bucket.read_by("entry-1", chunk_size=1024):
+        >>>     print(chunk)
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: UNIX timestamp in microseconds if None get the latest record
+            chunk_size:
+        Returns:
+            bytes:
+        Raises:
+            ReductError: if there is an HTTP error
+        """
         params = {"ts": timestamp} if timestamp else None
-        return await self._http.request(
-            "GET", f"/b/{self.name}/{entry_name}", params=params
-        )
+        async for chunk in self._http.request_by(
+            "GET", f"/b/{self.name}/{entry_name}", params=params, chunk_size=chunk_size
+        ):
+            yield chunk
 
     async def write(
-        self, entry_name: str, data: bytes, timestamp: Optional[int] = None
+        self,
+        entry_name: str,
+        data: Union[bytes, Tuple[AsyncIterator[bytes], int]],
+        timestamp: Optional[int] = None,
+        content_length: Optional[int] = None,
     ):
         """
         Write a record to entry
+
+        >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
+
+        You can writting data by chunks with an asynchronous iterator
+        and size of content:
+
+        >>> async def sender():
+        >>>     for chunk in [b"part1", b"part2", b"part3"]:
+        >>>         yield chunk
+        >>> await bucket.write("entry-1", sender(), content_length=15)
         Args:
             entry_name: name of entry in the bucket
-            data: data to write
-            timestamp: UNIX timestamp in microseconds. Current time if it's None
+            data: bytes to write or async itterator
+            timestamp: UNIX time stamp in microseconds. Current time if it's None
+            content_length: content size in bytes,
+                needed only when the data is itterator
         Raises:
             ReductError: if there is an HTTP error
 
@@ -177,6 +217,7 @@ class Bucket:
             f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
+            content_length=content_length if content_length else len(data),
         )
 
     async def list(

@@ -89,6 +89,16 @@ async def test__read_latest(bucket_1):
 
 
 @pytest.mark.asyncio
+async def test__read_by_chunks(bucket_1):
+    """Should read by chunks"""
+    data = b""
+    async for chunk in bucket_1.read_by("entry-2", chunk_size=3):
+        data += chunk
+
+    assert data == b"some-data-4"
+
+
+@pytest.mark.asyncio
 async def test__write_by_timestamp(bucket_2):
     """Should write a record by timestamp"""
     await bucket_2.write("entry-3", b"test-data", timestamp=5_000_000)
@@ -105,6 +115,19 @@ async def test__write_with_current_time(bucket_2):
     await bucket_2.write("entry-3", b"old-data", timestamp=belated_timestamp)
     data = await bucket_2.read("entry-3")
     assert data == b"test-data"
+
+
+@pytest.mark.asyncio
+async def test__write_by_chunks(bucket_2):
+    """Should accept interator for writing by chunks"""
+
+    async def sender():
+        for chunk in [b"part1", b"part2"]:
+            yield chunk
+
+    await bucket_2.write("entry-1", sender(), content_length=10)
+    data = await bucket_2.read("entry-1")
+    assert data == b"part1part2"
 
 
 @pytest.mark.asyncio
