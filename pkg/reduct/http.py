@@ -26,28 +26,31 @@ class HttpClient:
     ) -> AsyncIterator[bytes]:
         """HTTP request with ReductError exception by chunks"""
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            async with session.request(
-                method, f"{self.url}{path.strip()}", headers=self.headers, **kwargs
-            ) as response:
-                if response.ok:
-                    async for chunk in response.content.iter_chunked(chunk_size):
-                        yield chunk
-                    return
+            while True:  # We need cycle to repeat request if the token expires
+                async with session.request(
+                    method, f"{self.url}{path.strip()}", headers=self.headers, **kwargs
+                ) as response:
 
-                if response.status == 401:
-                    hasher = hashlib.sha256(bytes(self.api_token, "utf-8"))
-                    async with session.post(
-                        f"{self.url}/auth/refresh",
-                        headers={"Authorization": f"Bearer {hasher.hexdigest()}"},
-                    ) as auth_resp:
-                        if auth_resp.status == 200:
-                            data = json.loads(await auth_resp.read())
-                            self.headers = {
-                                "Authorization": f'Bearer {data["access_token"]}'
-                            }
-                            yield self.request_by(method, path, chunk_size, **kwargs)
+                    if response.ok:
+                        async for chunk in response.content.iter_chunked(chunk_size):
+                            yield chunk
+                        return  # Success
 
-                raise ReductError(response.status, await response.text())
+                    if response.status == 401:
+                        # Authentication issue, try to refresh token and repeat request
+                        hasher = hashlib.sha256(bytes(self.api_token, "utf-8"))
+                        async with session.post(
+                            f"{self.url}/auth/refresh",
+                            headers={"Authorization": f"Bearer {hasher.hexdigest()}"},
+                        ) as auth_resp:
+                            if auth_resp.status == 200:
+                                data = json.loads(await auth_resp.read())
+                                self.headers = {
+                                    "Authorization": f'Bearer {data["access_token"]}'
+                                }
+                                continue
+
+                    raise ReductError(response.status, await response.text())
 
     async def request(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
