@@ -1,7 +1,7 @@
 """Bucket API"""
 import json
 from enum import Enum
-from typing import Optional, List, Tuple, AsyncIterator, Callable, Union, Awaitable
+from typing import Optional, List, Tuple, AsyncIterator, Union
 import time
 
 from pydantic import BaseModel
@@ -193,7 +193,8 @@ class Bucket:
 
         >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
 
-        You can writting data by chunks with an asynchronous iterator and size of content:
+        You can writting data by chunks with an asynchronous iterator
+        and size of content:
 
         >>> async def sender():
         >>>     for chunk in [b"part1", b"part2", b"part3"]:
@@ -203,7 +204,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             data: bytes to write or async itterator
             timestamp: UNIX time stamp in microseconds. Current time if it's None
-            content_length: content size in bytes, needed only when the data is itterator
+            content_length: content size in bytes,
+                needed only when the data is itterator
         Raises:
             ReductError: if there is an HTTP error
 
