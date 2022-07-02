@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from reduct import ReductError, BucketSettings
+from reduct import ReductError, BucketSettings, QuotaType
 
 
 @pytest.mark.asyncio
@@ -31,9 +31,9 @@ async def test__set_settings(bucket_1):
     new_settings = await bucket_1.get_settings()
     assert new_settings.dict() == {
         "max_block_size": 10000,
-        "quota_size": None,
-        "quota_type": None,
-    }  # actually bug
+        "quota_size": 0,
+        "quota_type": QuotaType.NONE,
+    }
 
 
 @pytest.mark.asyncio

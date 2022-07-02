@@ -1,3 +1,9 @@
+## Release 0.3.0 (in progress)
+
+**Other**:
+
+* Update dependencies, [PR-27](https://github.com/reduct-storage/reduct-py/pull/27)
+
 ## Release 0.2.0 (2022-06-12)
 
 **Features**:
