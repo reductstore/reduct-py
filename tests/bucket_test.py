@@ -118,6 +118,17 @@ async def test__write_with_current_time(bucket_2):
 
 
 @pytest.mark.asyncio
+async def test__write_by_chunks(bucket_2):
+    async def sender():
+        for chunk in [b"part1", b"part2"]:
+            yield chunk
+
+    await bucket_2.write("entry-1", sender(), content_length=10)
+    data = await bucket_2.read("entry-1")
+    assert data == b"part1part2"
+
+
+@pytest.mark.asyncio
 async def test__list(bucket_1):
     """Should get list of records for time interval"""
     records = await bucket_1.list("entry-2", start=0, stop=5_000_000)

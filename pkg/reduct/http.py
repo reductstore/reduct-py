@@ -25,10 +25,19 @@ class HttpClient:
         self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """HTTP request with ReductError exception by chunks"""
+
+        extra_headers = {}
+        if "content_length" in kwargs:
+            extra_headers["Content-Length"] = str(kwargs["content_length"])
+            del kwargs["content_length"]
+
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             while True:  # We need cycle to repeat request if the token expires
                 async with session.request(
-                    method, f"{self.url}{path.strip()}", headers=self.headers, **kwargs
+                    method,
+                    f"{self.url}{path.strip()}",
+                    headers=dict(self.headers, **extra_headers),
+                    **kwargs,
                 ) as response:
 
                     if response.ok:
