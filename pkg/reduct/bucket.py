@@ -22,6 +22,9 @@ class BucketSettings(BaseModel):
     max_block_size: Optional[int]
     """max block size in bytes"""
 
+    max_block_records: Optional[int]
+    """max number of records in a block"""
+
     quota_type: Optional[QuotaType]
     """quota type"""
 

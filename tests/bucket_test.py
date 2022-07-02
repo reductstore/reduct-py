@@ -31,6 +31,7 @@ async def test__set_settings(bucket_1):
     new_settings = await bucket_1.get_settings()
     assert new_settings.dict() == {
         "max_block_size": 10000,
+        "max_block_records": 1024,
         "quota_size": 0,
         "quota_type": QuotaType.NONE,
     }
