@@ -1,5 +1,9 @@
 ## Release 0.3.0 (in progress)
 
+**Features**:
+
+* Update to HTTP API v0.6, [PR-28](https://github.com/reduct-storage/reduct-py/pull/28)
+
 **Other**:
 
 * Update dependencies, [PR-27](https://github.com/reduct-storage/reduct-py/pull/27)
