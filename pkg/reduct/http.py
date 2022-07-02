@@ -4,6 +4,7 @@ import json
 from typing import Optional
 
 import aiohttp
+from aiohttp import ClientTimeout
 
 from reduct.error import ReductError
 
@@ -12,14 +13,17 @@ from reduct.error import ReductError
 class HttpClient:
     """Wrapper for HTTP calls"""
 
-    def __init__(self, url: str, api_token: Optional[str] = None):
+    def __init__(
+        self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
+    ):
         self.url = url
         self.api_token = api_token
         self.headers = {}
+        self.timeout = ClientTimeout(timeout) if timeout else ClientTimeout()
 
     async def request(self, method: str, path: str = "", **kwargs) -> bytes:
         """HTTP request with ReductError exception"""
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.request(
                 method, f"{self.url}{path.strip()}", headers=self.headers, **kwargs
             ) as response:
