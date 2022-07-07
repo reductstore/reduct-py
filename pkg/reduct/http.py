@@ -9,7 +9,6 @@ from aiohttp import ClientTimeout
 from reduct.error import ReductError
 
 
-# pylint: disable=too-few-public-methods
 class HttpClient:
     """Wrapper for HTTP calls"""
 
@@ -19,7 +18,7 @@ class HttpClient:
         self.url = url
         self.api_token = api_token
         self.headers = {}
-        self.timeout = ClientTimeout(timeout) if timeout else ClientTimeout()
+        self.timeout = ClientTimeout(timeout)
 
     async def request_by(
         self, method: str, path: str = "", chunk_size=1024, **kwargs
