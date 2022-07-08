@@ -110,3 +110,9 @@ async def test__get_bucket_with_error(client):
     """Should raise an error, if bucket doesn't exist"""
     with pytest.raises(ReductError):
         await client.get_bucket("NOTEXIST")
+
+
+def test__exception_formatting():
+    """Check the output formatting of raised exceptions"""
+    with pytest.raises(ReductError, match="Status 404: Not Found"):
+        raise ReductError(404, '{"detail":"Not Found"}')
