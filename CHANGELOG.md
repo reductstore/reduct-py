@@ -6,6 +6,10 @@
 * Add timeout for HTTP request, [PR-29](https://github.com/reduct-storage/reduct-py/pull/29)
 * Implement streaming data, [PR-30](https://github.com/reduct-storage/reduct-py/pull/30)
 
+**Fixed**:
+
+* Exceptions print status code and server message, [PR-32](https://github.com/reduct-storage/reduct-py/pull/32)
+
 **Other**:
 
 * Update dependencies, [PR-27](https://github.com/reduct-storage/reduct-py/pull/27)

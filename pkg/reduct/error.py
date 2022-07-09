@@ -13,9 +13,8 @@ class ReductError(Exception):
 
     def __init__(self, code: int, message: str):
         self._code = code
-        self._detail = message
-        self.message = ServerError.parse_raw(message) if message else ""
-        super().__init__(self.message)
+        self.message = ServerError.parse_raw(message).detail if message else ""
+        super().__init__(f"Status {self._code}: {self.message}")
 
     @property
     def status_code(self):
