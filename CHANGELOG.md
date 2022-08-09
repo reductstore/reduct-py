@@ -1,30 +1,47 @@
-## Release 0.3.0 (2022-07-02)
+# Changelog
 
-**Features**:
+All notable changes to this project will be documented in this file.
 
-* Update to HTTP API v0.6, [PR-28](https://github.com/reduct-storage/reduct-py/pull/28)
-* Add timeout for HTTP request, [PR-29](https://github.com/reduct-storage/reduct-py/pull/29)
-* Implement streaming data, [PR-30](https://github.com/reduct-storage/reduct-py/pull/30)
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-**Fixed**:
+## [Unreleased]
 
-* Exceptions print status code and server message, [PR-32](https://github.com/reduct-storage/reduct-py/pull/32)
+## [0.3.0] - 2022-07-02
 
-**Other**:
+### Added:
 
-* Update dependencies, [PR-27](https://github.com/reduct-storage/reduct-py/pull/27)
+- Support HTTP API v0.6, [PR-28](https://github.com/reduct-storage/reduct-py/pull/28)
+- Timeout for HTTP request, [PR-29](https://github.com/reduct-storage/reduct-py/pull/29)
+- Streaming data, [PR-30](https://github.com/reduct-storage/reduct-py/pull/30)
 
-## Release 0.2.0 (2022-06-12)
+### Fixed:
 
-**Features**:
+- Exceptions print status code and server message, [PR-32](https://github.com/reduct-storage/reduct-py/pull/32)
 
-* Add exist_ok flag to Client.create_bucket, [PR-21](https://github.com/reduct-storage/reduct-py/pull/21)
-* Update to HTTP API v0.5, [PR-22](https://github.com/reduct-storage/reduct-py/pull/22)
+### Changed:
 
-**Documentation**:
+- Update dependencies, [PR-27](https://github.com/reduct-storage/reduct-py/pull/27)
 
-* Update docs for Bucket.list method, [PR-20](https://github.com/reduct-storage/reduct-py/pull/20)
+## [0.2.0] - 2022-06-12
 
-## Release 0.1.0 (2022-05-21)
+### Added:
 
-* Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
+- `exist_ok` flag to Client.create_bucket, [PR-21](https://github.com/reduct-storage/reduct-py/pull/21)
+- Support HTTP API v0.5, [PR-22](https://github.com/reduct-storage/reduct-py/pull/22)
+
+### Changed:
+
+- Documentation for `Bucket.list` method, [PR-20](https://github.com/reduct-storage/reduct-py/pull/20)
+
+## [0.1.0] - 2022-05-21
+
+- Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
+
+[Unreleased]: https://github.com/reduct-storage/reduct-js/compare/v0.3.0...HEAD
+
+[0.3.0]: https://github.com/reduct-storage/reduct-py/compare/v0.2.0...v0.3.0
+
+[0.2.0]: https://github.com/reduct-storage/reduct-py/compare/v0.1.0...v0.2.0
+
+[0.1.0]: https://github.com/reduct-storage/reduct-py/compare/tag/v0.1.0
