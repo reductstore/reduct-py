@@ -46,10 +46,9 @@ class HttpClient:
 
                     if response.status == 401:
                         # Authentication issue, try to refresh token and repeat request
-                        hasher = hashlib.sha256(bytes(self.api_token, "utf-8"))
                         async with session.post(
                             f"{self.url}/auth/refresh",
-                            headers={"Authorization": f"Bearer {hasher.hexdigest()}"},
+                            headers={"Authorization": f"Bearer {self.api_token}"},
                         ) as auth_resp:
                             if auth_resp.status == 200:
                                 data = json.loads(await auth_resp.read())
