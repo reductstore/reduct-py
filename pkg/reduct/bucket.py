@@ -112,7 +112,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request("PUT", f"/b/{self.name}", data=settings.json())
+        await self._http.request_all("PUT", f"/b/{self.name}", data=settings.json())
 
     async def info(self) -> BucketInfo:
         """
@@ -140,7 +140,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request("DELETE", f"/b/{self.name}")
+        await self._http.request_all("DELETE", f"/b/{self.name}")
 
     async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
         """
@@ -213,7 +213,7 @@ class Bucket:
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
 
-        await self._http.request(
+        await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
             params=params,
@@ -240,7 +240,7 @@ class Bucket:
             has time stamp (first element) of a record and its size in bytes
         """
         params = {"start": start, "stop": stop}
-        data = await self._http.request(
+        data = await self._http.request_all(
             "GET",
             f"/b/{self.name}/{entry_name}/list",
             params=params,
@@ -256,7 +256,7 @@ class Bucket:
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
     ):
-        data = await self._http.request(
+        data = await self._http.request_all(
             "GET",
             f"/b/{self.name}/{entry}",
             params={"start": start, "stop": stop, "ttl": ttl},
@@ -264,9 +264,9 @@ class Bucket:
         query_id = json.loads(data)["id"]
         last = False
         while not last:
-            await self._http.request()
+            await self._http.request_all()
 
     async def __get_full_info(self) -> BucketFullInfo:
         return BucketFullInfo.parse_raw(
-            await self._http.request("GET", f"/b/{self.name}")
+            await self._http.request_all("GET", f"/b/{self.name}")
         )

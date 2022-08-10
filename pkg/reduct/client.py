@@ -76,7 +76,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return ServerInfo.parse_raw(await self._http.request("GET", "/info"))
+        return ServerInfo.parse_raw(await self._http.request_all("GET", "/info"))
 
     async def list(self) -> List[BucketInfo]:
         """
@@ -87,7 +87,9 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return BucketList.parse_raw(await self._http.request("GET", "/list")).buckets
+        return BucketList.parse_raw(
+            await self._http.request_all("GET", "/list")
+        ).buckets
 
     async def get_bucket(self, name: str) -> Bucket:
         """
@@ -99,7 +101,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request("HEAD", f"/b/{name}")
+        await self._http.request_all("HEAD", f"/b/{name}")
         return Bucket(name, self._http)
 
     async def create_bucket(
@@ -120,7 +122,7 @@ class Client:
         """
         data = settings.json() if settings else None
         try:
-            await self._http.request("POST", f"/b/{name}", data=data)
+            await self._http.request_all("POST", f"/b/{name}", data=data)
         except ReductError as err:
             if err.status_code != 409 or not exist_ok:
                 raise err

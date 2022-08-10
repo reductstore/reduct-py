@@ -1,10 +1,11 @@
 """Internal HTTP helper"""
 import hashlib
 import json
+from contextlib import asynccontextmanager
 from typing import Optional, AsyncIterator
 
 import aiohttp
-from aiohttp import ClientTimeout
+from aiohttp import ClientTimeout, ClientResponse
 
 from reduct.error import ReductError
 
@@ -20,10 +21,9 @@ class HttpClient:
         self.headers = {}
         self.timeout = ClientTimeout(timeout)
 
-    async def request_by(
-        self, method: str, path: str = "", chunk_size=1024, **kwargs
-    ) -> AsyncIterator[bytes]:
-        """HTTP request with ReductError exception by chunks"""
+    @asynccontextmanager
+    async def request(self, method: str, path: str = "", **kwargs) -> ClientResponse:
+        """HTTP request with ReductError exception"""
 
         extra_headers = {}
         if "content_length" in kwargs:
@@ -40,9 +40,8 @@ class HttpClient:
                 ) as response:
 
                     if response.ok:
-                        async for chunk in response.content.iter_chunked(chunk_size):
-                            yield chunk
-                        return  # Success
+                        yield response
+                        break
 
                     if response.status == 401:
                         # Authentication issue, try to refresh token and repeat request
@@ -59,9 +58,16 @@ class HttpClient:
 
                     raise ReductError(response.status, await response.text())
 
-    async def request(self, method: str, path: str = "", **kwargs) -> bytes:
+    async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
-        blob = b""
-        async for chunk in self.request_by(method, path, chunk_size=1024, **kwargs):
-            blob += chunk
-        return blob
+        async with self.request(method, path, **kwargs) as response:
+            return await response.read()
+
+    async def request_by(
+        self, method: str, path: str = "", chunk_size=1024, **kwargs
+    ) -> AsyncIterator[bytes]:
+        """Http request"""
+        async with self.request(method, path, **kwargs) as response:
+            async for chunk in response.content.iter_chunked(chunk_size):
+                yield chunk
+        return
