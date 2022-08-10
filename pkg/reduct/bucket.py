@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, AsyncIterator, Union
 import time
 
 from pydantic import BaseModel
+from deprecation import deprecated
 
 from reduct.http import HttpClient
 
@@ -220,6 +221,9 @@ class Bucket:
             content_length=content_length if content_length else len(data),
         )
 
+    @deprecated(
+        deprecated_in="0.4.0", removed_in="1.0.0", details="Use Bucket.query instead"
+    )
     async def list(
         self, entry_name: str, start: int, stop: int
     ) -> List[Tuple[int, int]]:
@@ -244,6 +248,23 @@ class Bucket:
         records = json.loads(data)["records"]
         items = [(int(record["ts"]), int(record["size"])) for record in records]
         return items
+
+    async def query(
+        self,
+        entry: str,
+        start: Optional[int] = None,
+        stop: Optional[int] = None,
+        ttl: Optional[int] = None,
+    ):
+        data = await self._http.request(
+            "GET",
+            f"/b/{self.name}/{entry}",
+            params={"start": start, "stop": stop, "ttl": ttl},
+        )
+        query_id = json.loads(data)["id"]
+        last = False
+        while not last:
+            await self._http.request()
 
     async def __get_full_info(self) -> BucketFullInfo:
         return BucketFullInfo.parse_raw(

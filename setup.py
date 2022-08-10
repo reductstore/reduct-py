@@ -48,7 +48,7 @@ setup(
     package_data={"": ["VERSION"]},
     packages=find_packages(where="pkg"),
     python_requires=">=3.8",
-    install_requires=["aiohttp~=3.8", "pydantic~=1.9"],
+    install_requires=["aiohttp~=3.8", "pydantic~=1.9", "deprecation~=2.1"],
     extras_require={
         "test": ["pytest~=7.1", "pytest-asyncio~=0.18"],
         "lint": [
