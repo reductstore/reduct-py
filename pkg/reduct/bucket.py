@@ -256,12 +256,13 @@ class Bucket:
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
     ):
+        """TODO"""
         data = await self._http.request_all(
             "GET",
             f"/b/{self.name}/{entry}",
             params={"start": start, "stop": stop, "ttl": ttl},
         )
-        query_id = json.loads(data)["id"]
+        _ = json.loads(data)["id"]
         last = False
         while not last:
             await self._http.request_all()
