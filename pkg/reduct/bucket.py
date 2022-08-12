@@ -276,22 +276,30 @@ class Bucket:
         ttl: Optional[int] = None,
     ):
         """TODO"""
+        params = {}
+        if start:
+            params["start"] = start
+        if stop:
+            params["stop"] = stop
+        if ttl:
+            params["ttl"] = ttl
+
         url = f"/b/{self.name}/{entry}"
         data = await self._http.request_all(
             "GET",
             f"{url}/q",
-            params={"start": start, "stop": stop, "ttl": ttl},
+            params=params,
         )
         query_id = json.loads(data)["id"]
         last = False
         while not last:
             async with self._http.request("GET", f"{url}?q={query_id}") as resp:
+                if resp.status == 202:
+                    return
+
                 timestamp = int(resp.headers["x-reduct-time"])
                 size = int(resp.headers["content-length"])
                 last = int(resp.headers["x-reduct-last"]) != 0
-
-                async def read_all() -> bytes:
-                    return b""
 
                 async def read(chunk_size: int = 1024) -> AsyncIterator[bytes]:
                     yield b""
@@ -300,8 +308,8 @@ class Bucket:
                     timestamp=timestamp,
                     size=size,
                     last=last,
-                    read_all=read_all,
-                    read=read,
+                    read_all=resp.read,
+                    read=resp.content.iter_chunked,
                 )
 
     async def __get_full_info(self) -> BucketFullInfo:
