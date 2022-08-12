@@ -277,12 +277,28 @@ class Bucket:
 
     async def query(
         self,
-        entry: str,
+        entry_name: str,
         start: Optional[int] = None,
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
-    ):
-        """TODO"""
+    ) -> AsyncIterator[Record]:
+        """
+        Query data for a time interval
+
+        >>> async for record in bucket.query("entry-1", stop=time.time_ns() / 1000):
+        >>>     data: bytes = record.read_all()
+        >>>     # or
+        >>>     async for chunk in record.read(n=1024):
+        >>>         print(chunk)
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning of the time interval
+            stop: the end of the time interval
+            ttl: Time To Live of the request in seconds
+
+        Returns:
+             AsyncIterator[Record]: iterator to the records
+        """
         params = {}
         if start:
             params["start"] = start
@@ -291,7 +307,7 @@ class Bucket:
         if ttl:
             params["ttl"] = ttl
 
-        url = f"/b/{self.name}/{entry}"
+        url = f"/b/{self.name}/{entry_name}"
         data = await self._http.request_all(
             "GET",
             f"{url}/q",
