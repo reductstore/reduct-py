@@ -141,6 +141,7 @@ async def test__list(bucket_1):
 
 @pytest.mark.asyncio
 async def test_query_records(bucket_1):
+    """Should query records for a time interval"""
     records: List[Record] = [
         record
         async for record in bucket_1.query("entry-2", start=0, stop=5_000_000, ttl=5)
@@ -157,23 +158,36 @@ async def test_query_records(bucket_1):
 
 
 @pytest.mark.asyncio
-async def test_query_records_defaults(bucket_1):
+async def test_query_records_first(bucket_1):
+    """Should query records for from first record"""
+
     records: List[Record] = [
         record async for record in bucket_1.query("entry-2", stop=4_000_000)
     ]
     assert len(records) == 1
     assert records[0].timestamp == 3_000_000
 
-    records = [record async for record in bucket_1.query("entry-2", start=4_000_000)]
+
+@pytest.mark.asyncio
+async def test_query_records_last(bucket_1):
+    """Should query records for until last record"""
+    records: List[Record] = [
+        record async for record in bucket_1.query("entry-2", start=4_000_000)
+    ]
     assert len(records) == 1
     assert records[0].timestamp == 4_000_000
 
+
+@pytest.mark.asyncio
+async def test_query_records_all(bucket_1):
+    """Should query records all data"""
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 2
 
 
 @pytest.mark.asyncio
 async def test_read_record(bucket_1):
+    """Should provide records with read method"""
     data = [await record.read_all() async for record in bucket_1.query("entry-2")]
     assert data == [b"some-data-3", b"some-data-4"]
 

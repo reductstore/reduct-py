@@ -1,5 +1,6 @@
 """Bucket API"""
 import json
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -10,12 +11,10 @@ from typing import (
     Union,
     Callable,
     Awaitable,
-    AsyncGenerator,
 )
-import time
 
-from pydantic import BaseModel
 from deprecation import deprecated
+from pydantic import BaseModel
 
 from reduct.http import HttpClient
 
@@ -99,11 +98,18 @@ class BucketFullInfo(BaseModel):
 
 @dataclass
 class Record:
+    """Record in a query"""
+
     timestamp: int
+    """UNIX timestamp in microsecods"""
     size: int
+    """size of data"""
     last: bool
+    """last record in the query"""
     read_all: Callable[[None], Awaitable[bytes]]
+    """read all data"""
     read: Callable[[int], AsyncIterator[bytes]]
+    """read data in chunks"""
 
 
 class Bucket:
@@ -188,7 +194,8 @@ class Bucket:
         >>>     print(chunk)
         Args:
             entry_name: name of entry in the bucket
-            timestamp: UNIX timestamp in microseconds if None get the latest record
+            timestamp: UNIX timestamp in microseconds
+            if None get the latest record
             chunk_size:
         Returns:
             bytes:
@@ -300,9 +307,6 @@ class Bucket:
                 timestamp = int(resp.headers["x-reduct-time"])
                 size = int(resp.headers["content-length"])
                 last = int(resp.headers["x-reduct-last"]) != 0
-
-                async def read(chunk_size: int = 1024) -> AsyncIterator[bytes]:
-                    yield b""
 
                 yield Record(
                     timestamp=timestamp,
