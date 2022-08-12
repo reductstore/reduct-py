@@ -1,7 +1,17 @@
 """Bucket API"""
 import json
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, List, Tuple, AsyncIterator, Union
+from typing import (
+    Optional,
+    List,
+    Tuple,
+    AsyncIterator,
+    Union,
+    Callable,
+    Awaitable,
+    AsyncGenerator,
+)
 import time
 
 from pydantic import BaseModel
@@ -85,6 +95,15 @@ class BucketFullInfo(BaseModel):
 
     entries: List[EntryInfo]
     """information about entries of bucket"""
+
+
+@dataclass
+class Record:
+    timestamp: int
+    size: int
+    last: bool
+    read_all: Callable[[None], Awaitable[bytes]]
+    read: Callable[[int], AsyncIterator[bytes]]
 
 
 class Bucket:
@@ -257,15 +276,33 @@ class Bucket:
         ttl: Optional[int] = None,
     ):
         """TODO"""
+        url = f"/b/{self.name}/{entry}"
         data = await self._http.request_all(
             "GET",
-            f"/b/{self.name}/{entry}",
+            f"{url}/q",
             params={"start": start, "stop": stop, "ttl": ttl},
         )
-        _ = json.loads(data)["id"]
+        query_id = json.loads(data)["id"]
         last = False
         while not last:
-            await self._http.request_all()
+            async with self._http.request("GET", f"{url}?q={query_id}") as resp:
+                timestamp = int(resp.headers["x-reduct-time"])
+                size = int(resp.headers["content-length"])
+                last = int(resp.headers["x-reduct-last"]) != 0
+
+                async def read_all() -> bytes:
+                    return b""
+
+                async def read(chunk_size: int = 1024) -> AsyncIterator[bytes]:
+                    yield b""
+
+                yield Record(
+                    timestamp=timestamp,
+                    size=size,
+                    last=last,
+                    read_all=read_all,
+                    read=read,
+                )
 
     async def __get_full_info(self) -> BucketFullInfo:
         return BucketFullInfo.parse_raw(

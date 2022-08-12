@@ -1,9 +1,11 @@
 """Tests for Bucket"""
 import time
+from typing import List
 
 import pytest
 
 from reduct import ReductError, BucketSettings, QuotaType
+from reduct.bucket import Record
 
 
 @pytest.mark.asyncio
@@ -135,3 +137,20 @@ async def test__list(bucket_1):
     """Should get list of records for time interval"""
     records = await bucket_1.list("entry-2", start=0, stop=5_000_000)
     assert records == [(3000000, 11), (4000000, 11)]
+
+
+@pytest.mark.asyncio
+async def test_query(bucket_1):
+    records: List[Record] = [
+        record
+        async for record in bucket_1.query("entry-2", start=0, stop=5_000_000, ttl=5)
+    ]
+    assert len(records) == 2
+
+    assert records[0].timestamp == 3000000
+    assert records[0].size == 11
+    assert not records[0].last
+
+    assert records[1].timestamp == 4000000
+    assert records[1].size == 11
+    assert records[1].last
