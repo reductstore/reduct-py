@@ -1,9 +1,19 @@
 """Bucket API"""
 import json
-from enum import Enum
-from typing import Optional, List, Tuple, AsyncIterator, Union
 import time
+from dataclasses import dataclass
+from enum import Enum
+from typing import (
+    Optional,
+    List,
+    Tuple,
+    AsyncIterator,
+    Union,
+    Callable,
+    Awaitable,
+)
 
+from deprecation import deprecated
 from pydantic import BaseModel
 
 from reduct.http import HttpClient
@@ -86,6 +96,22 @@ class BucketFullInfo(BaseModel):
     """information about entries of bucket"""
 
 
+@dataclass
+class Record:
+    """Record in a query"""
+
+    timestamp: int
+    """UNIX timestamp in microsecods"""
+    size: int
+    """size of data"""
+    last: bool
+    """last record in the query"""
+    read_all: Callable[[None], Awaitable[bytes]]
+    """read all data"""
+    read: Callable[[int], AsyncIterator[bytes]]
+    """read data in chunks"""
+
+
 class Bucket:
     """A bucket of data in Reduct Storage"""
 
@@ -111,7 +137,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request("PUT", f"/b/{self.name}", data=settings.json())
+        await self._http.request_all("PUT", f"/b/{self.name}", data=settings.json())
 
     async def info(self) -> BucketInfo:
         """
@@ -139,7 +165,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request("DELETE", f"/b/{self.name}")
+        await self._http.request_all("DELETE", f"/b/{self.name}")
 
     async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
         """
@@ -168,7 +194,8 @@ class Bucket:
         >>>     print(chunk)
         Args:
             entry_name: name of entry in the bucket
-            timestamp: UNIX timestamp in microseconds if None get the latest record
+            timestamp: UNIX timestamp in microseconds
+            if None get the latest record
             chunk_size:
         Returns:
             bytes:
@@ -212,7 +239,7 @@ class Bucket:
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
 
-        await self._http.request(
+        await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
             params=params,
@@ -220,6 +247,9 @@ class Bucket:
             content_length=content_length if content_length else len(data),
         )
 
+    @deprecated(
+        deprecated_in="0.4.0", removed_in="1.0.0", details="Use Bucket.query instead"
+    )
     async def list(
         self, entry_name: str, start: int, stop: int
     ) -> List[Tuple[int, int]]:
@@ -236,7 +266,7 @@ class Bucket:
             has time stamp (first element) of a record and its size in bytes
         """
         params = {"start": start, "stop": stop}
-        data = await self._http.request(
+        data = await self._http.request_all(
             "GET",
             f"/b/{self.name}/{entry_name}/list",
             params=params,
@@ -245,7 +275,64 @@ class Bucket:
         items = [(int(record["ts"]), int(record["size"])) for record in records]
         return items
 
+    async def query(
+        self,
+        entry_name: str,
+        start: Optional[int] = None,
+        stop: Optional[int] = None,
+        ttl: Optional[int] = None,
+    ) -> AsyncIterator[Record]:
+        """
+        Query data for a time interval
+
+        >>> async for record in bucket.query("entry-1", stop=time.time_ns() / 1000):
+        >>>     data: bytes = record.read_all()
+        >>>     # or
+        >>>     async for chunk in record.read(n=1024):
+        >>>         print(chunk)
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning of the time interval
+            stop: the end of the time interval
+            ttl: Time To Live of the request in seconds
+
+        Returns:
+             AsyncIterator[Record]: iterator to the records
+        """
+        params = {}
+        if start:
+            params["start"] = start
+        if stop:
+            params["stop"] = stop
+        if ttl:
+            params["ttl"] = ttl
+
+        url = f"/b/{self.name}/{entry_name}"
+        data = await self._http.request_all(
+            "GET",
+            f"{url}/q",
+            params=params,
+        )
+        query_id = json.loads(data)["id"]
+        last = False
+        while not last:
+            async with self._http.request("GET", f"{url}?q={query_id}") as resp:
+                if resp.status == 202:
+                    return
+
+                timestamp = int(resp.headers["x-reduct-time"])
+                size = int(resp.headers["content-length"])
+                last = int(resp.headers["x-reduct-last"]) != 0
+
+                yield Record(
+                    timestamp=timestamp,
+                    size=size,
+                    last=last,
+                    read_all=resp.read,
+                    read=resp.content.iter_chunked,
+                )
+
     async def __get_full_info(self) -> BucketFullInfo:
         return BucketFullInfo.parse_raw(
-            await self._http.request("GET", f"/b/{self.name}")
+            await self._http.request_all("GET", f"/b/{self.name}")
         )
