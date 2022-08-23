@@ -20,7 +20,7 @@ from reduct.http import HttpClient
 
 
 class QuotaType(Enum):
-    """determines if database has fixed size"""
+    """determines if database has a fixed size"""
 
     NONE = "NONE"
     FIFO = "FIFO"
@@ -211,7 +211,7 @@ class Bucket:
     async def write(
         self,
         entry_name: str,
-        data: Union[bytes, Tuple[AsyncIterator[bytes], int]],
+        data: Union[bytes, AsyncIterator[bytes]],
         timestamp: Optional[int] = None,
         content_length: Optional[int] = None,
     ):
@@ -220,8 +220,8 @@ class Bucket:
 
         >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
 
-        You can writting data by chunks with an asynchronous iterator
-        and size of content:
+        You can write data chunk-wise using an asynchronous iterator and the
+        size of the content:
 
         >>> async def sender():
         >>>     for chunk in [b"part1", b"part2", b"part3"]:
@@ -229,10 +229,10 @@ class Bucket:
         >>> await bucket.write("entry-1", sender(), content_length=15)
         Args:
             entry_name: name of entry in the bucket
-            data: bytes to write or async itterator
+            data: bytes to write or async iterator
             timestamp: UNIX time stamp in microseconds. Current time if it's None
             content_length: content size in bytes,
-                needed only when the data is itterator
+                needed only when the data is an iterator
         Raises:
             ReductError: if there is an HTTP error
 
@@ -244,7 +244,7 @@ class Bucket:
             f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
-            content_length=content_length if content_length else len(data),
+            content_length=content_length if content_length is not None else len(data),
         )
 
     @deprecated(
