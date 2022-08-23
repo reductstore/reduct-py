@@ -220,8 +220,8 @@ class Bucket:
 
         >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
 
-        You can writting data by chunks with an asynchronous iterator
-        and size of content:
+        You can write data by chunk-wise using an asynchronous iterator and the
+        size of the content:
 
         >>> async def sender():
         >>>     for chunk in [b"part1", b"part2", b"part3"]:
@@ -229,10 +229,10 @@ class Bucket:
         >>> await bucket.write("entry-1", sender(), content_length=15)
         Args:
             entry_name: name of entry in the bucket
-            data: bytes to write or async itterator
+            data: bytes to write or async iterator
             timestamp: UNIX time stamp in microseconds. Current time if it's None
             content_length: content size in bytes,
-                needed only when the data is itterator
+                needed only when the data is iterator
         Raises:
             ReductError: if there is an HTTP error
 
