@@ -211,7 +211,7 @@ class Bucket:
     async def write(
         self,
         entry_name: str,
-        data: Union[bytes, Tuple[AsyncIterator[bytes], int]],
+        data: Union[bytes, AsyncIterator[bytes]],
         timestamp: Optional[int] = None,
         content_length: Optional[int] = None,
     ):
