@@ -20,7 +20,7 @@ from reduct.http import HttpClient
 
 
 class QuotaType(Enum):
-    """determines if database has fixed size"""
+    """determines if database has a fixed size"""
 
     NONE = "NONE"
     FIFO = "FIFO"
@@ -220,7 +220,7 @@ class Bucket:
 
         >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
 
-        You can write data by chunk-wise using an asynchronous iterator and the
+        You can write data chunk-wise using an asynchronous iterator and the
         size of the content:
 
         >>> async def sender():
@@ -232,7 +232,7 @@ class Bucket:
             data: bytes to write or async iterator
             timestamp: UNIX time stamp in microseconds. Current time if it's None
             content_length: content size in bytes,
-                needed only when the data is iterator
+                needed only when the data is an iterator
         Raises:
             ReductError: if there is an HTTP error
 
