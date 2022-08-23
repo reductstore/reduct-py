@@ -244,7 +244,7 @@ class Bucket:
             f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
-            content_length=content_length if content_length else len(data),
+            content_length=content_length if content_length is not None else len(data),
         )
 
     @deprecated(
