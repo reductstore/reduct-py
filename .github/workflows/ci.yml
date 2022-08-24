@@ -11,15 +11,15 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Update pip
-      run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
+      - uses: actions/checkout@v2
+      - name: Update pip
+        run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
 
-    - name: Install dependencies
-      run: pip3 install .[format]
+      - name: Install dependencies
+        run: pip3 install .[format]
 
-    - name: Check PEP8 with black
-      run: black . --check
+      - name: Check PEP8 with black
+        run: black . --check
 
   build:
     needs: format
@@ -51,7 +51,7 @@ jobs:
           path: ./dist
 
       - name: Install package
-        run:  python3 -m pip install dist/*
+        run: python3 -m pip install dist/*
 
       - name: Install dependencies
         run: pip3 install .[test]
@@ -73,7 +73,7 @@ jobs:
           path: ./dist
 
       - name: Install package
-        run:  python3 -m pip install dist/*
+        run: python3 -m pip install dist/*
 
       - name: Install dependencies
         run: pip3 install .[test]
@@ -95,7 +95,7 @@ jobs:
           path: ./dist
 
       - name: Install package
-        run:  python3 -m pip install dist/*
+        run: python3 -m pip install dist/*
 
       - name: Install dependencies
         run: pip3 install .[test,lint]
@@ -105,3 +105,26 @@ jobs:
 
       - name: Lint tests
         run: pylint ./tests
+
+
+  py-pip-upload:
+    name: Upload if release
+    needs: [ pylint, test-with-auth, test-wo-auth ]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./python
+
+    if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/setup-python@v2
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: package
+          path: ./dist
+
+      - uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: ${{ secrets.PYPI_USERNAME }}
+          password: ${{ secrets.PYPI_PASSWORD }}
