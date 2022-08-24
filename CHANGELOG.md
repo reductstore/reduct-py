@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2022-08-24
 
 ### Added:
 
 - Support HTTP API v0.7, [PR-36](https://github.com/reduct-storage/reduct-py/pull/36)
+
+### Fixed:
+
+- Content length can be 0 with async version of command, [PR-37](https://github.com/reduct-storage/reduct-py/pull/37)
+- Type hint in bucket.write incorrect, [PR-37](https://github.com/reduct-storage/reduct-py/pull/37)
 
 ## [0.3.0] - 2022-07-02
 
@@ -22,8 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 
 - Exceptions print status code and server message, [PR-32](https://github.com/reduct-storage/reduct-py/pull/32)
-- Content length can be 0 with async version of command, [PR-37](https://github.com/reduct-storage/reduct-py/pull/37)
-- Type hint in bucket.write incorrect, [PR-37](https://github.com/reduct-storage/reduct-py/pull/37)
 
 ### Changed:
 
@@ -44,7 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-js/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-js/compare/v0.4.0...HEAD
+
+[0.4.0]: https://github.com/reduct-storage/reduct-py/compare/v0.3.0...v0.4.0
 
 [0.3.0]: https://github.com/reduct-storage/reduct-py/compare/v0.2.0...v0.3.0
 
