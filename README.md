@@ -1,7 +1,7 @@
 # Reduct Storage Client SDK for Python
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/reduct-storage/reduct-py)
-![PyPI - Downloads](https://img.shields.io/pypi/dw/reduct-py)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/reduct-py)
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/reduct-storage/reduct-py/ci)
 
 Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) written in Python.
