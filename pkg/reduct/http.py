@@ -29,19 +29,17 @@ class HttpClient:
             del kwargs["content_length"]
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            while True:  # We need cycle to repeat request if the token expires
-                async with session.request(
-                    method,
-                    f"{self.url}{path.strip()}",
-                    headers=dict(self.headers, **extra_headers),
-                    **kwargs,
-                ) as response:
+            async with session.request(
+                method,
+                f"{self.url}{path.strip()}",
+                headers=dict(self.headers, **extra_headers),
+                **kwargs,
+            ) as response:
 
-                    if response.ok:
-                        yield response
-                        break
+                if response.ok:
+                    yield response
 
-                    raise ReductError(response.status, await response.text())
+                raise ReductError(response.status, await response.text())
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
