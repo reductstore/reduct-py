@@ -16,7 +16,9 @@ class HttpClient:
     ):
         self.url = url
         self.api_token = api_token
-        self.headers = {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}
+        self.headers = (
+            {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}
+        )
         self.timeout = ClientTimeout(timeout)
 
     @asynccontextmanager
@@ -27,7 +29,6 @@ class HttpClient:
         if "content_length" in kwargs:
             extra_headers["Content-Length"] = str(kwargs["content_length"])
             del kwargs["content_length"]
-
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.request(
