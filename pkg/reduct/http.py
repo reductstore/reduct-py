@@ -37,7 +37,7 @@ class HttpClient:
             ) as response:
 
                 if response.ok:
-                    yield response
+                    return response
 
                 raise ReductError(response.status, await response.text())
 
