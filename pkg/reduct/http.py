@@ -39,9 +39,10 @@ class HttpClient:
             ) as response:
 
                 if response.ok:
-                    return response
+                    yield response
 
-                raise ReductError(response.status, await response.text())
+                else:
+                    raise ReductError(response.status, await response.text())
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
