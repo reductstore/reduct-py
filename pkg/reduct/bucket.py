@@ -121,7 +121,7 @@ class Bucket:
 
     async def get_settings(self) -> BucketSettings:
         """
-        Get current settings of bucket
+        Get current bucket settings
         Returns:
              BucketSettings:
         Raises:
@@ -151,7 +151,7 @@ class Bucket:
 
     async def get_entry_list(self) -> List[EntryInfo]:
         """
-        Get list of entries with its stats
+        Get list of entries with their stats
         Returns:
             List[EntryInfo]
         Raises:
@@ -172,7 +172,7 @@ class Bucket:
         Read a record from entry
         Args:
             entry_name: name of entry in the bucket
-            timestamp: UNIX timestamp in microseconds if None get the latest record
+            timestamp: UNIX timestamp in microseconds - if None: get the latest record
         Returns:
             bytes:
         Raises:
@@ -188,7 +188,7 @@ class Bucket:
         self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
     ) -> AsyncIterator[bytes]:
         """
-        Read a record from entry by chunks
+        Read a record from entry in chunks
 
         >>> async for chunk in bucket.read_by("entry-1", chunk_size=1024):
         >>>     print(chunk)
@@ -254,7 +254,7 @@ class Bucket:
         self, entry_name: str, start: int, stop: int
     ) -> List[Tuple[int, int]]:
         """
-        Get list of records in entry for time interval
+        Get a list of records in an entry for a specified time interval
         Args:
             entry_name: name of entry in the bucket
             start: the beginning of the time interval

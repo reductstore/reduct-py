@@ -57,8 +57,8 @@ class Client:
 
         Args:
             url: URL to connect to the storage
-            api_token: API token if the storage uses it for autherization
-            timeout: total timout for connection, reqest and responose in seconds
+            api_token: API token if the storage uses it for authorization
+            timeout: total timeout for connection, request and response in seconds
 
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
