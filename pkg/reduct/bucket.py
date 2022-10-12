@@ -6,14 +6,12 @@ from enum import Enum
 from typing import (
     Optional,
     List,
-    Tuple,
     AsyncIterator,
     Union,
     Callable,
     Awaitable,
 )
 
-from deprecation import deprecated
 from pydantic import BaseModel
 
 from reduct.http import HttpClient
@@ -246,34 +244,6 @@ class Bucket:
             data=data,
             content_length=content_length if content_length is not None else len(data),
         )
-
-    @deprecated(
-        deprecated_in="0.4.0", removed_in="1.0.0", details="Use Bucket.query instead"
-    )
-    async def list(
-        self, entry_name: str, start: int, stop: int
-    ) -> List[Tuple[int, int]]:
-        """
-        Get a list of records in an entry for a specified time interval
-        Args:
-            entry_name: name of entry in the bucket
-            start: the beginning of the time interval
-            stop: the end of the time interval
-        Raises:
-            ReductError: if there is an HTTP error
-        Returns:
-            List[Tuple[int,int]]:  list of tuples, where each tuple
-            has time stamp (first element) of a record and its size in bytes
-        """
-        params = {"start": start, "stop": stop}
-        data = await self._http.request_all(
-            "GET",
-            f"/b/{self.name}/{entry_name}/list",
-            params=params,
-        )
-        records = json.loads(data)["records"]
-        items = [(int(record["ts"]), int(record["size"])) for record in records]
-        return items
 
     async def query(
         self,

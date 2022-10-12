@@ -133,13 +133,6 @@ async def test__write_by_chunks(bucket_2):
 
 
 @pytest.mark.asyncio
-async def test__list(bucket_1):
-    """Should get list of records for time interval"""
-    records = await bucket_1.list("entry-2", start=0, stop=5_000_000)
-    assert records == [(3000000, 11), (4000000, 11)]
-
-
-@pytest.mark.asyncio
 async def test_query_records(bucket_1):
     """Should query records for a time interval"""
     records: List[Record] = [

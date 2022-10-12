@@ -8,13 +8,16 @@ from aiohttp import ClientTimeout, ClientResponse
 from reduct.error import ReductError
 
 
+API_PREFIX = "/api/v1"
+
+
 class HttpClient:
     """Wrapper for HTTP calls"""
 
     def __init__(
         self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
     ):
-        self.url = url
+        self.url = url + API_PREFIX
         self.api_token = api_token
         self.headers = (
             {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}

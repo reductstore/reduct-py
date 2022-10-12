@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed:
+
+- Deprecated entry `list` function, [PR-42](https://github.com/reduct-storage/reduct-py/pull/42)
+
+### Added:
+
+- `/api/v1/` prefix to all http endpoints, [PR-42](https://github.com/reduct-storage/reduct-py/pull/42)
+
 ## [0.5.1] - 2022-09-14
 
 ### Removed:
