@@ -8,7 +8,7 @@ from aiohttp import ClientTimeout, ClientResponse
 from reduct.error import ReductError
 
 
-API_PREFIX = "/api/v1/"
+API_PREFIX = "/api/v1"
 
 
 class HttpClient:
