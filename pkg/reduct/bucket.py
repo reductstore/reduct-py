@@ -6,14 +6,12 @@ from enum import Enum
 from typing import (
     Optional,
     List,
-    Tuple,
     AsyncIterator,
     Union,
     Callable,
     Awaitable,
 )
 
-from deprecation import deprecated
 from pydantic import BaseModel
 
 from reduct.http import HttpClient
