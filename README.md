@@ -30,8 +30,9 @@ async def main():
 
     ts = time.time_ns() / 1000
     await bucket.write("entry-1", b"Hey!!", ts)
-    data = await bucket.read("entry-1", ts)
-    print(data)
+    async with bucket.read("entry-1", ts) as record:
+        data = await record.read_all()
+        print(data)
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
