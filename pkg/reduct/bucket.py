@@ -1,4 +1,5 @@
 """Bucket API"""
+from contextlib import asynccontextmanager
 import json
 import time
 from dataclasses import dataclass
@@ -165,14 +166,21 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
 
-    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> Record:
+    @asynccontextmanager
+    async def read(
+        self, entry_name: str, timestamp: Optional[int] = None
+    ) -> AsyncIterator[Record]:
         """
         Read a record from entry
+
+        >>> async def reader():
+        >>>     async with bucket.read("entry", timestamp=123456789) as record:
+        >>>         data = await record.read_all()
         Args:
             entry_name: name of entry in the bucket
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
         Returns:
-            bytes:
+            async context, which generates Records
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -183,32 +191,13 @@ class Bucket:
             timestamp = int(resp.headers["x-reduct-time"])
             size = int(resp.headers["content-length"])
 
-            return Record(
+            yield Record(
                 timestamp=timestamp,
                 size=size,
                 last=True,
                 read_all=resp.read,
                 read=resp.content.iter_chunked,
             )
-
-    async def read_by(
-        self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
-    ) -> AsyncIterator[bytes]:
-        """
-        Read a record from entry in chunks
-
-        >>> async for chunk in bucket.read_by("entry-1", chunk_size=1024):
-        >>>     print(chunk)
-        Args:
-            entry_name: name of entry in the bucket
-            timestamp: UNIX timestamp in microseconds
-            if None get the latest record
-            chunk_size:
-        Returns:
-            bytes:
-        Raises:
-            ReductError: if there is an HTTP error
-        """
 
     async def write(
         self,
