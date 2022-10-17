@@ -99,7 +99,7 @@ class Record:
     """Record in a query"""
 
     timestamp: int
-    """UNIX timestamp in microsecods"""
+    """UNIX timestamp in microseconds"""
     size: int
     """size of data"""
     last: bool
@@ -165,7 +165,7 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
 
-    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
+    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> Record:
         """
         Read a record from entry
         Args:
@@ -176,11 +176,20 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        blob = b""
-        async for chunk in self.read_by(entry_name, timestamp):
-            blob += chunk
+        params = {"ts": timestamp} if timestamp else None
+        async with self._http.request(
+            "GET", f"/b/{self.name}/{entry_name}", params=params
+        ) as resp:
+            timestamp = int(resp.headers["x-reduct-time"])
+            size = int(resp.headers["content-length"])
 
-        return blob
+            yield Record(
+                timestamp=timestamp,
+                size=size,
+                last=True,
+                read_all=resp.read,
+                read=resp.content.iter_chunked,
+            )
 
     async def read_by(
         self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
@@ -200,11 +209,6 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        params = {"ts": timestamp} if timestamp else None
-        async for chunk in self._http.request_by(
-            "GET", f"/b/{self.name}/{entry_name}", params=params, chunk_size=chunk_size
-        ):
-            yield chunk
 
     async def write(
         self,

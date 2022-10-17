@@ -79,15 +79,17 @@ async def test__get_entries(bucket_1):
 @pytest.mark.asyncio
 async def test__read_by_timestamp(bucket_1):
     """Should read a record by timestamp"""
-    data = await bucket_1.read("entry-2", timestamp=3_000_000)
+    record: Record = await bucket_1.read("entry-2", timestamp=3_000_000)
+    data = await record.read_all()
     assert data == b"some-data-3"
 
 
 @pytest.mark.asyncio
 async def test__read_latest(bucket_1):
     """Should read the latest record if no timestamp"""
-    data = await bucket_1.read("entry-2")
-    assert data == b"some-data-4"
+    record = await bucket_1.read("entry-2")
+    # data = await record.read_all()
+    assert record == b"some-data-4"
 
 
 @pytest.mark.asyncio
