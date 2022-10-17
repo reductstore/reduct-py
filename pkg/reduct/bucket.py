@@ -183,7 +183,7 @@ class Bucket:
             timestamp = int(resp.headers["x-reduct-time"])
             size = int(resp.headers["content-length"])
 
-            yield Record(
+            return Record(
                 timestamp=timestamp,
                 size=size,
                 last=True,
