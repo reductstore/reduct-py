@@ -25,7 +25,9 @@ class HttpClient:
         self.timeout = ClientTimeout(timeout)
 
     @asynccontextmanager
-    async def request(self, method: str, path: str = "", **kwargs) -> ClientResponse:
+    async def request(
+        self, method: str, path: str = "", **kwargs
+    ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
 
         extra_headers = {}
