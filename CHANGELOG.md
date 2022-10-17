@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed:
-
-- Deprecated entry `list` function, [PR-42](https://github.com/reduct-storage/reduct-py/pull/42)
-
 ### Added:
 
 - `/api/v1/` prefix to all http endpoints, [PR-42](https://github.com/reduct-storage/reduct-py/pull/42)
+
+### Changed:
+
+- `bucket.read()` now returns a Record yielded from an asynccontext, [PR-43](https://github.com/reduct-storage/reduct-py/pull/43)
+
+### Removed:
+
+- Deprecated entry `list` function, [PR-42](https://github.com/reduct-storage/reduct-py/pull/42)
+- `bucket.read_by` method, [PR-43](https://github.com/reduct-storage/reduct-py/pull/43)
 
 ## [0.5.1] - 2022-09-14
 
