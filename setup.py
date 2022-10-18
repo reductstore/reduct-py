@@ -8,9 +8,9 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 PACKAGE_NAME = "reduct-py"
-MAJOR_VERSION = 0
-MINOR_VERSION = 5
-PATCH_VERSION = 1
+MAJOR_VERSION = 1
+MINOR_VERSION = 0
+PATCH_VERSION = 0
 
 HERE = Path(__file__).parent.resolve()
 
