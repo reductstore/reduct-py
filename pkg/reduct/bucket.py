@@ -1,4 +1,5 @@
 """Bucket API"""
+from contextlib import asynccontextmanager
 import json
 import time
 from dataclasses import dataclass
@@ -99,7 +100,7 @@ class Record:
     """Record in a query"""
 
     timestamp: int
-    """UNIX timestamp in microsecods"""
+    """UNIX timestamp in microseconds"""
     size: int
     """size of data"""
     last: bool
@@ -165,46 +166,38 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
 
-    async def read(self, entry_name: str, timestamp: Optional[int] = None) -> bytes:
+    @asynccontextmanager
+    async def read(
+        self, entry_name: str, timestamp: Optional[int] = None
+    ) -> AsyncIterator[Record]:
         """
         Read a record from entry
+
+        >>> async def reader():
+        >>>     async with bucket.read("entry", timestamp=123456789) as record:
+        >>>         data = await record.read_all()
         Args:
             entry_name: name of entry in the bucket
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
         Returns:
-            bytes:
-        Raises:
-            ReductError: if there is an HTTP error
-        """
-        blob = b""
-        async for chunk in self.read_by(entry_name, timestamp):
-            blob += chunk
-
-        return blob
-
-    async def read_by(
-        self, entry_name: str, timestamp: Optional[int] = None, chunk_size: int = 1024
-    ) -> AsyncIterator[bytes]:
-        """
-        Read a record from entry in chunks
-
-        >>> async for chunk in bucket.read_by("entry-1", chunk_size=1024):
-        >>>     print(chunk)
-        Args:
-            entry_name: name of entry in the bucket
-            timestamp: UNIX timestamp in microseconds
-            if None get the latest record
-            chunk_size:
-        Returns:
-            bytes:
+            async context, which generates Records
         Raises:
             ReductError: if there is an HTTP error
         """
         params = {"ts": timestamp} if timestamp else None
-        async for chunk in self._http.request_by(
-            "GET", f"/b/{self.name}/{entry_name}", params=params, chunk_size=chunk_size
-        ):
-            yield chunk
+        async with self._http.request(
+            "GET", f"/b/{self.name}/{entry_name}", params=params
+        ) as resp:
+            timestamp = int(resp.headers["x-reduct-time"])
+            size = int(resp.headers["content-length"])
+
+            yield Record(
+                timestamp=timestamp,
+                size=size,
+                last=True,
+                read_all=resp.read,
+                read=resp.content.iter_chunked,
+            )
 
     async def write(
         self,
