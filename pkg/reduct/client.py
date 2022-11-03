@@ -101,7 +101,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request_all("HEAD", f"/b/{name}")
+        await self._http.request_all("GET", f"/b/{name}")
         return Bucket(name, self._http)
 
     async def create_bucket(
