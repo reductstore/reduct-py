@@ -108,8 +108,9 @@ async def test__get_bucket(client):
 @pytest.mark.asyncio
 async def test__get_bucket_with_error(client):
     """Should raise an error, if bucket doesn't exist"""
-    with pytest.raises(ReductError):
+    with pytest.raises(ReductError) as reduct_err:
         await client.get_bucket("NOTEXIST")
+    assert "Status 404: Bucket 'NOTEXIST' is not found" == str(reduct_err.value)
 
 
 def test__exception_formatting():
