@@ -61,8 +61,8 @@ class Client:
             timeout: total timeout for connection, request and response in seconds
 
         Examples:
-        >>> client = Client("http://127.0.0.1:8383")
-        >>> info = await client.info()
+            >>> client = Client("http://127.0.0.1:8383")
+            >>> info = await client.info()
         """
         self._http = HttpClient(url.rstrip("/"), api_token, timeout)
 
