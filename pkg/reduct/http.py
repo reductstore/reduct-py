@@ -51,6 +51,7 @@ class HttpClient:
                     else:
                         raise ReductError(response.status, await response.text())
             except ClientConnectorError:
+                # pylint: disable=line-too-long
                 raise ReductError(
                     599,
                     f'{{"detail": "Connection failed, server {self.url} cannot be reached"}}',
