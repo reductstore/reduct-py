@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 
-- `client.get_bucket` now uses `GET` instead of `HEAD` in order to be able to return a meaningful error to the user, [PR-51](https://github.com/reduct-storage/reduct-py/pull/51)
+- `Client.get_bucket` now uses `GET` instead of `HEAD` in order to be able to return a meaningful error to the user, [PR-51](https://github.com/reduct-storage/reduct-py/pull/51)
+- `Client` class now catches parsing errors raised by incorrect server configurations or missing servers, [PR-52](https://github.com/reduct-storage/reduct-py/pull/52)
 
 ## [v1.0.0] - 2022-10-18
 
