@@ -23,6 +23,14 @@ async def test__bad_url():
     with pytest.raises(ClientConnectionError):
         await client.info()
 
+@pytest.mark.asyncio
+async def test__bad_url_server_exists():
+    """Should raise an error"""
+    client = Client("http://example.com")
+
+    with pytest.raises(ReductError):
+        await client.info()
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
