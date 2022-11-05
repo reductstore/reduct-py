@@ -3,7 +3,6 @@ from asyncio import sleep
 from typing import List
 
 import pytest
-from aiohttp import ClientConnectionError
 
 from reduct import (
     Client,
@@ -31,9 +30,9 @@ async def test__bad_url_server_exists():
 
     with pytest.raises(ReductError) as reduct_err:
         await client.info()
-    assert (
-        str(reduct_err.value)
-        == "Status 404: Could not parse error response from server, is it definitely Reduct?"
+    assert str(reduct_err.value) == (
+        "Status 404: Could not parse error response from server,"
+        " is it definitely Reduct?"
     )
 
 
