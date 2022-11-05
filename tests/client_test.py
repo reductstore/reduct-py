@@ -23,13 +23,18 @@ async def test__bad_url():
     with pytest.raises(ClientConnectionError):
         await client.info()
 
+
 @pytest.mark.asyncio
 async def test__bad_url_server_exists():
     """Should raise an error"""
     client = Client("http://example.com")
 
-    with pytest.raises(ReductError):
+    with pytest.raises(ReductError) as reduct_err:
         await client.info()
+    assert (
+        str(reduct_err.value)
+        == "Status 404: Could not parse error response from server, is it definitely Reduct?"
+    )
 
 
 @pytest.mark.asyncio
