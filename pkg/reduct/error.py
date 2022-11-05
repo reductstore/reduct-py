@@ -1,5 +1,5 @@
 """Reduct Errors"""
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 
 class ServerError(BaseModel):
@@ -13,7 +13,14 @@ class ReductError(Exception):
 
     def __init__(self, code: int, message: str):
         self._code = code
-        self.message = ServerError.parse_raw(message).detail if message else ""
+
+        try:
+            self.message = ServerError.parse_raw(message).detail if message else ""
+        except ValidationError:
+            self.message = (
+                "Could not parse error response from server, is it definitely Reduct?"
+            )
+
         super().__init__(f"Status {self._code}: {self.message}")
 
     @property
