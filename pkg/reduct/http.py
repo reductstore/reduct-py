@@ -51,10 +51,12 @@ class HttpClient:
                     else:
                         raise ReductError(response.status, await response.text())
             except ClientConnectorError:
-                # pylint: disable=line-too-long
                 raise ReductError(
                     599,
-                    f'{{"detail": "Connection failed, server {self.url} cannot be reached"}}',
+                    (
+                        f'{{"detail": "Connection failed,'
+                        f'server {self.url} cannot be reached"}}'
+                    ),
                 ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
