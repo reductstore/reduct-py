@@ -4,6 +4,7 @@ from typing import Optional, AsyncIterator
 
 import aiohttp
 from aiohttp import ClientTimeout, ClientResponse
+from aiohttp.client_exceptions import ClientConnectorError
 
 from reduct.error import ReductError
 
@@ -36,18 +37,27 @@ class HttpClient:
             del kwargs["content_length"]
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            async with session.request(
-                method,
-                f"{self.url}{path.strip()}",
-                headers=dict(self.headers, **extra_headers),
-                **kwargs,
-            ) as response:
+            try:
+                async with session.request(
+                    method,
+                    f"{self.url}{path.strip()}",
+                    headers=dict(self.headers, **extra_headers),
+                    **kwargs,
+                ) as response:
 
-                if response.ok:
-                    yield response
+                    if response.ok:
+                        yield response
 
-                else:
-                    raise ReductError(response.status, await response.text())
+                    else:
+                        raise ReductError(response.status, await response.text())
+            except ClientConnectorError:
+                raise ReductError(
+                    599,
+                    (
+                        f'{{"detail": "Connection failed,'
+                        f'server {self.url} cannot be reached"}}'
+                    ),
+                ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
