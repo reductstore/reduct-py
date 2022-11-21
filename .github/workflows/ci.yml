@@ -94,7 +94,7 @@ jobs:
 
   py-pip-upload:
     name: Upload if release
-    needs: [ pylint, test-with-auth, test-wo-auth ]
+    needs: [ pylint, test]
     runs-on: ubuntu-latest
     defaults:
       run:
