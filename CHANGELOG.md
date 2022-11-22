@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- Support Python 3.7. [PR-53](https://github.com/reduct-storage/reduct-py/pull/53)
+
 ### Changed:
 
 - `Client.get_bucket` now uses `GET` instead of `HEAD` in order to be able to return a meaningful error to the user, [PR-51](https://github.com/reduct-storage/reduct-py/pull/51)
