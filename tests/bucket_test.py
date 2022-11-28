@@ -4,8 +4,7 @@ from typing import List
 
 import pytest
 
-from reduct import ReductError, BucketSettings, QuotaType
-from reduct.bucket import Record
+from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
 
 
 @pytest.mark.asyncio
@@ -50,6 +49,15 @@ async def test__get_info(bucket_2):
         "oldest_record": 5000000,
         "size": 22,
     }
+
+
+@pytest.mark.asyncio
+async def test__get_full_info(bucket_2):
+    """Should get full info about bucket"""
+    info: BucketFullInfo = await bucket_2.get_full_info()
+    assert info.info == await bucket_2.info()
+    assert info.settings == await bucket_2.get_settings()
+    assert info.entries == await bucket_2.get_entry_list()
 
 
 @pytest.mark.asyncio

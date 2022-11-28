@@ -9,12 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added:
 
-- Support Python 3.7. [PR-53](https://github.com/reduct-storage/reduct-py/pull/53)
+- Support Python 3.7, [PR-53](https://github.com/reduct-storage/reduct-py/pull/53)
+- `Client.get_full_info()` to get full information about a
+  bucket, [pr-55](https://github.com/reduct-storage/reduct-py/pull/55)
 
 ### Changed:
 
-- `Client.get_bucket` now uses `GET` instead of `HEAD` in order to be able to return a meaningful error to the user, [PR-51](https://github.com/reduct-storage/reduct-py/pull/51)
-- `Client` class now catches parsing errors raised by incorrect server configurations or missing servers, [PR-52](https://github.com/reduct-storage/reduct-py/pull/52)
+- `Client.get_bucket` now uses `GET` instead of `HEAD` in order to be able to return a meaningful error to the
+  user, [PR-51](https://github.com/reduct-storage/reduct-py/pull/51)
+- `Client` class now catches parsing errors raised by incorrect server configurations or missing
+  servers, [PR-52](https://github.com/reduct-storage/reduct-py/pull/52)
 
 ### Fixed:
 
@@ -28,7 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 
-- `bucket.read()` now returns a Record yielded from an asynccontext, [PR-43](https://github.com/reduct-storage/reduct-py/pull/43)
+- `bucket.read()` now returns a Record yielded from an
+  asynccontext, [PR-43](https://github.com/reduct-storage/reduct-py/pull/43)
 
 ### Removed:
 

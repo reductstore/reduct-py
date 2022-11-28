@@ -126,7 +126,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return (await self.__get_full_info()).settings
+        return (await self.get_full_info()).settings
 
     async def set_settings(self, settings: BucketSettings):
         """
@@ -146,7 +146,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return (await self.__get_full_info()).info
+        return (await self.get_full_info()).info
 
     async def get_entry_list(self) -> List[EntryInfo]:
         """
@@ -156,7 +156,7 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return (await self.__get_full_info()).entries
+        return (await self.get_full_info()).entries
 
     async def remove(self):
         """
@@ -299,7 +299,10 @@ class Bucket:
                     read=resp.content.iter_chunked,
                 )
 
-    async def __get_full_info(self) -> BucketFullInfo:
+    async def get_full_info(self) -> BucketFullInfo:
+        """
+        Get full information about bucket (settings, statistics, entries)
+        """
         return BucketFullInfo.parse_raw(
             await self._http.request_all("GET", f"/b/{self.name}")
         )
