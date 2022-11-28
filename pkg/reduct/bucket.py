@@ -172,10 +172,6 @@ class Bucket:
     ) -> AsyncIterator[Record]:
         """
         Read a record from entry
-
-        >>> async def reader():
-        >>>     async with bucket.read("entry", timestamp=123456789) as record:
-        >>>         data = await record.read_all()
         Args:
             entry_name: name of entry in the bucket
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
@@ -183,6 +179,10 @@ class Bucket:
             async context, which generates Records
         Raises:
             ReductError: if there is an HTTP error
+        Examples:
+            >>> async def reader():
+            >>>     async with bucket.read("entry", timestamp=123456789) as record:
+            >>>         data = await record.read_all()
         """
         params = {"ts": timestamp} if timestamp else None
         async with self._http.request(
@@ -209,15 +209,6 @@ class Bucket:
         """
         Write a record to entry
 
-        >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
-
-        You can write data chunk-wise using an asynchronous iterator and the
-        size of the content:
-
-        >>> async def sender():
-        >>>     for chunk in [b"part1", b"part2", b"part3"]:
-        >>>         yield chunk
-        >>> await bucket.write("entry-1", sender(), content_length=15)
         Args:
             entry_name: name of entry in the bucket
             data: bytes to write or async iterator
@@ -226,6 +217,17 @@ class Bucket:
                 needed only when the data is an iterator
         Raises:
             ReductError: if there is an HTTP error
+
+        Examples:
+            >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
+            >>>
+            >>> # You can write data chunk-wise using an asynchronous iterator and the
+            >>> # size of the content:
+            >>>
+            >>> async def sender():
+            >>>     for chunk in [b"part1", b"part2", b"part3"]:
+            >>>         yield chunk
+            >>> await bucket.write("entry-1", sender(), content_length=15)
 
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
@@ -248,11 +250,6 @@ class Bucket:
         """
         Query data for a time interval
 
-        >>> async for record in bucket.query("entry-1", stop=time.time_ns() / 1000):
-        >>>     data: bytes = record.read_all()
-        >>>     # or
-        >>>     async for chunk in record.read(n=1024):
-        >>>         print(chunk)
         Args:
             entry_name: name of entry in the bucket
             start: the beginning of the time interval
@@ -261,6 +258,13 @@ class Bucket:
 
         Returns:
              AsyncIterator[Record]: iterator to the records
+
+        Examples:
+            >>> async for record in bucket.query("entry-1", stop=time.time_ns() / 1000):
+            >>>     data: bytes = record.read_all()
+            >>>     # or
+            >>>     async for chunk in record.read(n=1024):
+            >>>         print(chunk)
         """
         params = {}
         if start:
