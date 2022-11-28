@@ -50,7 +50,7 @@ class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
-        self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
+            self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
     ):
         """
         Constructor
@@ -105,7 +105,7 @@ class Client:
         return Bucket(name, self._http)
 
     async def create_bucket(
-        self, name: str, settings: Optional[BucketSettings] = None, exist_ok=False
+            self, name: str, settings: Optional[BucketSettings] = None, exist_ok: bool = False
     ) -> Bucket:
         """
         Create a new bucket
@@ -114,7 +114,7 @@ class Client:
             settings: settings for the bucket If None, the server
             default settings is used.
             exist_ok: the client raises no exception if the bucket
-            already exists and returns it
+                already exists and returns it
         Returns:
             Bucket: created bucket
         Raises:
