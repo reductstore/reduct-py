@@ -7,6 +7,16 @@ import pytest_asyncio
 from reduct import Client, Bucket
 
 
+def requires_env(key):
+    """Skip test if environment variable is not set"""
+    env = os.environ.get(key)
+
+    return pytest.mark.skipif(
+        env is None or env == "",
+        reason=f"Not suitable environment {key} for current test",
+    )
+
+
 @pytest.fixture(name="url")
 def _url() -> str:
     return "http://127.0.0.1:8383"
@@ -20,6 +30,10 @@ async def _make_client(url):
     for info in buckets:
         bucket = await client.get_bucket(info.name)
         await bucket.remove()
+
+    for token in await client.get_token_list():
+        if token.name != "init-token":
+            await client.remove_token(token.name)
 
     yield client
 

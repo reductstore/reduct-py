@@ -1,4 +1,5 @@
 """Main client code"""
+from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel
@@ -44,6 +45,49 @@ class BucketList(BaseModel):
     """List of buckets"""
 
     buckets: List[BucketInfo]
+
+
+class Permissions(BaseModel):
+    """Token permission"""
+
+    full_access: bool
+    """full access to manage buckets and tokens"""
+
+    read: Optional[List[str]]
+    """list of buckets with read access"""
+
+    write: Optional[List[str]]
+    """list of buckets with write access"""
+
+
+class Token(BaseModel):
+    """Token for authentication"""
+
+    name: str
+    """name of token"""
+
+    created_at: datetime
+    """creation time of token"""
+
+
+class FullTokenInfo(Token):
+    """Full information about token with permissions"""
+
+    permissions: Permissions
+    """permissions of token"""
+
+
+class TokenList(BaseModel):
+    """List of tokens"""
+
+    tokens: List[Token]
+
+
+class TokenCreateResponse(BaseModel):
+    """Response from creating a token"""
+
+    value: str
+    """token for authentication"""
 
 
 class Client:
@@ -131,3 +175,56 @@ class Client:
                 raise err
 
         return Bucket(name, self._http)
+
+    async def get_token_list(self) -> List[Token]:
+        """
+        Get a list of all tokens
+        Returns:
+            List[Token]
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return TokenList.parse_raw(
+            await self._http.request_all("GET", "/tokens")
+        ).tokens
+
+    async def get_token(self, name: str) -> FullTokenInfo:
+        """
+        Get a token by name
+        Args:
+            name: name of the token
+        Returns:
+            Token
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return FullTokenInfo.parse_raw(
+            await self._http.request_all("GET", f"/tokens/{name}")
+        )
+
+    async def create_token(self, name: str, permissions: Permissions) -> str:
+        """
+        Create a new token
+        Args:
+            name: name of the token
+            permissions: permissions for the token
+        Returns:
+            str: token value
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return TokenCreateResponse.parse_raw(
+            await self._http.request_all(
+                "POST", f"/tokens/{name}", data=permissions.json()
+            )
+        ).value
+
+    async def remove_token(self, name: str) -> None:
+        """
+        Delete a token
+        Args:
+            name: name of the token
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all("DELETE", f"/tokens/{name}")
