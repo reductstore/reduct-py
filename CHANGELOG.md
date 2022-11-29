@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2022-11-29
+
 ### Added:
 
 - Support Python 3.7, [PR-53](https://github.com/reduct-storage/reduct-py/pull/53)
@@ -25,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix examples in docstrings, [PR-54](https://github.com/reduct-storage/reduct-py/pull/54)
 
-## [v1.0.0] - 2022-10-18
+## [1.0.0] - 2022-10-18
 
 ### Added:
 
