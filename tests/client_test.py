@@ -3,6 +3,7 @@ from asyncio import sleep
 from typing import List
 
 import pytest
+import pytest_asyncio
 
 from reduct import (
     Client,
@@ -11,7 +12,23 @@ from reduct import (
     BucketInfo,
     QuotaType,
     BucketSettings,
+    Permissions,
 )
+from .conftest import requires_env
+
+
+@pytest_asyncio.fixture(name="with_token")
+async def _create_token(client):
+    """Create a token for tests"""
+    _ = await client.create_token(
+        "test-token",
+        Permissions(full_access=True, read=["bucket-1"], write=["bucket-2"]),
+    )
+    yield "test-token"
+    try:
+        await client.remove_token("test-token")
+    except ReductError:
+        pass
 
 
 @pytest.mark.asyncio
@@ -129,3 +146,68 @@ def test__exception_formatting():
     """Check the output formatting of raised exceptions"""
     with pytest.raises(ReductError, match="Status 404: Not Found"):
         raise ReductError(404, '{"detail":"Not Found"}')
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__create_token(client):
+    """Should create a token"""
+    token = await client.create_token(
+        "test-token",
+        Permissions(full_access=True, read=["bucket-1"], write=["bucket-2"]),
+    )
+    assert "test-token-" in token
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__create_token_with_error(client, with_token):
+    """Should raise an error, if token exists"""
+    with pytest.raises(
+        ReductError, match="Status 409: Token 'test-token' already exists"
+    ):
+        await client.create_token(
+            with_token, Permissions(full_access=True, read=[], write=[])
+        )
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__get_token(client, with_token):
+    """Should get a token by name"""
+    token = await client.get_token(with_token)
+    assert token.name == with_token
+    assert token.permissions.dict() == {
+        "full_access": True,
+        "read": ["bucket-1"],
+        "write": ["bucket-2"],
+    }
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__get_token_with_error(client):
+    """Should raise an error, if token doesn't exist"""
+    with pytest.raises(ReductError, match="Status 404: Token 'NOTEXIST' doesn't exist"):
+        await client.get_token("NOTEXIST")
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__list_tokens(client, with_token):
+    """Should list all tokens"""
+    tokens = await client.get_token_list()
+    assert len(tokens) == 2
+    assert tokens[0].name == "init-token"
+    assert tokens[1].name == with_token
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__remove_token(client, with_token):
+    """Should delete a token"""
+    await client.remove_token(with_token)
+    with pytest.raises(
+        ReductError, match="Status 404: Token 'test-token' doesn't exist"
+    ):
+        await client.get_token(with_token)

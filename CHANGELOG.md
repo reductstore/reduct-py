@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support Python 3.7, [PR-53](https://github.com/reduct-storage/reduct-py/pull/53)
 - `Client.get_full_info()` to get full information about a
   bucket, [pr-55](https://github.com/reduct-storage/reduct-py/pull/55)
+- Implement token API for Reduct Storage API v1.1, [PR-56](https://github.com/reduct-storage/reduct-py/pull/56)
 
 ### Changed:
 

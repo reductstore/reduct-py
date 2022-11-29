@@ -13,6 +13,9 @@ from reduct.client import (
     Client,
     ServerInfo,
     BucketList,
+    Token,
+    Permissions,
+    FullTokenInfo,
 )
 
 from reduct.error import ReductError

@@ -8,8 +8,8 @@ Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) writte
 
 ## Features
 
-* Support Reduct Storage HTTP API v1.0
-* Based on aiohttp
+* Support [Reduct Storage HTTP API v1.1](https://docs.reduct-storage.dev/http-api)
+* Based on aiohttp and pydantic
 
 ## Install
 
