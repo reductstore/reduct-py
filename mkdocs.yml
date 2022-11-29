@@ -10,6 +10,7 @@ nav:
       - BucketInfo: docs/api/bucket_info.md
       - BucketSettings: docs/api/bucket_settings.md
       - EntryInfo: docs/api/entry_info.md
+      - Token: docs/api/token.md
   - Reduct Storage: https://reduct-storage.dev
 
 repo_name: reduct-storage/reduct-py

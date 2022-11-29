@@ -9,6 +9,13 @@ from reduct.bucket import (
     Record,
 )
 
-from reduct.client import Client, ServerInfo, BucketList, Token, Permissions
+from reduct.client import (
+    Client,
+    ServerInfo,
+    BucketList,
+    Token,
+    Permissions,
+    FullTokenInfo,
+)
 
 from reduct.error import ReductError
