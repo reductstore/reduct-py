@@ -1,8 +1,8 @@
 # Reduct Storage Client SDK for Python
 
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/reduct-storage/reduct-py)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/reduct-py)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/reduct-storage/reduct-py/ci)
+[![PyPI](https://img.shields.io/pypi/v/reduct-py)](https://pypi.org/project/reduct-py/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/reduct-py)](https://pypi.org/project/reduct-py/)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/reduct-storage/reduct-py/ci)](https://github.com/reduct-storage/reduct-py/actions)
 
 Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) written in Python.
 
@@ -24,6 +24,7 @@ import time
 import asyncio
 from reduct import Client, Bucket
 
+
 async def main():
     client = Client('https://play.reduct-storage.dev')
     bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
@@ -33,6 +34,7 @@ async def main():
     async with bucket.read("entry-1", ts) as record:
         data = await record.read_all()
         print(data)
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
