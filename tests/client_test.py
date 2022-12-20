@@ -149,6 +149,7 @@ def test__exception_formatting():
 
 
 @requires_env("RS_API_TOKEN")
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__create_token(client):
     """Should create a token"""
@@ -160,6 +161,7 @@ async def test__create_token(client):
 
 
 @requires_env("RS_API_TOKEN")
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__create_token_with_error(client, with_token):
     """Should raise an error, if token exists"""
@@ -172,6 +174,7 @@ async def test__create_token_with_error(client, with_token):
 
 
 @requires_env("RS_API_TOKEN")
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__get_token(client, with_token):
     """Should get a token by name"""
@@ -193,6 +196,7 @@ async def test__get_token_with_error(client):
 
 
 @requires_env("RS_API_TOKEN")
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__list_tokens(client, with_token):
     """Should list all tokens"""
@@ -203,6 +207,7 @@ async def test__list_tokens(client, with_token):
 
 
 @requires_env("RS_API_TOKEN")
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__remove_token(client, with_token):
     """Should delete a token"""

@@ -64,7 +64,7 @@ jobs:
         run: pip3 install .[test]
 
       - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} -d ghcr.io/reductstore/reductstore:v1.1.1
+        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} -d ghcr.io/reductstore/reductstore:latest
 
       - name: Run Tests
         run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} pytest tests
