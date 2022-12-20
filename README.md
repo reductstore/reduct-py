@@ -1,14 +1,14 @@
-# Reduct Storage Client SDK for Python
+# ReductStore Client SDK for Python
 
 [![PyPI](https://img.shields.io/pypi/v/reduct-py)](https://pypi.org/project/reduct-py/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/reduct-py)](https://pypi.org/project/reduct-py/)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/reduct-storage/reduct-py/ci)](https://github.com/reduct-storage/reduct-py/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/reductstore/reduct-py/ci.yml?branch=main)](https://github.com/reductstore/reduct-py/actions)
 
-Asynchronous HTTP client for [Reduct Storage](https://reduct-storage.dev) written in Python.
+Asynchronous HTTP client for [ReductStore](https://www.reduct.store) written in Python.
 
 ## Features
 
-* Support [Reduct Storage HTTP API v1.1](https://docs.reduct-storage.dev/http-api)
+* Support [ReductStore HTTP API v1.1](https://docs.reduct.store/http-api)
 * Based on aiohttp and pydantic
 
 ## Install
@@ -26,7 +26,7 @@ from reduct import Client, Bucket
 
 
 async def main():
-    client = Client('https://play.reduct-storage.dev')
+    client = Client('https://play.reduct.store')
     bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
 
     ts = time.time_ns() / 1000
@@ -42,5 +42,5 @@ loop.run_until_complete(main())
 
 ## References
 
-* [Documentation](http://reduct-py.rtfd.io/)
-* [Reduct Storage HTTP API](https://docs.reduct-storage.dev/http-api)
+* [Documentation](https://py.reduct.store/)
+* [ReductStore HTTP API](https://docs.reduct.store/http-api)
