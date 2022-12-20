@@ -1,4 +1,5 @@
-site_name: Reduct Client SDK for Python
+site_name: ReductStore Client SDK for Python
+site_url: "https:/py.reduct.store"
 docs_dir: .
 nav:
   - Home: README.md
@@ -11,10 +12,10 @@ nav:
       - BucketSettings: docs/api/bucket_settings.md
       - EntryInfo: docs/api/entry_info.md
       - Token: docs/api/token.md
-  - Reduct Storage: https://reduct-storage.dev
+  - ReductStore: https://www.reduct.store
 
-repo_name: reduct-storage/reduct-py
-repo_url: https://github.com/reduct-storage/reduct-py
+repo_name: reductstore/reduct-py
+repo_url: https://github.com/reductstore/reduct-py
 edit_uri: edit/main/docs
 
 
@@ -87,3 +88,10 @@ extra:
   analytics:
     provider: google
     property: G-3VXRKVYKGG
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
