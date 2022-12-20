@@ -1,5 +1,5 @@
 site_name: ReductStore Client SDK for Python
-site_url: "https:/py.reduct.store"
+site_url: "https://py.reduct.store"
 docs_dir: .
 nav:
   - Home: README.md
@@ -24,7 +24,9 @@ theme:
   name: material
   language: en
   palette:
-    primary: 231b49
+    primary: indigo
+  logo: docs/img/favicon.png
+  favicon: docs/img/favicon.png
   font:
     text: Roboto
     code: JetBrains Mono
