@@ -1,5 +1,5 @@
 [build-system]
-requires = ["wheel"]
+requires = ["setuptools>=40.8.0", "wheel"]
 
 [project]
 
