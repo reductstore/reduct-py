@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed:
 
--  Update documentation after rebranding, [PR-59](https://github.com/reductstore/reduct-py/pull/59)
+- Update documentation after rebranding, [PR-59](https://github.com/reductstore/reduct-py/pull/59)
+- Migrate to pyproject.toml, [PR-61](https://github.com/reductstore/reduct-py/pull/61)
 
 ## [1.1.0] - 2022-11-29
 
