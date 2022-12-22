@@ -32,6 +32,9 @@ classifiers = [
 
 dependencies = ["aiohttp~=3.8", "pydantic~=1.9", "deprecation~=2.1"]
 
+[options]
+package_dir = "./pkg"
+
 [project.optional-dependencies]
 test = [
     "pytest~=7.1",
