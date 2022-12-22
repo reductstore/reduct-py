@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
+requires = ["wheel"]
 
 [project]
 
@@ -31,9 +31,6 @@ classifiers = [
 ]
 
 dependencies = ["aiohttp~=3.8", "pydantic~=1.9", "deprecation~=2.1"]
-
-[options]
-package_dir = "./pkg"
 
 [project.optional-dependencies]
 test = [
