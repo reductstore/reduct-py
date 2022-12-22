@@ -12,7 +12,7 @@ from reduct import (
     BucketInfo,
     QuotaType,
     BucketSettings,
-    Permissions,
+    Permissions, FullTokenInfo,
 )
 from .conftest import requires_env
 
@@ -61,7 +61,7 @@ async def test__info(client):
     await sleep(1)
 
     info: ServerInfo = await client.info()
-    assert info.version >= "0.7.0"
+    assert info.version >= "1.2.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
     assert info.usage == 66
@@ -166,7 +166,7 @@ async def test__create_token(client):
 async def test__create_token_with_error(client, with_token):
     """Should raise an error, if token exists"""
     with pytest.raises(
-        ReductError, match="Status 409: Token 'test-token' already exists"
+            ReductError, match="Status 409: Token 'test-token' already exists"
     ):
         await client.create_token(
             with_token, Permissions(full_access=True, read=[], write=[])
@@ -213,6 +213,19 @@ async def test__remove_token(client, with_token):
     """Should delete a token"""
     await client.remove_token(with_token)
     with pytest.raises(
-        ReductError, match="Status 404: Token 'test-token' doesn't exist"
+            ReductError, match="Status 404: Token 'test-token' doesn't exist"
     ):
         await client.get_token(with_token)
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__me(client):
+    """Should get user info"""
+    me: FullTokenInfo = await client.me()
+    assert me.name == "init-token"
+    assert me.permissions.dict() == {
+        "full_access": True,
+        "read": [],
+        "write": [],
+    }
