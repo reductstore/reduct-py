@@ -64,3 +64,4 @@ asyncio_mode = "strict"
 [tool.pylint]
 max-line-length = 88
 extension-pkg-whitelist = "pydantic"
+good-names = "me"

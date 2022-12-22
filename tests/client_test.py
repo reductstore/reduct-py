@@ -223,9 +223,9 @@ async def test__remove_token(client, with_token):
 @pytest.mark.asyncio
 async def test__me(client):
     """Should get user info"""
-    me: FullTokenInfo = await client.me()
-    assert me.name == "init-token"
-    assert me.permissions.dict() == {
+    current_token: FullTokenInfo = await client.me()
+    assert current_token.name == "init-token"
+    assert current_token.permissions.dict() == {
         "full_access": True,
         "read": [],
         "write": [],
