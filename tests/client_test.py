@@ -12,7 +12,8 @@ from reduct import (
     BucketInfo,
     QuotaType,
     BucketSettings,
-    Permissions, FullTokenInfo,
+    Permissions,
+    FullTokenInfo,
 )
 from .conftest import requires_env
 
@@ -166,7 +167,7 @@ async def test__create_token(client):
 async def test__create_token_with_error(client, with_token):
     """Should raise an error, if token exists"""
     with pytest.raises(
-            ReductError, match="Status 409: Token 'test-token' already exists"
+        ReductError, match="Status 409: Token 'test-token' already exists"
     ):
         await client.create_token(
             with_token, Permissions(full_access=True, read=[], write=[])
@@ -213,7 +214,7 @@ async def test__remove_token(client, with_token):
     """Should delete a token"""
     await client.remove_token(with_token)
     with pytest.raises(
-            ReductError, match="Status 404: Token 'test-token' doesn't exist"
+        ReductError, match="Status 404: Token 'test-token' doesn't exist"
     ):
         await client.get_token(with_token)
 
