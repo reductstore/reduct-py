@@ -30,7 +30,7 @@ jobs:
         run: python3 -m pip install --no-cache --upgrade pip pipx
 
       - name: Build package
-        run: pipx run build --wheel --sdist
+        run: pipx run build --wheel
 
       - uses: actions/upload-artifact@master
         with:
