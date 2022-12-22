@@ -228,3 +228,13 @@ class Client:
             ReductError: if there is an HTTP error
         """
         await self._http.request_all("DELETE", f"/tokens/{name}")
+
+    async def me(self) -> FullTokenInfo:
+        """
+        Get information about the current token
+        Returns:
+            FullTokenInfo
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        return FullTokenInfo.parse_raw(await self._http.request_all("GET", "/me"))

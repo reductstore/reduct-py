@@ -61,10 +61,14 @@ jobs:
         run: pip3 install .[test]
 
       - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} -d ghcr.io/reductstore/reductstore:latest
+        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} --env RS_LOG_LEVEL=DEBUG -d ghcr.io/reductstore/reductstore:latest
 
       - name: Run Tests
         run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} pytest tests
+
+      - name: Dump docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
 
   pylint:
     needs: build

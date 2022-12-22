@@ -13,6 +13,7 @@ from reduct import (
     QuotaType,
     BucketSettings,
     Permissions,
+    FullTokenInfo,
 )
 from .conftest import requires_env
 
@@ -61,7 +62,7 @@ async def test__info(client):
     await sleep(1)
 
     info: ServerInfo = await client.info()
-    assert info.version >= "0.7.0"
+    assert info.version >= "1.2.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
     assert info.usage == 66
@@ -216,3 +217,16 @@ async def test__remove_token(client, with_token):
         ReductError, match="Status 404: Token 'test-token' doesn't exist"
     ):
         await client.get_token(with_token)
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__me(client):
+    """Should get user info"""
+    current_token: FullTokenInfo = await client.me()
+    assert current_token.name == "init-token"
+    assert current_token.permissions.dict() == {
+        "full_access": True,
+        "read": [],
+        "write": [],
+    }
