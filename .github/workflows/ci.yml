@@ -75,6 +75,8 @@ jobs:
         with:
           name: package
           path: ./dist
+      - name: Upgrade pip
+        run: pip install -U pip
 
       - name: Install package
         run: python3 -m pip install dist/*
