@@ -102,7 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.2.0...HEAD
+
+[1.2.0]: https://github.com/reduct-storage/reduct-py/compare/v1.1.0...v1.2.0
+
+[1.1.0]: https://github.com/reduct-storage/reduct-py/compare/v1.0.0...v1.1.0
+
+[1.0.0]: https://github.com/reduct-storage/reduct-py/compare/v0.5.1...v1.0.0
 
 [0.5.1]: https://github.com/reduct-storage/reduct-py/compare/v0.4.0...v0.5.1
 
