@@ -43,7 +43,7 @@ lint = ["pylint~=2.14"]
 format = ["black~=22.6"]
 docs = [
     "mkdocs~=1.3",
-    "mkdocs-material~=8.3",
+    "mkdocs-material~=9.0",
     "plantuml-markdown~=3.5",
     "mkdocs-same-dir~=0.1",
     "mkdocstrings[python]~=0.19"
