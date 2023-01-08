@@ -25,10 +25,10 @@ This will start a ReductStore instance listening on port 8383 of your local mach
 
 ## Using the SDK
 
-Now that you have the reduct-py SDK installed and a ReductStore instance running, you can start using the SDK to
+Now that you have the `reduct-py` SDK installed and a ReductStore instance running, you can start using the SDK to
 interact with the ReductStore service.
 
-Here is an example of using the reduct-py SDK to perform a few different operations on a bucket:
+Here is an example of using the Python SDK to perform a few different operations on a bucket:
 
 ```python title="quick_start.py"
 --8<-- "../examples/quick_start.py:"
@@ -100,10 +100,10 @@ record to read the data in chunks:
 --8<-- "../examples/quick_start.py:iteraterecords"
 ```
 
-The `query` method returns an async iterator to the records in the entry. By default, the `query` method returns all records
+The `query` method returns an async iterator to the records in the entry. By default, the method returns all records
 in the entry. However, you can use the `start` and `stop` arguments to specify a time interval for the records you want to
 retrieve. The `start` argument specifies the beginning of the time interval, and the `stop` argument specifies the end of
-the time interval. Both `start` and `stop` are timestamps in UNIX microseconds.
+the time interval. Both arguments are timestamps in UNIX microseconds.
 
 
 ```python
