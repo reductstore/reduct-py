@@ -27,7 +27,7 @@ async def main():
     # --8<-- [end:writedata]
 
     # --8<-- [start:uploadfile]
-    # More complex case. Upload a file in chunks with a custom timestamp unix timestamp in milliseconds
+    # More complex case. Upload a file in chunks with a custom timestamp unix timestamp in microseconds
     async def file_reader():
         """Read the current example in chunks of 50 bytes"""
         with open(CURRENT_FILE, "rb") as file:
