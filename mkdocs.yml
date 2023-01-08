@@ -3,7 +3,9 @@ site_description: The ReductStore Client SDK for Python is a Python client for R
 site_url: "https://py.reduct.store"
 docs_dir: .
 nav:
-  - Home: README.md
+  - Home:
+      - README.md
+      - Quick Start: docs/quick-start.md
   - API Reference:
       - Client: docs/api/client.md
       - Bucket: docs/api/bucket.md
