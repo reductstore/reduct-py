@@ -196,22 +196,7 @@ class Bucket:
         async with self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            timestamp = int(resp.headers["x-reduct-time"])
-            size = int(resp.headers["content-length"])
-
-            labels = dict(
-                (name[len(LABEL_PREFIX) :], value)
-                for name, value in resp.headers.items()
-                if name.startswith(LABEL_PREFIX)
-            )
-            yield Record(
-                timestamp=timestamp,
-                size=size,
-                last=True,
-                read_all=resp.read,
-                read=resp.content.iter_chunked,
-                labels=labels,
-            )
+            yield self._parse_record(resp)
 
     async def write(
         self,
@@ -263,6 +248,8 @@ class Bucket:
         start: Optional[int] = None,
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
+        include: Optional[dict] = None,
+        exclude: Optional[dict] = None,
     ) -> AsyncIterator[Record]:
         """
         Query data for a time interval
@@ -272,7 +259,8 @@ class Bucket:
             start: the beginning of the time interval
             stop: the end of the time interval
             ttl: Time To Live of the request in seconds
-
+            include: query records which have all labels from this dict
+            exclude: querz records which doesn't have all labels from this dict
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -290,6 +278,12 @@ class Bucket:
             params["stop"] = stop
         if ttl:
             params["ttl"] = ttl
+        if include:
+            for name, value in include.items():
+                params[f"include-{name}"] = str(value)
+        if exclude:
+            for name, value in exclude.items():
+                params[f"exclude-{name}"] = str(value)
 
         url = f"/b/{self.name}/{entry_name}"
         data = await self._http.request_all(
@@ -303,19 +297,8 @@ class Bucket:
             async with self._http.request("GET", f"{url}?q={query_id}") as resp:
                 if resp.status == 202:
                     return
-
-                timestamp = int(resp.headers["x-reduct-time"])
-                size = int(resp.headers["content-length"])
                 last = int(resp.headers["x-reduct-last"]) != 0
-
-                yield Record(
-                    timestamp=timestamp,
-                    size=size,
-                    last=last,
-                    read_all=resp.read,
-                    read=resp.content.iter_chunked,
-                    labels={},
-                )
+                yield self._parse_record(resp, last)
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -323,4 +306,21 @@ class Bucket:
         """
         return BucketFullInfo.parse_raw(
             await self._http.request_all("GET", f"/b/{self.name}")
+        )
+
+    def _parse_record(self, resp, last=True):
+        timestamp = int(resp.headers["x-reduct-time"])
+        size = int(resp.headers["content-length"])
+        labels = dict(
+            (name[len(LABEL_PREFIX) :], value)
+            for name, value in resp.headers.items()
+            if name.startswith(LABEL_PREFIX)
+        )
+        return Record(
+            timestamp=timestamp,
+            size=size,
+            last=last,
+            read_all=resp.read,
+            read=resp.content.iter_chunked,
+            labels=labels,
         )

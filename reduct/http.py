@@ -51,16 +51,16 @@ class HttpClient:
 
                     if response.ok:
                         yield response
-
                     else:
-                        raise ReductError(response.status, await response.text())
+                        if "x-reduct-error" in response.headers:
+                            raise ReductError(
+                                response.status,
+                                response.headers["x-reduct-error"],
+                            )
+                        raise ReductError(response.status, "Unknown error")
             except ClientConnectorError:
                 raise ReductError(
-                    599,
-                    (
-                        f'{{"detail": "Connection failed,'
-                        f'server {self.url} cannot be reached"}}'
-                    ),
+                    599, f"Connection failed, server {self.url} cannot be reached"
                 ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
