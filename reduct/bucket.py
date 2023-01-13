@@ -1,7 +1,7 @@
 """Bucket API"""
-from contextlib import asynccontextmanager
 import json
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -11,6 +11,8 @@ from typing import (
     Union,
     Callable,
     Awaitable,
+    Any,
+    Dict,
 )
 
 from pydantic import BaseModel
@@ -205,6 +207,7 @@ class Bucket:
         data: Union[bytes, AsyncIterator[bytes]],
         timestamp: Optional[int] = None,
         content_length: Optional[int] = None,
+        labels: Optional[Dict[str, Any]] = None,
     ):
         """
         Write a record to entry
@@ -215,6 +218,7 @@ class Bucket:
             timestamp: UNIX time stamp in microseconds. Current time if it's None
             content_length: content size in bytes,
                 needed only when the data is an iterator
+            labels: labels of the written records as key-values
         Raises:
             ReductError: if there is an HTTP error
 
@@ -238,6 +242,7 @@ class Bucket:
             params=params,
             data=data,
             content_length=content_length if content_length is not None else len(data),
+            labels=labels,
         )
 
     async def query(

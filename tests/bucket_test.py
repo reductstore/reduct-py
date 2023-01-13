@@ -122,8 +122,8 @@ async def test__write_with_current_time(bucket_2):
 
 
 @pytest.mark.asyncio
-async def test__write_by_chunks(bucket_2):
-    """Should accept interator for writing by chunks"""
+async def test__write_in_chunks(bucket_2):
+    """Should accept interator for writing in chunks"""
 
     async def sender():
         for chunk in [b"part1", b"part2"]:
@@ -133,6 +133,18 @@ async def test__write_by_chunks(bucket_2):
     async with bucket_2.read("entry-1") as record:
         data = await record.read_all()
         assert data == b"part1part2"
+
+
+@pytest.mark.asyncio
+async def test__write_with_labels(bucket_1):
+    """Schould write data with labels"""
+    await bucket_1.write(
+        "entry-1", b"something", labels={"label1": 123, "label2": 0.1, "label3": "hey"}
+    )
+    async with bucket_1.read("entry-1") as record:
+        data = await record.read_all()
+        assert data == b"something"
+        assert record.labels == {"label1": 123, "label2": 0.1, "label3": "hey"}
 
 
 @pytest.mark.asyncio

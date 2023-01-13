@@ -8,7 +8,6 @@ from aiohttp.client_exceptions import ClientConnectorError
 
 from reduct.error import ReductError
 
-
 API_PREFIX = "/api/v1"
 
 
@@ -35,6 +34,11 @@ class HttpClient:
         if "content_length" in kwargs:
             extra_headers["Content-Length"] = str(kwargs["content_length"])
             del kwargs["content_length"]
+        if "labels" in kwargs:
+            if kwargs["labels"]:
+                for name, value in kwargs["labels"].items():
+                    extra_headers[f"x-reduct-label-{name}"] = str(value)
+            del kwargs["labels"]
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
