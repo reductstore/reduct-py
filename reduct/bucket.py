@@ -112,6 +112,12 @@ class Record:
     read: Callable[[int], AsyncIterator[bytes]]
     """read data in chunks"""
 
+    labels: Dict[str, str]
+    """labels of record"""
+
+
+LABEL_PREFIX = "x-reduct-label-"
+
 
 class Bucket:
     """A bucket of data in Reduct Storage"""
@@ -193,12 +199,18 @@ class Bucket:
             timestamp = int(resp.headers["x-reduct-time"])
             size = int(resp.headers["content-length"])
 
+            labels = dict(
+                (name[len(LABEL_PREFIX) :], value)
+                for name, value in resp.headers.items()
+                if name.startswith(LABEL_PREFIX)
+            )
             yield Record(
                 timestamp=timestamp,
                 size=size,
                 last=True,
                 read_all=resp.read,
                 read=resp.content.iter_chunked,
+                labels=labels,
             )
 
     async def write(
@@ -302,6 +314,7 @@ class Bucket:
                     last=last,
                     read_all=resp.read,
                     read=resp.content.iter_chunked,
+                    labels={},
                 )
 
     async def get_full_info(self) -> BucketFullInfo:

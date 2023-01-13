@@ -144,7 +144,7 @@ async def test__write_with_labels(bucket_1):
     async with bucket_1.read("entry-1") as record:
         data = await record.read_all()
         assert data == b"something"
-        assert record.labels == {"label1": 123, "label2": 0.1, "label3": "hey"}
+        assert record.labels == {"label1": "123", "label2": "0.1", "label3": "hey"}
 
 
 @pytest.mark.asyncio
