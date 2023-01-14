@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- Quick Start example and guide, [PR-65](https://github.com/reductstore/reduct-py/pull/65)
+
 ## [1.2.0] - 2022-12-22
 
 ### Added:
