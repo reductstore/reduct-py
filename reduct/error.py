@@ -1,5 +1,4 @@
 """Reduct Errors"""
-from pydantic import BaseModel, ValidationError
 
 
 class ReductError(Exception):

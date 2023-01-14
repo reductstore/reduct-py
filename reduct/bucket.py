@@ -11,7 +11,6 @@ from typing import (
     Union,
     Callable,
     Awaitable,
-    Any,
     Dict,
 )
 
@@ -204,7 +203,7 @@ class Bucket:
         data: Union[bytes, AsyncIterator[bytes]],
         timestamp: Optional[int] = None,
         content_length: Optional[int] = None,
-        labels: Optional[Dict[str, Any]] = None,
+        **kwargs,
     ):
         """
         Write a record to entry
@@ -215,7 +214,8 @@ class Bucket:
             timestamp: UNIX time stamp in microseconds. Current time if it's None
             content_length: content size in bytes,
                 needed only when the data is an iterator
-            labels: labels of the written records as key-values
+        Keyword Args:
+            labels (dict): labels as key-values
         Raises:
             ReductError: if there is an HTTP error
 
@@ -232,7 +232,7 @@ class Bucket:
 
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
-
+        labels = kwargs["labels"] if "labels" in kwargs else None
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
@@ -248,8 +248,7 @@ class Bucket:
         start: Optional[int] = None,
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
-        include: Optional[dict] = None,
-        exclude: Optional[dict] = None,
+        **kwargs,
     ) -> AsyncIterator[Record]:
         """
         Query data for a time interval
@@ -259,8 +258,9 @@ class Bucket:
             start: the beginning of the time interval
             stop: the end of the time interval
             ttl: Time To Live of the request in seconds
-            include: query records which have all labels from this dict
-            exclude: querz records which doesn't have all labels from this dict
+        Keyword Args:
+            include (dict): query records which have all labels from this dict
+            exclude (dict): querz records which doesn't have all labels from this dict
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -278,11 +278,11 @@ class Bucket:
             params["stop"] = stop
         if ttl:
             params["ttl"] = ttl
-        if include:
-            for name, value in include.items():
+        if "include" in kwargs:
+            for name, value in kwargs["include"].items():
                 params[f"include-{name}"] = str(value)
-        if exclude:
-            for name, value in exclude.items():
+        if "exclude" in kwargs:
+            for name, value in kwargs["exclude"].items():
                 params[f"exclude-{name}"] = str(value)
 
         url = f"/b/{self.name}/{entry_name}"
