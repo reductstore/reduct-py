@@ -8,7 +8,7 @@ This package provides an asynchronous HTTP client for interacting with the [Redu
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.2](https://docs.reduct.store/http-api)
+* Supports the [ReductStore HTTP API v1.3](https://docs.reduct.store/http-api)
 * Asynchronous and based on aiohttp and pydantic
 
 ## Install
