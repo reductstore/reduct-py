@@ -48,10 +48,7 @@ async def test__bad_url_server_exists():
 
     with pytest.raises(ReductError) as reduct_err:
         await client.info()
-    assert str(reduct_err.value) == (
-        "Status 404: Could not parse error response from server,"
-        " is it definitely Reduct?"
-    )
+    assert str(reduct_err.value) == ("Status 404: Unknown error")
 
 
 @pytest.mark.asyncio
@@ -146,7 +143,7 @@ async def test__get_bucket_with_error(client):
 def test__exception_formatting():
     """Check the output formatting of raised exceptions"""
     with pytest.raises(ReductError, match="Status 404: Not Found"):
-        raise ReductError(404, '{"detail":"Not Found"}')
+        raise ReductError(404, "Not Found")
 
 
 @requires_env("RS_API_TOKEN")

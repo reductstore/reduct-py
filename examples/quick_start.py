@@ -51,6 +51,7 @@ async def main():
     async with bucket.read("entry-1", timestamp=ts) as record:
         print(f"Record timestamp: {record.timestamp}")
         print(f"Record size: {record.size}")
+
         print(await record.read_all())
     # --8<-- [end:readdata]
 

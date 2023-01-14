@@ -122,8 +122,8 @@ async def test__write_with_current_time(bucket_2):
 
 
 @pytest.mark.asyncio
-async def test__write_by_chunks(bucket_2):
-    """Should accept interator for writing by chunks"""
+async def test__write_in_chunks(bucket_2):
+    """Should accept interator for writing in chunks"""
 
     async def sender():
         for chunk in [b"part1", b"part2"]:
@@ -133,6 +133,18 @@ async def test__write_by_chunks(bucket_2):
     async with bucket_2.read("entry-1") as record:
         data = await record.read_all()
         assert data == b"part1part2"
+
+
+@pytest.mark.asyncio
+async def test__write_with_labels(bucket_1):
+    """Schould write data with labels"""
+    await bucket_1.write(
+        "entry-1", b"something", labels={"label1": 123, "label2": 0.1, "label3": "hey"}
+    )
+    async with bucket_1.read("entry-1") as record:
+        data = await record.read_all()
+        assert data == b"something"
+        assert record.labels == {"label1": "123", "label2": "0.1", "label3": "hey"}
 
 
 @pytest.mark.asyncio
@@ -162,6 +174,49 @@ async def test_query_records_first(bucket_1):
     ]
     assert len(records) == 1
     assert records[0].timestamp == 3_000_000
+
+
+@pytest.mark.asyncio
+async def test_query_records_included_labels(bucket_1):
+    """Should query records including certain labels"""
+    await bucket_1.write(
+        "entry-1", b"data1", labels={"label1": "value1", "label2": "value2"}
+    )
+    await bucket_1.write(
+        "entry-1", b"data2", labels={"label1": "value1", "label2": "value3"}
+    )
+
+    records: List[Record] = [
+        record
+        async for record in bucket_1.query(
+            "entry-1", include={"label1": "value1", "label2": "value2"}
+        )
+    ]
+
+    assert len(records) == 1
+    assert records[0].labels == {"label1": "value1", "label2": "value2"}
+    assert records[0].last
+
+
+@pytest.mark.asyncio
+async def test_query_records_excluded_labels(bucket_2):
+    """Should query records excluding certain labels"""
+    await bucket_2.write(
+        "entry-3", b"data1", labels={"label1": "value1", "label2": "value2"}
+    )
+    await bucket_2.write(
+        "entry-3", b"data2", labels={"label1": "value1", "label2": "value3"}
+    )
+    records: List[Record] = [
+        record
+        async for record in bucket_2.query(
+            "entry-3", exclude={"label1": "value1", "label2": "value2"}
+        )
+    ]
+
+    assert len(records) == 1
+    assert records[0].labels == {"label1": "value1", "label2": "value3"}
+    assert records[0].last
 
 
 @pytest.mark.asyncio

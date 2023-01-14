@@ -8,7 +8,6 @@ from aiohttp.client_exceptions import ClientConnectorError
 
 from reduct.error import ReductError
 
-
 API_PREFIX = "/api/v1"
 
 
@@ -35,6 +34,11 @@ class HttpClient:
         if "content_length" in kwargs:
             extra_headers["Content-Length"] = str(kwargs["content_length"])
             del kwargs["content_length"]
+        if "labels" in kwargs:
+            if kwargs["labels"]:
+                for name, value in kwargs["labels"].items():
+                    extra_headers[f"x-reduct-label-{name}"] = str(value)
+            del kwargs["labels"]
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
@@ -47,16 +51,16 @@ class HttpClient:
 
                     if response.ok:
                         yield response
-
                     else:
-                        raise ReductError(response.status, await response.text())
+                        if "x-reduct-error" in response.headers:
+                            raise ReductError(
+                                response.status,
+                                response.headers["x-reduct-error"],
+                            )
+                        raise ReductError(response.status, "Unknown error")
             except ClientConnectorError:
                 raise ReductError(
-                    599,
-                    (
-                        f'{{"detail": "Connection failed,'
-                        f'server {self.url} cannot be reached"}}'
-                    ),
+                    599, f"Connection failed, server {self.url} cannot be reached"
                 ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:

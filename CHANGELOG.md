@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 
 - Quick Start example and guide, [PR-65](https://github.com/reductstore/reduct-py/pull/65)
+- Support labels for read, write and querying, [PR-66](https://github.com/reductstore/reduct-py/pull/66)
 
 ## [1.2.0] - 2022-12-22
 
