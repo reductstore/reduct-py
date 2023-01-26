@@ -95,6 +95,8 @@ jobs:
       - name: Dump docker logs on failure
         if: failure()
         uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs'
       - name: Tar logs
         if: failure()
         run: tar cvzf ./logs.tgz ./logs
