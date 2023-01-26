@@ -106,6 +106,8 @@ class Record:
     """size of data"""
     last: bool
     """last record in the query"""
+    content_type: str
+    """content type of data"""
     read_all: Callable[[None], Awaitable[bytes]]
     """read all data"""
     read: Callable[[int], AsyncIterator[bytes]]
@@ -116,6 +118,27 @@ class Record:
 
 
 LABEL_PREFIX = "x-reduct-label-"
+
+
+def _parse_record(resp, last=True):
+    timestamp = int(resp.headers["x-reduct-time"])
+    size = int(resp.headers["content-length"])
+    content_type = resp.headers.get("content-type", "application/octet-stream")
+    labels = dict(
+        (name[len(LABEL_PREFIX) :], value)
+        for name, value in resp.headers.items()
+        if name.startswith(LABEL_PREFIX)
+    )
+
+    return Record(
+        timestamp=timestamp,
+        size=size,
+        last=last,
+        read_all=resp.read,
+        read=resp.content.iter_chunked,
+        labels=labels,
+        content_type=content_type,
+    )
 
 
 class Bucket:
@@ -195,7 +218,7 @@ class Bucket:
         async with self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            yield self._parse_record(resp)
+            yield _parse_record(resp)
 
     async def write(
         self,
@@ -216,6 +239,7 @@ class Bucket:
                 needed only when the data is an iterator
         Keyword Args:
             labels (dict): labels as key-values
+            content_type (str): content type of data
         Raises:
             ReductError: if there is an HTTP error
 
@@ -232,14 +256,13 @@ class Bucket:
 
         """
         params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
-        labels = kwargs["labels"] if "labels" in kwargs else None
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
             params=params,
             data=data,
             content_length=content_length if content_length is not None else len(data),
-            labels=labels,
+            **kwargs,
         )
 
     async def query(
@@ -298,7 +321,7 @@ class Bucket:
                 if resp.status == 202:
                     return
                 last = int(resp.headers["x-reduct-last"]) != 0
-                yield self._parse_record(resp, last)
+                yield _parse_record(resp, last)
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -306,21 +329,4 @@ class Bucket:
         """
         return BucketFullInfo.parse_raw(
             await self._http.request_all("GET", f"/b/{self.name}")
-        )
-
-    def _parse_record(self, resp, last=True):
-        timestamp = int(resp.headers["x-reduct-time"])
-        size = int(resp.headers["content-length"])
-        labels = dict(
-            (name[len(LABEL_PREFIX) :], value)
-            for name, value in resp.headers.items()
-            if name.startswith(LABEL_PREFIX)
-        )
-        return Record(
-            timestamp=timestamp,
-            size=size,
-            last=last,
-            read_all=resp.read,
-            read=resp.content.iter_chunked,
-            labels=labels,
         )

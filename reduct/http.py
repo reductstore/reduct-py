@@ -34,6 +34,11 @@ class HttpClient:
         if "content_length" in kwargs:
             extra_headers["Content-Length"] = str(kwargs["content_length"])
             del kwargs["content_length"]
+
+        if "content_type" in kwargs:
+            extra_headers["Content-Type"] = str(kwargs["content_type"])
+            del kwargs["content_type"]
+
         if "labels" in kwargs:
             if kwargs["labels"]:
                 for name, value in kwargs["labels"].items():
@@ -68,7 +73,7 @@ class HttpClient:
         async with self.request(method, path, **kwargs) as response:
             return await response.read()
 
-    async def request_by(
+    async def request_chunked(
         self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """Http request"""

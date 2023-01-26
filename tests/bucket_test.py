@@ -90,6 +90,9 @@ async def test__read_by_timestamp(bucket_1):
     async with bucket_1.read("entry-2", timestamp=3_000_000) as record:
         data = await record.read_all()
         assert data == b"some-data-3"
+        assert record.timestamp == 3_000_000
+        assert record.size == 11
+        assert record.content_type == "application/octet-stream"
 
 
 @pytest.mark.asyncio
@@ -137,7 +140,7 @@ async def test__write_in_chunks(bucket_2):
 
 @pytest.mark.asyncio
 async def test__write_with_labels(bucket_1):
-    """Schould write data with labels"""
+    """Should write data with labels"""
     await bucket_1.write(
         "entry-1", b"something", labels={"label1": 123, "label2": 0.1, "label3": "hey"}
     )
@@ -145,6 +148,17 @@ async def test__write_with_labels(bucket_1):
         data = await record.read_all()
         assert data == b"something"
         assert record.labels == {"label1": "123", "label2": "0.1", "label3": "hey"}
+
+
+@pytest.mark.asyncio
+async def test__write_with_content_type(bucket_1):
+    """Should write data with content_type"""
+    await bucket_1.write("entry-1", b"something", content_type="text/plain")
+
+    async with bucket_1.read("entry-1") as record:
+        data = await record.read_all()
+        assert data == b"something"
+        assert record.content_type == "text/plain"
 
 
 @pytest.mark.asyncio
@@ -158,10 +172,12 @@ async def test_query_records(bucket_1):
 
     assert records[0].timestamp == 3000000
     assert records[0].size == 11
+    assert records[0].content_type == "application/octet-stream"
     assert not records[0].last
 
     assert records[1].timestamp == 4000000
     assert records[1].size == 11
+    assert records[1].content_type == "application/octet-stream"
     assert records[1].last
 
 
