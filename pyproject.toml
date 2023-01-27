@@ -4,7 +4,7 @@ requires = ["setuptools>=40.8.0", "wheel"]
 [project]
 
 name = "reduct-py"
-version = "1.2.0"
+version = "1.3.0"
 description = "ReductStore Client SDK for Python"
 requires-python = ">=3.7"
 readme = "README.md"
@@ -19,7 +19,7 @@ maintainers = [
 ]
 
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3 :: Only",
     "Framework :: aiohttp",
     "Intended Audience :: Information Technology",

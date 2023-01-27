@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### [1.3.0] - 2023-01-27
+
 ### Added:
 
 - Quick Start example and guide, [PR-65](https://github.com/reductstore/reduct-py/pull/65)
 - Support labels for read, write and querying, [PR-66](https://github.com/reductstore/reduct-py/pull/66)
-- 'Content-Type' header for read and write operations, [PR-67](https://github.com/reductstore/reduct-py/pull/67)
+- `Content-Type` header for read and write operations, [PR-67](https://github.com/reductstore/reduct-py/pull/67)
 
 ## [1.2.0] - 2022-12-22
 
@@ -108,7 +110,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.3.0...HEAD
+
+[1.3.0]: https://github.com/reduct-storage/reduct-py/compare/v1.2.0...v1.3.0
 
 [1.2.0]: https://github.com/reduct-storage/reduct-py/compare/v1.1.0...v1.2.0
 
