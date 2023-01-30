@@ -44,11 +44,11 @@ async def test__bad_url():
 @pytest.mark.asyncio
 async def test__bad_url_server_exists():
     """Should raise an error"""
-    client = Client("http://example.com")
+    client = Client("http://127.0.0.1:8383/bad-path")
 
     with pytest.raises(ReductError) as reduct_err:
         await client.info()
-    assert str(reduct_err.value) == ("Status 404: Unknown error")
+    assert str(reduct_err.value) == ("Status 404: Not Found")
 
 
 @pytest.mark.asyncio
