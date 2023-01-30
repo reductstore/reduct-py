@@ -318,7 +318,7 @@ class Bucket:
         last = False
         while not last:
             async with self._http.request("GET", f"{url}?q={query_id}") as resp:
-                if resp.status == 202:
+                if resp.status == 204:
                     return
                 last = int(resp.headers["x-reduct-last"]) != 0
                 yield _parse_record(resp, last)

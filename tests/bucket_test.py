@@ -265,3 +265,13 @@ async def test_read_record(bucket_1):
             data.append(chunk)
 
     assert data == [b"some", b"-dat", b"a-3", b"some", b"-dat", b"a-4"]
+
+
+@pytest.mark.asyncio
+async def test_no_content_query(bucket_1):
+    """Should return empty list if no content"""
+    records = [
+        record
+        async for record in bucket_1.query("entry-2", include={"label1": "value1"})
+    ]
+    assert len(records) == 0
