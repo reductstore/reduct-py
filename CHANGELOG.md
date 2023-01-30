@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2023-01-30
+
 ### Fixed:
 
 - No content status in `Bucket.query`, [PR-69](https://github.com/reductstore/reduct-py/pull/69)
