@@ -57,8 +57,8 @@ jobs:
       - name: Install package
         run: python3 -m pip install dist/*.whl
 
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -d ghcr.io/reductstore/reductstore:latest
+      - name: Run ReductStore
+        run: docker run -p 8383:8383 -d ghcr.io/reductstore/reductstore:main
 
       - name: Run examples
         run: python3 examples/quick_start.py
@@ -86,7 +86,7 @@ jobs:
       - name: Install dependencies
         run: pip3 install .[test]
 
-      - name: Run Reduct Storage
+      - name: Run ReductStore
         run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} --env RS_LOG_LEVEL=DEBUG -d ghcr.io/reductstore/reductstore:main
 
       - name: Run Tests
