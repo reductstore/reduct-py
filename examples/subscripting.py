@@ -29,7 +29,7 @@ async def subscriber():
     async for record in bucket.subscribe(
         "entry-1",
         start=int(time_ns() / 10000),
-        poll_interval=1,
+        poll_interval=0.2,
         include=dict(good=True),
     ):
         print(f"Good record received: ts={record.timestamp}, labels={record.labels}")

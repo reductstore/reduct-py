@@ -1,4 +1,5 @@
 """Tests for Bucket"""
+import asyncio
 import time
 from typing import List
 
@@ -275,3 +276,21 @@ async def test_no_content_query(bucket_1):
         async for record in bucket_1.query("entry-2", include={"label1": "value1"})
     ]
     assert len(records) == 0
+
+
+@pytest.mark.asyncio
+async def test_subscribe(bucket_1):
+    """Should subscribe to new records"""
+    data = []
+
+    async def subscriber():
+        async for record in bucket_1.subscribe("entry-2"):
+            data.append(await record.read_all())
+            if record.labels.get("stop", "") == "true":
+                break
+
+    await asyncio.gather(
+        subscriber(), bucket_1.write("entry-2", b"some-data-5", labels={"stop": "true"})
+    )
+
+    assert data == [b"some-data-3", b"some-data-4", b"some-data-5"]

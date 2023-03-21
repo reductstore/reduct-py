@@ -338,7 +338,7 @@ class Bucket:
             >>>         print(chunk)
         """
         query_id = await self._query(
-            entry_name, start, None, poll_interval * 2, continuous=True, **kwargs
+            entry_name, start, None, poll_interval * 2 + 1, continuous=True, **kwargs
         )
         while True:
             async with self._http.request(
