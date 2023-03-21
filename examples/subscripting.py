@@ -20,13 +20,17 @@ async def writer():
         await asyncio.sleep(1)
 
 
+# --8<-- [start:subscriber]
 async def subscriber():
     """Subscribe on good records and exit after ten received"""
     global running
     bucket: Bucket = await client.create_bucket("bucket", exist_ok=True)
     counter = 0
     async for record in bucket.subscribe(
-        "entry-1", start=int(time_ns() / 10000), include=dict(good=True)
+        "entry-1",
+        start=int(time_ns() / 10000),
+        poll_interval=1,
+        include=dict(good=True),
     ):
         print(f"Good record received: ts={record.timestamp}, labels={record.labels}")
         counter += 1
@@ -34,6 +38,8 @@ async def subscriber():
             running = False
             break
 
+
+# --8<-- [end:subscriber]
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()

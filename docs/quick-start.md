@@ -18,7 +18,7 @@ If you don't already have a ReductStore instance running, you can easily spin on
 run the following command:
 
 ```
-docker run -p 8383:8383 reductstore/reductstore
+docker run -p 8383:8383 reduct/store:latest
 ```
 
 This will start a ReductStore instance listening on port 8383 of your local machine.
