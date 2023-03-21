@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- Subscripting to new records, [PR-70](https://github.com/reductstore/reduct-py/pull/70)
+
 ## [1.3.1] - 2023-01-30
 
 ### Fixed:
