@@ -1,4 +1,5 @@
 """Bucket API"""
+import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
@@ -283,7 +284,7 @@ class Bucket:
             ttl: Time To Live of the request in seconds
         Keyword Args:
             include (dict): query records which have all labels from this dict
-            exclude (dict): querz records which doesn't have all labels from this dict
+            exclude (dict): query records which doesn't have all labels from this dict
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -294,30 +295,12 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
-        params = {}
-        if start:
-            params["start"] = start
-        if stop:
-            params["stop"] = stop
-        if ttl:
-            params["ttl"] = ttl
-        if "include" in kwargs:
-            for name, value in kwargs["include"].items():
-                params[f"include-{name}"] = str(value)
-        if "exclude" in kwargs:
-            for name, value in kwargs["exclude"].items():
-                params[f"exclude-{name}"] = str(value)
-
-        url = f"/b/{self.name}/{entry_name}"
-        data = await self._http.request_all(
-            "GET",
-            f"{url}/q",
-            params=params,
-        )
-        query_id = json.loads(data)["id"]
+        query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
         while not last:
-            async with self._http.request("GET", f"{url}?q={query_id}") as resp:
+            async with self._http.request(
+                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+            ) as resp:
                 if resp.status == 204:
                     return
                 last = int(resp.headers["x-reduct-last"]) != 0
@@ -330,3 +313,67 @@ class Bucket:
         return BucketFullInfo.parse_raw(
             await self._http.request_all("GET", f"/b/{self.name}")
         )
+
+    async def subscribe(
+        self, entry_name: str, start: Optional[int] = None, poll_interval=1.0, **kwargs
+    ) -> AsyncIterator[Record]:
+        """
+        Query records from the start timestamp and wait for new records
+
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning timestamp to read records
+            poll_interval: inteval to ask new records in seconds
+        Keyword Args:
+            include (dict): query records which have all labels from this dict
+            exclude (dict): query records which doesn't have all labels from this dict
+        Returns:
+             AsyncIterator[Record]: iterator to the records
+
+        Examples:
+            >>> async for record in bucket.subscribes("entry-1"):
+            >>>     data: bytes = record.read_all()
+            >>>     # or
+            >>>     async for chunk in record.read(n=1024):
+            >>>         print(chunk)
+        """
+        query_id = await self._query(
+            entry_name, start, None, poll_interval * 2, continuous=True, **kwargs
+        )
+        while True:
+            async with self._http.request(
+                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+            ) as resp:
+                if resp.status == 204:
+                    await asyncio.sleep(poll_interval)
+                    continue
+
+                yield _parse_record(resp, False)
+
+    async def _query(self, entry_name, start, stop, ttl, **kwargs):
+        params = {}
+        if start:
+            params["start"] = start
+        if stop:
+            params["stop"] = stop
+        if ttl:
+            params["ttl"] = ttl
+
+        if "include" in kwargs:
+            for name, value in kwargs["include"].items():
+                params[f"include-{name}"] = str(value)
+        if "exclude" in kwargs:
+            for name, value in kwargs["exclude"].items():
+                params[f"exclude-{name}"] = str(value)
+
+        if "continuous" in kwargs:
+            params["continuous"] = "true" if kwargs["continuous"] else "false"
+
+        url = f"/b/{self.name}/{entry_name}"
+        data = await self._http.request_all(
+            "GET",
+            f"{url}/q",
+            params=params,
+        )
+        query_id = json.loads(data)["id"]
+        return query_id
