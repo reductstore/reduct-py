@@ -5,7 +5,9 @@ docs_dir: .
 nav:
   - Home:
       - README.md
+  - Tutorials:
       - Quick Start: docs/quick-start.md
+      - Subscribing: docs/subscribing.md
   - API Reference:
       - Client: docs/api/client.md
       - Bucket: docs/api/bucket.md

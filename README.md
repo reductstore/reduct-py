@@ -8,8 +8,12 @@ This package provides an asynchronous HTTP client for interacting with the [Redu
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.3](https://docs.reduct.store/http-api)
-* Asynchronous and based on aiohttp and pydantic
+* Supports the [ReductStore HTTP API v1.4](https://docs.reduct.store/http-api)
+* Bucket management
+* API Token management
+* Write, read and query data
+* Labels
+* Subscription on new data
 
 ## Install
 
@@ -29,8 +33,8 @@ import asyncio
 from reduct import Client, Bucket
 
 async def main():
-    # Create a client for interacting with the ReductStore service
-    client = Client('https://play.reduct.store', api_token="reduct")
+    # Create a client for interacting with a ReductStore service
+    client = Client("http://localhost:80383")
 
     # Create a bucket and store a reference to it in the `bucket` variable
     bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
@@ -49,7 +53,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 
-For more examples, see the [Quick Start](https://py.reduct.store/en/latest/docs/quick-start/).
+For more examples, see the [Quick Start](https://py.reduct.storgit ce/en/latest/docs/quick-start/).
 
 ## References
 
