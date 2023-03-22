@@ -1,4 +1,4 @@
-  # Subscribing to Data
+# Subscribing to Data
 
 This guide shows you how to use [ReductStore Python SDK](https://py.reduct.store/en/latest/) to subscribe to new
 records in a bucket.
