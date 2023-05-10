@@ -106,7 +106,7 @@ class Record:
     size: int
     """size of data"""
     last: bool
-    """last record in the query"""
+    """last record in the query. Deprecated: doesn't work for some cases"""
     content_type: str
     """content type of data"""
     read_all: Callable[[None], Awaitable[bytes]]
@@ -126,7 +126,7 @@ def _parse_record(resp, last=True):
     size = int(resp.headers["content-length"])
     content_type = resp.headers.get("content-type", "application/octet-stream")
     labels = dict(
-        (name[len(LABEL_PREFIX) :], value)
+        (name[len(LABEL_PREFIX):], value)
         for name, value in resp.headers.items()
         if name.startswith(LABEL_PREFIX)
     )
@@ -199,7 +199,7 @@ class Bucket:
 
     @asynccontextmanager
     async def read(
-        self, entry_name: str, timestamp: Optional[int] = None
+            self, entry_name: str, timestamp: Optional[int] = None
     ) -> AsyncIterator[Record]:
         """
         Read a record from entry
@@ -215,19 +215,19 @@ class Bucket:
             >>>     async with bucket.read("entry", timestamp=123456789) as record:
             >>>         data = await record.read_all()
         """
-        params = {"ts": timestamp} if timestamp else None
+        params = {"ts": int(timestamp)} if timestamp else None
         async with self._http.request(
-            "GET", f"/b/{self.name}/{entry_name}", params=params
+                "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
             yield _parse_record(resp)
 
     async def write(
-        self,
-        entry_name: str,
-        data: Union[bytes, AsyncIterator[bytes]],
-        timestamp: Optional[int] = None,
-        content_length: Optional[int] = None,
-        **kwargs,
+            self,
+            entry_name: str,
+            data: Union[bytes, AsyncIterator[bytes]],
+            timestamp: Optional[int] = None,
+            content_length: Optional[int] = None,
+            **kwargs,
     ):
         """
         Write a record to entry
@@ -256,7 +256,8 @@ class Bucket:
             >>> await bucket.write("entry-1", sender(), content_length=15)
 
         """
-        params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
+        timestamp = timestamp if timestamp else time.time_ns() / 1000
+        params = {"ts": int(timestamp)}
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
@@ -267,12 +268,12 @@ class Bucket:
         )
 
     async def query(
-        self,
-        entry_name: str,
-        start: Optional[int] = None,
-        stop: Optional[int] = None,
-        ttl: Optional[int] = None,
-        **kwargs,
+            self,
+            entry_name: str,
+            start: Optional[int] = None,
+            stop: Optional[int] = None,
+            ttl: Optional[int] = None,
+            **kwargs,
     ) -> AsyncIterator[Record]:
         """
         Query data for a time interval
@@ -299,7 +300,7 @@ class Bucket:
         last = False
         while not last:
             async with self._http.request(
-                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
             ) as resp:
                 if resp.status == 204:
                     return
@@ -315,7 +316,7 @@ class Bucket:
         )
 
     async def subscribe(
-        self, entry_name: str, start: Optional[int] = None, poll_interval=1.0, **kwargs
+            self, entry_name: str, start: Optional[int] = None, poll_interval=1.0, **kwargs
     ) -> AsyncIterator[Record]:
         """
         Query records from the start timestamp and wait for new records
@@ -342,7 +343,7 @@ class Bucket:
         )
         while True:
             async with self._http.request(
-                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
             ) as resp:
                 if resp.status == 204:
                     await asyncio.sleep(poll_interval)
@@ -353,11 +354,11 @@ class Bucket:
     async def _query(self, entry_name, start, stop, ttl, **kwargs):
         params = {}
         if start:
-            params["start"] = start
+            params["start"] = int(start)
         if stop:
-            params["stop"] = stop
+            params["stop"] = int(stop)
         if ttl:
-            params["ttl"] = ttl
+            params["ttl"] = int(ttl)
 
         if "include" in kwargs:
             for name, value in kwargs["include"].items():
