@@ -117,6 +117,7 @@ async def test__write_by_timestamp(bucket_2):
 async def test__write_with_current_time(bucket_2):
     """Should write a record with current time"""
     belated_timestamp = int(time.time_ns() / 1000)
+    await asyncio.sleep(0.01)
 
     await bucket_2.write("entry-3", b"test-data")
     await bucket_2.write("entry-3", b"old-data", timestamp=belated_timestamp)
@@ -174,12 +175,10 @@ async def test_query_records(bucket_1):
     assert records[0].timestamp == 3000000
     assert records[0].size == 11
     assert records[0].content_type == "application/octet-stream"
-    assert not records[0].last
 
     assert records[1].timestamp == 4000000
     assert records[1].size == 11
     assert records[1].content_type == "application/octet-stream"
-    assert records[1].last
 
 
 @pytest.mark.asyncio
@@ -212,7 +211,6 @@ async def test_query_records_included_labels(bucket_1):
 
     assert len(records) == 1
     assert records[0].labels == {"label1": "value1", "label2": "value2"}
-    assert records[0].last
 
 
 @pytest.mark.asyncio
@@ -233,7 +231,6 @@ async def test_query_records_excluded_labels(bucket_2):
 
     assert len(records) == 1
     assert records[0].labels == {"label1": "value1", "label2": "value3"}
-    assert records[0].last
 
 
 @pytest.mark.asyncio

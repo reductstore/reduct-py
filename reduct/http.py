@@ -53,7 +53,6 @@ class HttpClient:
                     headers=dict(self.headers, **extra_headers),
                     **kwargs,
                 ) as response:
-
                     if response.ok:
                         yield response
                     else:

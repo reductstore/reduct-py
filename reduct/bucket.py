@@ -106,7 +106,7 @@ class Record:
     size: int
     """size of data"""
     last: bool
-    """last record in the query"""
+    """last record in the query. Deprecated: doesn't work for some cases"""
     content_type: str
     """content type of data"""
     read_all: Callable[[None], Awaitable[bytes]]
@@ -215,7 +215,7 @@ class Bucket:
             >>>     async with bucket.read("entry", timestamp=123456789) as record:
             >>>         data = await record.read_all()
         """
-        params = {"ts": timestamp} if timestamp else None
+        params = {"ts": int(timestamp)} if timestamp else None
         async with self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
@@ -256,7 +256,8 @@ class Bucket:
             >>> await bucket.write("entry-1", sender(), content_length=15)
 
         """
-        params = {"ts": timestamp if timestamp else time.time_ns() / 1000}
+        timestamp = timestamp if timestamp else time.time_ns() / 1000
+        params = {"ts": int(timestamp)}
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
@@ -353,11 +354,11 @@ class Bucket:
     async def _query(self, entry_name, start, stop, ttl, **kwargs):
         params = {}
         if start:
-            params["start"] = start
+            params["start"] = int(start)
         if stop:
-            params["stop"] = stop
+            params["stop"] = int(stop)
         if ttl:
-            params["ttl"] = ttl
+            params["ttl"] = int(ttl)
 
         if "include" in kwargs:
             for name, value in kwargs["include"].items():

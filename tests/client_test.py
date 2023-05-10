@@ -48,7 +48,7 @@ async def test__bad_url_server_exists():
 
     with pytest.raises(ReductError) as reduct_err:
         await client.info()
-    assert str(reduct_err.value) == ("Status 404: Not Found")
+    assert str(reduct_err.value) == ("Status 404: Not found")
 
 
 @pytest.mark.asyncio
