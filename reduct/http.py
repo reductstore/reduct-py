@@ -31,8 +31,14 @@ class HttpClient:
         """HTTP request with ReductError exception"""
 
         extra_headers = {}
+
         if "content_length" in kwargs:
-            extra_headers["Content-Length"] = str(kwargs["content_length"])
+            content_length = kwargs["content_length"]
+            extra_headers["Content-Length"] = str(content_length)
+            if content_length > 256_000:
+                # Use 100-continue for large files
+                extra_headers["Expect"] = "100-continue"
+
             del kwargs["content_length"]
 
         if "content_type" in kwargs:

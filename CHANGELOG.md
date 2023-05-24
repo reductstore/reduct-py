@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed:
 
 - No int timestamps in queries, [PR-73](https://github.com/reductstore/reduct-py/pull/73)
+- Use Expect: 100-continue for large files, [PR-75](https://github.com/reductstore/reduct-py/pull/75)
 
 ## [1.3.1] - 2023-01-30
 
