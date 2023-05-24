@@ -164,6 +164,14 @@ async def test__write_with_content_type(bucket_1):
 
 
 @pytest.mark.asyncio
+async def test_write_big_blob(bucket_1):
+    """Should write big blob and stop upload if http status is not 200"""
+    await bucket_1.write("entry-1", b"1" * 1000000, timestamp=1)
+    with pytest.raises(ReductError, match="409"):
+        await bucket_1.write("entry-1", b"1" * 10_000_000, timestamp=1)
+
+
+@pytest.mark.asyncio
 async def test_query_records(bucket_1):
     """Should query records for a time interval"""
     records: List[Record] = [
