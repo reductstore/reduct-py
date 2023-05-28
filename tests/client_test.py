@@ -199,8 +199,9 @@ async def test__get_token_with_error(client):
 async def test__list_tokens(client, with_token):
     """Should list all tokens"""
     tokens = await client.get_token_list()
-    assert len(tokens) == 1
-    assert tokens[0].name == with_token
+    assert len(tokens) == 2
+    assert tokens[1].name == with_token
+    assert tokens[1].created_at is not None
 
 
 @requires_env("RS_API_TOKEN")
