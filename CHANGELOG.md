@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2023-05-29
+
 ### Added:
 
 - Subscribing to new records, [PR-70](https://github.com/reductstore/reduct-py/pull/70)
@@ -22,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - No content status in `Bucket.query`, [PR-69](https://github.com/reductstore/reduct-py/pull/69)
 
-### [1.3.0] - 2023-01-27
+## [1.3.0] - 2023-01-27
 
 ### Added:
 
@@ -125,7 +127,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.4.0...HEAD
+
+[1.4.0]: https://github.com/reduct-storage/reduct-py/compare/v1.3.1...v1.4.0
+
+[1.3.1]: https://github.com/reduct-storage/reduct-py/compare/v1.3.0...v1.3.1
 
 [1.3.0]: https://github.com/reduct-storage/reduct-py/compare/v1.2.0...v1.3.0
 
