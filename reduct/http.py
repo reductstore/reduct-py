@@ -34,13 +34,14 @@ class HttpClient:
         """HTTP request with ReductError exception"""
 
         extra_headers = {}
+        expect100 = False
 
         if "content_length" in kwargs:
             content_length = kwargs["content_length"]
             extra_headers["Content-Length"] = str(content_length)
             if content_length > self.FILE_SIZE_FOR_100_CONTINUE:
                 # Use 100-continue for large files
-                extra_headers["Expect"] = "100-continue"
+                expect100 = True
 
             del kwargs["content_length"]
 
@@ -63,6 +64,7 @@ class HttpClient:
                     method,
                     f"{self.url}{path.strip()}",
                     headers=dict(self.headers, **extra_headers),
+                    expect100=expect100,
                     **kwargs,
                 ) as response:
                     if response.ok:
