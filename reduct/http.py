@@ -14,6 +14,9 @@ API_PREFIX = "/api/v1"
 class HttpClient:
     """Wrapper for HTTP calls"""
 
+    FILE_SIZE_FOR_100_CONTINUE = 256_000
+    CONNECTION_REQUEST_LIMIT = 1000
+
     def __init__(
         self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
     ):
@@ -23,6 +26,7 @@ class HttpClient:
             {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}
         )
         self.timeout = ClientTimeout(timeout)
+        self.request_count = 0
 
     @asynccontextmanager
     async def request(
@@ -35,7 +39,7 @@ class HttpClient:
         if "content_length" in kwargs:
             content_length = kwargs["content_length"]
             extra_headers["Content-Length"] = str(content_length)
-            if content_length > 256_000:
+            if content_length > self.FILE_SIZE_FOR_100_CONTINUE:
                 # Use 100-continue for large files
                 extra_headers["Expect"] = "100-continue"
 
@@ -50,6 +54,11 @@ class HttpClient:
                 for name, value in kwargs["labels"].items():
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
+
+        self.request_count += 1
+        if self.request_count > self.CONNECTION_REQUEST_LIMIT:
+            extra_headers["connection"] = "close"
+            self.request_count = 0
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             try:
