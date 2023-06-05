@@ -26,6 +26,7 @@ async def subscriber():
     global running
     bucket: Bucket = await client.create_bucket("bucket", exist_ok=True)
     counter = 0
+    await asyncio.sleep(1)
     async for record in bucket.subscribe(
         "entry-1",
         start=int(time_ns() / 10000),
