@@ -15,7 +15,6 @@ class HttpClient:
     """Wrapper for HTTP calls"""
 
     FILE_SIZE_FOR_100_CONTINUE = 256_000
-    CONNECTION_REQUEST_LIMIT = 1000
 
     def __init__(
         self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
@@ -55,12 +54,10 @@ class HttpClient:
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
 
-        self.request_count += 1
-        if self.request_count > self.CONNECTION_REQUEST_LIMIT:
-            extra_headers["connection"] = "close"
-            self.request_count = 0
-
-        async with aiohttp.ClientSession(timeout=self.timeout) as session:
+        connector = aiohttp.TCPConnector(force_close=True)
+        async with aiohttp.ClientSession(
+            timeout=self.timeout, connector=connector
+        ) as session:
             try:
                 async with session.request(
                     method,
