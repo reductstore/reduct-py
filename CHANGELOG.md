@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed:
+
+- Force close connection after each request to avoid
+  ServerDisconnectedError, [PR-77](https://github.com/reductstore/reduct-py/pull/77)
+
 ## [1.4.0] - 2023-05-29
 
 ### Added:
