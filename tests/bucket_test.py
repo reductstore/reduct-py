@@ -1,7 +1,7 @@
 """Tests for Bucket"""
 import asyncio
 import time
-from typing import List
+from typing import List, Tuple
 
 import pytest
 
@@ -174,19 +174,21 @@ async def test_write_big_blob(bucket_1):
 @pytest.mark.asyncio
 async def test_query_records(bucket_1):
     """Should query records for a time interval"""
-    records: List[Record] = [
-        record
+    records: List[Tuple[Record, bytes]] = [
+        (record, await record.read_all())
         async for record in bucket_1.query("entry-2", start=0, stop=5_000_000, ttl=5)
     ]
     assert len(records) == 2
 
-    assert records[0].timestamp == 3000000
-    assert records[0].size == 11
-    assert records[0].content_type == "application/octet-stream"
+    assert records[0][0].timestamp == 3000000
+    assert records[0][0].size == 11
+    assert records[0][0].content_type == "application/octet-stream"
+    assert records[0][1] == b"some-data-3"
 
-    assert records[1].timestamp == 4000000
-    assert records[1].size == 11
-    assert records[1].content_type == "application/octet-stream"
+    assert records[1][0].timestamp == 4000000
+    assert records[1][0].size == 11
+    assert records[1][0].content_type == "application/octet-stream"
+    assert records[1][1] == b"some-data-4"
 
 
 @pytest.mark.asyncio

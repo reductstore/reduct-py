@@ -1,0 +1,2 @@
+::: reduct.Record
+    handler: python

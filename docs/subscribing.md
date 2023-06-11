@@ -31,13 +31,13 @@ When the `subscriber` will receive 10 records, it stops the subscription and the
 This is the whole script:
 
 ```python title="subscribing.py"
---8<-- "../examples/subscribing.py:"
+--8<--"../examples/subscribing.py:"
 ```
 
 The most important part of the script is the `subscriber` coroutine:
 
 ```python title="subscribing.py"
---8<-- "../examples/subscribing.py:subscriber"
+--8<--"../examples/subscribing.py:subscriber"
 ```
 
 The `subcribe` method queries records from the `entry-1` entry from the current time and subscribes to new records that have

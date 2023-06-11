@@ -3,21 +3,18 @@ import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
 from enum import Enum
 from typing import (
     Optional,
     List,
     AsyncIterator,
     Union,
-    Callable,
-    Awaitable,
-    Dict,
 )
 
 from pydantic import BaseModel
 
 from reduct.http import HttpClient
+from reduct.record import Record, parse_batched_records, parse_record
 
 
 class QuotaType(Enum):
@@ -97,51 +94,6 @@ class BucketFullInfo(BaseModel):
     """information about entries of bucket"""
 
 
-@dataclass
-class Record:
-    """Record in a query"""
-
-    timestamp: int
-    """UNIX timestamp in microseconds"""
-    size: int
-    """size of data"""
-    last: bool
-    """last record in the query. Deprecated: doesn't work for some cases"""
-    content_type: str
-    """content type of data"""
-    read_all: Callable[[None], Awaitable[bytes]]
-    """read all data"""
-    read: Callable[[int], AsyncIterator[bytes]]
-    """read data in chunks"""
-
-    labels: Dict[str, str]
-    """labels of record"""
-
-
-LABEL_PREFIX = "x-reduct-label-"
-
-
-def _parse_record(resp, last=True):
-    timestamp = int(resp.headers["x-reduct-time"])
-    size = int(resp.headers["content-length"])
-    content_type = resp.headers.get("content-type", "application/octet-stream")
-    labels = dict(
-        (name[len(LABEL_PREFIX) :], value)
-        for name, value in resp.headers.items()
-        if name.startswith(LABEL_PREFIX)
-    )
-
-    return Record(
-        timestamp=timestamp,
-        size=size,
-        last=last,
-        read_all=resp.read,
-        read=resp.content.iter_chunked,
-        labels=labels,
-        content_type=content_type,
-    )
-
-
 class Bucket:
     """A bucket of data in Reduct Storage"""
 
@@ -219,7 +171,7 @@ class Bucket:
         async with self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            yield _parse_record(resp)
+            yield parse_record(resp)
 
     async def write(
         self,
@@ -298,14 +250,26 @@ class Bucket:
         """
         query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
-        while not last:
-            async with self._http.request(
-                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    return
-                last = int(resp.headers["x-reduct-last"]) != 0
-                yield _parse_record(resp, last)
+
+        if self._http.api_version and self._http.api_version >= "1.5":
+            while not last:
+                async with self._http.request(
+                    "GET", f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        return
+                    async for record in parse_batched_records(resp):
+                        last = record.last
+                        yield record
+        else:
+            while not last:
+                async with self._http.request(
+                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        return
+                    last = int(resp.headers["x-reduct-last"]) != 0
+                    yield parse_record(resp, last)
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -341,15 +305,28 @@ class Bucket:
         query_id = await self._query(
             entry_name, start, None, poll_interval * 2 + 1, continuous=True, **kwargs
         )
-        while True:
-            async with self._http.request(
-                "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    await asyncio.sleep(poll_interval)
-                    continue
 
-                yield _parse_record(resp, False)
+        if self._http.api_version and self._http.api_version >= "1.5":
+            while True:
+                async with self._http.request(
+                    "GET", f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        await asyncio.sleep(poll_interval)
+                        continue
+
+                    async for record in parse_batched_records(resp):
+                        yield record
+        else:
+            while True:
+                async with self._http.request(
+                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        await asyncio.sleep(poll_interval)
+                        continue
+
+                    yield parse_record(resp, False)
 
     async def _query(self, entry_name, start, stop, ttl, **kwargs):
         params = {}

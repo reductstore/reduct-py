@@ -8,11 +8,12 @@ This package provides an asynchronous HTTP client for interacting with the [Redu
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.4](https://docs.reduct.store/http-api)
+* Supports the [ReductStore HTTP API v1.5](https://docs.reduct.store/http-api)
 * Bucket management
 * API Token management
 * Write, read and query data
 * Labels
+* Batching records
 * Subscription on new data
 
 ## Install

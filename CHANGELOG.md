@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- Supports for batched records, [PR-78](https://github.com/reductstore/reduct-py/pull/78)
+
 ## [1.4.1] - 2023-06-05
 
 ### Fixed:

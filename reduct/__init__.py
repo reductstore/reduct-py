@@ -1,4 +1,6 @@
 """Reduct module"""
+from reduct.record import Record
+
 from reduct.bucket import (
     QuotaType,
     Bucket,
@@ -6,7 +8,6 @@ from reduct.bucket import (
     BucketSettings,
     EntryInfo,
     BucketFullInfo,
-    Record,
 )
 
 from reduct.client import (
