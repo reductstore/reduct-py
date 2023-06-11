@@ -3,17 +3,12 @@ import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
 from enum import Enum
-from functools import partial
 from typing import (
     Optional,
     List,
     AsyncIterator,
     Union,
-    Callable,
-    Awaitable,
-    Dict,
 )
 
 from pydantic import BaseModel
@@ -176,7 +171,7 @@ class Bucket:
         async with self._http.request(
             "GET", f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            yield _parse_record(resp)
+            yield parse_record(resp)
 
     async def write(
         self,
@@ -273,7 +268,7 @@ class Bucket:
                 ) as resp:
                     if resp.status == 204:
                         return
-                    last = int(resp._headers["x-reduct-last"]) != 0
+                    last = int(resp.headers["x-reduct-last"]) != 0
                     yield parse_record(resp, last)
 
     async def get_full_info(self) -> BucketFullInfo:
@@ -320,7 +315,7 @@ class Bucket:
                         await asyncio.sleep(poll_interval)
                         continue
 
-                    for record in parse_batched_records(resp):
+                    async for record in parse_batched_records(resp):
                         yield record
         else:
             while True:

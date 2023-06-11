@@ -2,7 +2,7 @@
 import asyncio
 from dataclasses import dataclass
 from functools import partial
-from typing import List, Dict, Callable, AsyncIterator, Awaitable
+from typing import Dict, Callable, AsyncIterator, Awaitable
 
 from aiohttp import ClientResponse
 
@@ -53,33 +53,36 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-async def parse_batched_records(resp: ClientResponse):
-    def parse_csv_row(row: str):
-        items = []
-        escaped = ""
-        for item in row.split(","):
-            if item.startswith('"') and not escaped:
-                escaped = item[1:]
-            if escaped:
-                if item.endswith('"'):
-                    escaped = escaped[:-1]
-                    items.append(escaped)
-                    escaped = ""
-                else:
-                    escaped += item
+def _parse_csv_row(row: str):
+    items = []
+    escaped = ""
+    for item in row.split(","):
+        if item.startswith('"') and not escaped:
+            escaped = item[1:]
+        if escaped:
+            if item.endswith('"'):
+                escaped = escaped[:-1]
+                items.append(escaped)
+                escaped = ""
             else:
-                items.append(item)
+                escaped += item
+        else:
+            items.append(item)
 
-        data = dict(labels={})
-        for item in items:
-            kv = item.split("=", 1)
+    data = {"labels": {}}
+    for item in items:
+        kv_pair = item.split("=", 1)
 
-            if kv[0].startswith("label-"):
-                data["labels"][kv[0][6:]] = kv[1]
-            else:
-                data[kv[0]] = kv[1]
+        if kv_pair[0].startswith("label-"):
+            data["labels"][kv_pair[0][6:]] = kv_pair[1]
+        else:
+            data[kv_pair[0]] = kv_pair[1]
 
-        return data
+    return data
+
+
+async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
+    """Parse batched records from response"""
 
     records_total = sum(
         1 for header in resp.headers if header.startswith("x-reduct-time-")
@@ -87,37 +90,36 @@ async def parse_batched_records(resp: ClientResponse):
     records_count = 0
     read_counter = [0]
     global_offset = 0
-    for k, v in resp.headers.items():
-        if k.startswith("x-reduct-time-"):
-            timestamp = int(k[14:])
-            meta_data = parse_csv_row(v)
 
+    async def read(offset, size, n):
+        if read_counter[0] != offset:
+            raise RuntimeError(
+                f"Read batched records out of order: {read_counter[0]} != {offset}"
+            )
+        count = 0
+        n = min(n, size)
+
+        while True:
+            chunk = await resp.content.read(n)
+            read_counter[0] += len(chunk)
+            count += len(chunk)
+            n = min(n, size - count)
+            yield chunk
+
+            if count == size:
+                break
+
+    async def read_all(offset, size):
+        data = b""
+        async for chunk in read(offset, size, 512_000):
+            data += chunk
+        return data
+
+    for name, value in resp.headers.items():
+        if name.startswith("x-reduct-time-"):
+            timestamp = int(name[14:])
+            meta_data = _parse_csv_row(value)
             content_length = int(meta_data["content-length"])
-
-            async def read(offset, n):
-                if read_counter[0] != offset:
-                    raise RuntimeError(
-                        "Read batched records out of order: %d != %d"
-                        % (read_counter[0], offset)
-                    )
-                count = 0
-                n = min(n, content_length)
-
-                while True:
-                    chunk = await resp.content.read(n)
-                    read_counter[0] += len(chunk)
-                    count += len(chunk)
-                    n = min(n, content_length - count)
-                    yield chunk
-
-                    if count == content_length:
-                        break
-
-            async def read_all(offset):
-                data = b""
-                async for chunk in read(offset, 512_000):
-                    data += chunk
-                return data
 
             record = Record(
                 timestamp=timestamp,
@@ -125,8 +127,8 @@ async def parse_batched_records(resp: ClientResponse):
                 last=False,
                 content_type=meta_data["content-type"],
                 labels=meta_data["labels"],
-                read_all=partial(read_all, global_offset),
-                read=partial(read, global_offset),
+                read_all=partial(read_all, global_offset, content_length),
+                read=partial(read, global_offset, content_length),
             )
 
             global_offset += content_length
