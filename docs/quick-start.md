@@ -31,7 +31,7 @@ interact with the ReductStore service.
 Here is an example of using the Python SDK to perform a few different operations on a bucket:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:"
+--8<--"../examples/quick_start.py:"
 ```
 
 Let's break down what this example is doing.
@@ -42,7 +42,7 @@ To create a ReductStore client, you can use the `Client` class from the `reduct`
 instance you want to connect to as an argument to the `Client` constructor:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:createclient"
+--8<--"../examples/quick_start.py:createclient"
 ```
 
 
@@ -53,7 +53,7 @@ want to get or create as an argument, along with a `BucketSettings` object to sp
 Set the `exist_ok` argument to True to create the bucket if it does not exist:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:createbucket"
+--8<--"../examples/quick_start.py:createbucket"
 ```
 
 ### Writing data to a Bucket
@@ -63,7 +63,7 @@ Pass the name of the entry you want to write to as an argument, along with the d
 will automatically use the current timestamp when writing the data to the entry:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:writedata"
+--8<--"../examples/quick_start.py:writedata"
 ```
 
 This is the simplest case for writing data to an entry in a bucket using the SDK. The write method also allows
@@ -75,7 +75,7 @@ Specify the total size of the file with the `content_length` argument, and speci
 argument:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:uploadfile"
+--8<--"../examples/quick_start.py:uploadfile"
 ```
 
 This code snippet shows how to use the write method to upload a file in chunks to an entry in a bucket. The generator
@@ -89,7 +89,7 @@ want to read from and the timestamp of the specific record you want to read as a
 to open the record, and then use the `read_all` method to read all of the data in the record:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:readdata"
+--8<--"../examples/quick_start.py:readdata"
 ```
 
 To iterate over all records in an entry, you can use the `query` method on a Bucket instance. Pass the name of the entry
@@ -97,7 +97,7 @@ you want to iterate over as an argument. Use a for loop to iterate over the reco
 record to read the data in chunks:
 
 ```python title="quick_start.py"
---8<-- "../examples/quick_start.py:iteraterecords"
+--8<--"../examples/quick_start.py:iteraterecords"
 ```
 
 The `query` method returns an async iterator to the records in the entry. By default, the method returns all records
