@@ -19,13 +19,13 @@ class HttpClient:
     def __init__(
         self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
     ):
-        self.url = url + API_PREFIX
-        self.api_token = api_token
-        self.headers = (
+        self._url = url + API_PREFIX
+        self._api_token = api_token
+        self._headers = (
             {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}
         )
-        self.timeout = ClientTimeout(timeout)
-        self.request_count = 0
+        self._timeout = ClientTimeout(timeout)
+        self._api_version = None
 
     @asynccontextmanager
     async def request(
@@ -57,16 +57,19 @@ class HttpClient:
 
         connector = aiohttp.TCPConnector(force_close=True)
         async with aiohttp.ClientSession(
-            timeout=self.timeout, connector=connector
+            timeout=self._timeout, connector=connector
         ) as session:
             try:
                 async with session.request(
                     method,
-                    f"{self.url}{path.strip()}",
-                    headers=dict(self.headers, **extra_headers),
+                    f"{self._url}{path.strip()}",
+                    headers=dict(self._headers, **extra_headers),
                     expect100=expect100,
                     **kwargs,
                 ) as response:
+                    if self._api_version is None:
+                        self._api_version = response.headers.get("x-reduct-api")
+
                     if response.ok:
                         yield response
                     else:
@@ -78,7 +81,7 @@ class HttpClient:
                         raise ReductError(response.status, "Unknown error")
             except ClientConnectorError:
                 raise ReductError(
-                    599, f"Connection failed, server {self.url} cannot be reached"
+                    599, f"Connection failed, server {self._url} cannot be reached"
                 ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
@@ -94,3 +97,8 @@ class HttpClient:
             async for chunk in response.content.iter_chunked(chunk_size):
                 yield chunk
         return
+
+    @property
+    def api_version(self) -> Optional[str]:
+        """API version"""
+        return self._api_version
