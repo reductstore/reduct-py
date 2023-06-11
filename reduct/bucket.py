@@ -320,7 +320,7 @@ class Bucket:
                         await asyncio.sleep(poll_interval)
                         continue
 
-                    async for record in parse_batched_records(resp):
+                    for record in parse_batched_records(resp):
                         yield record
         else:
             while True:

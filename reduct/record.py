@@ -1,4 +1,5 @@
 """Record representation and its parsing"""
+import asyncio
 from dataclasses import dataclass
 from functools import partial
 from typing import List, Dict, Callable, AsyncIterator, Awaitable
@@ -52,7 +53,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
+async def parse_batched_records(resp: ClientResponse):
     def parse_csv_row(row: str):
         items = []
         escaped = ""
@@ -95,10 +96,15 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
 
             async def read(offset, n):
                 if read_counter[0] != offset:
-                    raise RuntimeError("Read batched records out of order")
+                    raise RuntimeError(
+                        "Read batched records out of order: %d != %d"
+                        % (read_counter[0], offset)
+                    )
                 count = 0
                 n = min(n, content_length)
-                async for chunk in resp.content.iter_chunked(n):
+
+                while True:
+                    chunk = await resp.content.read(n)
                     read_counter[0] += len(chunk)
                     count += len(chunk)
                     n = min(n, content_length - count)
@@ -130,3 +136,4 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                     record.last = True
 
             yield record
+            await asyncio.sleep(0)
