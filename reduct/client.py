@@ -1,6 +1,6 @@
 """Main client code"""
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel
 
@@ -94,7 +94,11 @@ class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
-        self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
+        self,
+        url: str,
+        api_token: Optional[str] = None,
+        timeout: Optional[float] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
     ):
         """
         Constructor
@@ -103,12 +107,13 @@ class Client:
             url: URL to connect to the storage
             api_token: API token if the storage uses it for authorization
             timeout: total timeout for connection, request and response in seconds
+            extra_headers: extra headers to send with each request
 
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
-        self._http = HttpClient(url.rstrip("/"), api_token, timeout)
+        self._http = HttpClient(url.rstrip("/"), api_token, timeout, extra_headers)
 
     async def info(self) -> ServerInfo:
         """

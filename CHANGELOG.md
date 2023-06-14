@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 
 - Supports for batched records, [PR-78](https://github.com/reductstore/reduct-py/pull/78)
+- `extra_headers` to Client constructor, [PR-81](https://github.com/reductstore/reduct-py/pull/81)
 
 ## [1.4.1] - 2023-06-05
 
