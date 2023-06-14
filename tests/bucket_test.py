@@ -1,6 +1,8 @@
 """Tests for Bucket"""
 import asyncio
 import time
+from hashlib import md5
+
 from typing import List, Tuple
 
 import pytest
@@ -301,3 +303,56 @@ async def test_subscribe(bucket_1):
     )
 
     assert data == [b"some-data-3", b"some-data-4", b"some-data-5"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [1, 100, 10_000, 1_000_000])
+async def test_read_batched_records_in_random_order(bucket_1, size):
+    """Should read batched records in random order (read_all)"""
+
+    await bucket_1.write("entry-3", b"1" * size, timestamp=1)
+    await bucket_1.write("entry-3", b"2" * size, timestamp=2)
+    await bucket_1.write("entry-3", b"3" * size, timestamp=3)
+
+    records = []
+    async for record in bucket_1.query("entry-3"):
+        records.append(record)
+
+        if len(records) == 3:
+            assert records[0].timestamp == 1
+            assert records[1].timestamp == 2
+            assert records[2].timestamp == 3
+
+            assert (await records[1].read_all()) == (b"2" * size)
+            assert (await records[0].read_all()) == (b"1" * size)
+            assert (await records[2].read_all()) == (b"3" * size)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [1, 100, 10_000, 1_000_000])
+async def test_read_batched_records_in_random_order_chunks(bucket_1, size):
+    """Should read batched records in random order (read in chunks)"""
+
+    await bucket_1.write("entry-3", b"1" * size, timestamp=1)
+    await bucket_1.write("entry-3", b"2" * size, timestamp=2)
+    await bucket_1.write("entry-3", b"3" * size, timestamp=3)
+
+    async def read_chunks(r: Record):
+        buffer = b""
+        async for chunk in r.read(1024):
+            buffer += chunk
+        return buffer
+
+    records = []
+    async for record in bucket_1.query("entry-3"):
+        records.append(record)
+
+        if len(records) == 3:
+            data = await read_chunks(records[1])
+            assert data == (b"2" * size)
+
+            data = await read_chunks(records[0])
+            assert data == (b"1" * size)
+
+            data = await read_chunks(records[2])
+            assert data == (b"3" * size)
