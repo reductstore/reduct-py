@@ -1,7 +1,6 @@
 """Tests for Bucket"""
 import asyncio
 import time
-from hashlib import md5
 
 from typing import List, Tuple
 
@@ -337,9 +336,9 @@ async def test_read_batched_records_in_random_order_chunks(bucket_1, size):
     await bucket_1.write("entry-3", b"2" * size, timestamp=2)
     await bucket_1.write("entry-3", b"3" * size, timestamp=3)
 
-    async def read_chunks(r: Record):
+    async def read_chunks(rec: Record):
         buffer = b""
-        async for chunk in r.read(1024):
+        async for chunk in rec.read(1024):
             buffer += chunk
         return buffer
 

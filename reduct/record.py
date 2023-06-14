@@ -82,6 +82,30 @@ def _parse_csv_row(row: str):
     return data
 
 
+async def _read(buffer: bytes, n: int):
+    count = 0
+    size = len(buffer)
+    n = min(n, size)
+
+    while True:
+        chunk = buffer[count : count + n]
+        count += len(chunk)
+        n = min(n, size - count)
+        yield chunk
+
+        await asyncio.sleep(0)
+
+        if count == size:
+            break
+
+
+async def _read_all(buffer):
+    data = b""
+    async for chunk in _read(buffer, CHUNK_SIZE):
+        data += chunk
+    return data
+
+
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
@@ -89,28 +113,6 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
         1 for header in resp.headers if header.startswith("x-reduct-time-")
     )
     records_count = 0
-
-    async def read(buffer: bytes, n: int):
-        count = 0
-        size = len(buffer)
-        n = min(n, size)
-
-        while True:
-            chunk = buffer[count : count + n]
-            count += len(chunk)
-            n = min(n, size - count)
-            yield chunk
-
-            await asyncio.sleep(0)
-
-            if count == size:
-                break
-
-    async def read_all(buffer):
-        data = b""
-        async for chunk in read(buffer, CHUNK_SIZE):
-            data += chunk
-        return data
 
     for name, value in resp.headers.items():
         if name.startswith("x-reduct-time-"):
@@ -133,20 +135,9 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                 # instead of reading them in the use code with an async interator.
                 # The batched records are small if they are not the last.
                 # The last batched record is read in the async generator in chunks.
-                buffer = b""
-                count = 0
-
-                while True:
-                    n = min(CHUNK_SIZE, content_length - count)
-                    chunk = await resp.content.read(n)
-                    buffer += chunk
-                    count += len(chunk)
-
-                    if count == content_length:
-                        break
-
-                read_func = partial(read, buffer)
-                read_all_func = partial(read_all, buffer)
+                buffer = await _read_response(resp, content_length)
+                read_func = partial(_read, buffer)
+                read_all_func = partial(_read_all, buffer)
 
             record = Record(
                 timestamp=timestamp,
@@ -159,3 +150,17 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
             )
 
             yield record
+
+
+async def _read_response(resp, content_length):
+    buffer = b""
+    count = 0
+    while True:
+        n = min(CHUNK_SIZE, content_length - count)
+        chunk = await resp.content.read(n)
+        buffer += chunk
+        count += len(chunk)
+
+        if count == content_length:
+            break
+    return buffer
