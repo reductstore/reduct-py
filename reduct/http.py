@@ -1,6 +1,6 @@
 """Internal HTTP helper"""
 from contextlib import asynccontextmanager
-from typing import Optional, AsyncIterator
+from typing import Optional, AsyncIterator, Dict
 
 import aiohttp
 from aiohttp import ClientTimeout, ClientResponse
@@ -17,13 +17,20 @@ class HttpClient:
     FILE_SIZE_FOR_100_CONTINUE = 256_000
 
     def __init__(
-        self, url: str, api_token: Optional[str] = None, timeout: Optional[float] = None
+        self,
+        url: str,
+        api_token: Optional[str] = None,
+        timeout: Optional[float] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
     ):
         self._url = url + API_PREFIX
         self._api_token = api_token
         self._headers = (
             {"Authorization": f"Bearer {api_token}"} if api_token is not None else {}
         )
+        if extra_headers:
+            self._headers.update(extra_headers)
+
         self._timeout = ClientTimeout(timeout)
         self._api_version = None
 
