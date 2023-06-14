@@ -29,6 +29,7 @@ class Record:
 
 
 LABEL_PREFIX = "x-reduct-label-"
+CHUNK_SIZE = 512_000
 
 
 def parse_record(resp: ClientResponse, last=True) -> Record:
@@ -81,6 +82,30 @@ def _parse_csv_row(row: str):
     return data
 
 
+async def _read(buffer: bytes, n: int):
+    count = 0
+    size = len(buffer)
+    n = min(n, size)
+
+    while True:
+        chunk = buffer[count : count + n]
+        count += len(chunk)
+        n = min(n, size - count)
+        yield chunk
+
+        await asyncio.sleep(0)
+
+        if count == size:
+            break
+
+
+async def _read_all(buffer):
+    data = b""
+    async for chunk in _read(buffer, CHUNK_SIZE):
+        data += chunk
+    return data
+
+
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
@@ -88,32 +113,6 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
         1 for header in resp.headers if header.startswith("x-reduct-time-")
     )
     records_count = 0
-    read_counter = [0]
-    global_offset = 0
-
-    async def read(offset, size, n):
-        if read_counter[0] != offset:
-            raise RuntimeError(
-                f"Read batched records out of order: {read_counter[0]} != {offset}"
-            )
-        count = 0
-        n = min(n, size)
-
-        while True:
-            chunk = await resp.content.read(n)
-            read_counter[0] += len(chunk)
-            count += len(chunk)
-            n = min(n, size - count)
-            yield chunk
-
-            if count == size:
-                break
-
-    async def read_all(offset, size):
-        data = b""
-        async for chunk in read(offset, size, 512_000):
-            data += chunk
-        return data
 
     for name, value in resp.headers.items():
         if name.startswith("x-reduct-time-"):
@@ -121,21 +120,47 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
             meta_data = _parse_csv_row(value)
             content_length = int(meta_data["content-length"])
 
+            last = False
+            records_count += 1
+
+            if records_count == records_total:
+                # last record in batched records read in client code
+                read_func = resp.content.iter_chunked
+                read_all_func = resp.read
+                if resp.headers.get("x-reduct-last", "false") == "true":
+                    # last record in query
+                    last = True
+            else:
+                # batched records must be read in order, so it is safe to read them here
+                # instead of reading them in the use code with an async interator.
+                # The batched records are small if they are not the last.
+                # The last batched record is read in the async generator in chunks.
+                buffer = await _read_response(resp, content_length)
+                read_func = partial(_read, buffer)
+                read_all_func = partial(_read_all, buffer)
+
             record = Record(
                 timestamp=timestamp,
                 size=content_length,
-                last=False,
+                last=last,
                 content_type=meta_data["content-type"],
                 labels=meta_data["labels"],
-                read_all=partial(read_all, global_offset, content_length),
-                read=partial(read, global_offset, content_length),
+                read_all=read_all_func,
+                read=read_func,
             )
 
-            global_offset += content_length
-            records_count += 1
-            if records_count == records_total:
-                if resp.headers.get("x-reduct-last", "false") == "true":
-                    record.last = True
-
             yield record
-            await asyncio.sleep(0)
+
+
+async def _read_response(resp, content_length):
+    buffer = b""
+    count = 0
+    while True:
+        n = min(CHUNK_SIZE, content_length - count)
+        chunk = await resp.content.read(n)
+        buffer += chunk
+        count += len(chunk)
+
+        if count == content_length:
+            break
+    return buffer

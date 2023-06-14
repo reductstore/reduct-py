@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Supports for batched records, [PR-78](https://github.com/reductstore/reduct-py/pull/78)
 - `extra_headers` to Client constructor, [PR-81](https://github.com/reductstore/reduct-py/pull/81)
 
+### Fixed:
+
+- Unordered reading batched records, [PR-82](https://github.com/reductstore/reduct-py/pull/82)
+
 ## [1.4.1] - 2023-06-05
 
 ### Fixed:
