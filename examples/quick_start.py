@@ -9,7 +9,7 @@ CURRENT_FILE = Path(__file__)
 async def main():
     # --8<-- [start:createclient]
     # Create a ReductStore client
-    client = Client("http://localhost:8383", extra_headers={"x-xxx": "yyy"})
+    client = Client("http://localhost:8383")
     # --8<-- [end:createclient]
 
     # --8<-- [start:createbucket]
