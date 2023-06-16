@@ -227,7 +227,6 @@ class Bucket:
         start: Optional[int] = None,
         stop: Optional[int] = None,
         ttl: Optional[int] = None,
-        head: bool = False,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
@@ -238,10 +237,10 @@ class Bucket:
             start: the beginning of the time interval
             stop: the end of the time interval
             ttl: Time To Live of the request in seconds
-            head: if True: get only the header of a recod with metadata
         Keyword Args:
             include (dict): query records which have all labels from this dict
-            exclude (dict): query records which doesn't have all labels from this dict
+            exclude (dict): query records which doesn't have all labels from this
+            head (bool): if True: get only the header of a recod with metadata
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -254,7 +253,7 @@ class Bucket:
         """
         query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
-        method = "HEAD" if head else "GET"
+        method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
 
         if self._http.api_version and self._http.api_version >= "1.5":
             while not last:
