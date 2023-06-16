@@ -86,12 +86,13 @@ async def test__get_entries(bucket_1):
     }
 
 
+@pytest.mark.parametrize("head, content", [(True, b""), (False, b"some-data-3")])
 @pytest.mark.asyncio
-async def test__read_by_timestamp(bucket_1):
+async def test__read_by_timestamp(bucket_1, head, content):
     """Should read a record by timestamp"""
-    async with bucket_1.read("entry-2", timestamp=3_000_000) as record:
+    async with bucket_1.read("entry-2", timestamp=3_000_000, head=head) as record:
         data = await record.read_all()
-        assert data == b"some-data-3"
+        assert data == content
         assert record.timestamp == 3_000_000
         assert record.size == 11
         assert record.content_type == "application/octet-stream"
@@ -172,24 +173,29 @@ async def test_write_big_blob(bucket_1):
         await bucket_1.write("entry-1", b"1" * 10_000_000, timestamp=1)
 
 
+@pytest.mark.parametrize(
+    "head, content", [(True, [b"", b""]), (False, [b"some-data-3", b"some-data-4"])]
+)
 @pytest.mark.asyncio
-async def test_query_records(bucket_1):
+async def test_query_records(bucket_1, head, content):
     """Should query records for a time interval"""
     records: List[Tuple[Record, bytes]] = [
         (record, await record.read_all())
-        async for record in bucket_1.query("entry-2", start=0, stop=5_000_000, ttl=5)
+        async for record in bucket_1.query(
+            "entry-2", start=0, stop=5_000_000, ttl=5, head=head
+        )
     ]
     assert len(records) == 2
 
     assert records[0][0].timestamp == 3000000
     assert records[0][0].size == 11
     assert records[0][0].content_type == "application/octet-stream"
-    assert records[0][1] == b"some-data-3"
+    assert records[0][1] == content[0]
 
     assert records[1][0].timestamp == 4000000
     assert records[1][0].size == 11
     assert records[1][0].content_type == "application/octet-stream"
-    assert records[1][1] == b"some-data-4"
+    assert records[1][1] == content[1]
 
 
 @pytest.mark.asyncio
