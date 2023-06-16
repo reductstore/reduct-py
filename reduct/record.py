@@ -113,6 +113,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
         1 for header in resp.headers if header.startswith("x-reduct-time-")
     )
     records_count = 0
+    head = resp.method == "HEAD"
 
     for name, value in resp.headers.items():
         if name.startswith("x-reduct-time-"):
@@ -135,7 +136,10 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                 # instead of reading them in the use code with an async interator.
                 # The batched records are small if they are not the last.
                 # The last batched record is read in the async generator in chunks.
-                buffer = await _read_response(resp, content_length)
+                if head:
+                    buffer = b""
+                else:
+                    buffer = await _read_response(resp, content_length)
                 read_func = partial(_read, buffer)
                 read_all_func = partial(_read_all, buffer)
 

@@ -151,15 +151,16 @@ class Bucket:
 
     @asynccontextmanager
     async def read(
-        self, entry_name: str, timestamp: Optional[int] = None
-    ) -> AsyncIterator[Record]:
+        self, entry_name: str, timestamp: Optional[int] = None, head: bool = False
+    ) -> Record:
         """
         Read a record from entry
         Args:
             entry_name: name of entry in the bucket
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
+            head: if True: get only the header of a recod with metadata
         Returns:
-            async context, which generates Records
+            async context with a record
         Raises:
             ReductError: if there is an HTTP error
         Examples:
@@ -168,8 +169,9 @@ class Bucket:
             >>>         data = await record.read_all()
         """
         params = {"ts": int(timestamp)} if timestamp else None
+        method = "HEAD" if head else "GET"
         async with self._http.request(
-            "GET", f"/b/{self.name}/{entry_name}", params=params
+            method, f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
             yield parse_record(resp)
 
@@ -237,7 +239,8 @@ class Bucket:
             ttl: Time To Live of the request in seconds
         Keyword Args:
             include (dict): query records which have all labels from this dict
-            exclude (dict): query records which doesn't have all labels from this dict
+            exclude (dict): query records which doesn't have all labels from this
+            head (bool): if True: get only the header of a recod with metadata
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -250,11 +253,12 @@ class Bucket:
         """
         query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
+        method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
 
         if self._http.api_version and self._http.api_version >= "1.5":
             while not last:
                 async with self._http.request(
-                    "GET", f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
                 ) as resp:
                     if resp.status == 204:
                         return
@@ -264,7 +268,7 @@ class Bucket:
         else:
             while not last:
                 async with self._http.request(
-                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                    method, f"/b/{self.name}/{entry_name}?q={query_id}"
                 ) as resp:
                     if resp.status == 204:
                         return
