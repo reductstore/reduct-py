@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Unordered reading batched records, [PR-82](https://github.com/reductstore/reduct-py/pull/82)
 
+### Changed:
+
+- Minimum Python version is now 3.8, [PR-84](https://github.com/reductstore/reduct-py/pull/84)
+
 ## [1.4.1] - 2023-06-05
 
 ### Fixed:
