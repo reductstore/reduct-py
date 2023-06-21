@@ -40,7 +40,7 @@ test = [
 ]
 
 lint = ["pylint~=2.14"]
-format = ["black~=22.6"]
+format = ["black>=22.6,<24.0"]
 docs = [
     "mkdocs~=1.3",
     "mkdocs-material~=9.0",
