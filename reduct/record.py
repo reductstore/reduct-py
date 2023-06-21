@@ -54,7 +54,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-def _parse_csv_row(row: str):
+def _parse_header_as_csv_row(row: str) -> (int, str, Dict[str, str]):
     items = []
     escaped = ""
     for item in row.split(","):
@@ -70,16 +70,16 @@ def _parse_csv_row(row: str):
         else:
             items.append(item)
 
-    data = {"labels": {}}
-    for item in items:
-        kv_pair = item.split("=", 1)
+    content_length = int(items[0])
+    content_type = items[1]
 
-        if kv_pair[0].startswith("label-"):
-            data["labels"][kv_pair[0][6:]] = kv_pair[1]
-        else:
-            data[kv_pair[0]] = kv_pair[1]
+    labels = {}
+    for label in items[2:]:
+        if "=" in label:
+            name, value = label.split("=", 1)
+            labels[name] = value
 
-    return data
+    return content_length, content_type, labels
 
 
 async def _read(buffer: bytes, n: int):
@@ -118,8 +118,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     for name, value in resp.headers.items():
         if name.startswith("x-reduct-time-"):
             timestamp = int(name[14:])
-            meta_data = _parse_csv_row(value)
-            content_length = int(meta_data["content-length"])
+            content_length, content_type, labels = _parse_header_as_csv_row(value)
 
             last = False
             records_count += 1
@@ -147,8 +146,8 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                 timestamp=timestamp,
                 size=content_length,
                 last=last,
-                content_type=meta_data["content-type"],
-                labels=meta_data["labels"],
+                content_type=content_type,
+                labels=labels,
                 read_all=read_all_func,
                 read=read_func,
             )
