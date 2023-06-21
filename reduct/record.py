@@ -2,7 +2,7 @@
 import asyncio
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, Callable, AsyncIterator, Awaitable
+from typing import Dict, Callable, AsyncIterator, Awaitable, List
 
 from aiohttp import ClientResponse
 
@@ -54,7 +54,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-def _parse_csv_row(row: str):
+def _parse_csv_row(row: str) -> List[str]:
     items = []
     escaped = ""
     for item in row.split(","):
@@ -70,16 +70,7 @@ def _parse_csv_row(row: str):
         else:
             items.append(item)
 
-    data = {"labels": {}}
-    for item in items:
-        kv_pair = item.split("=", 1)
-
-        if kv_pair[0].startswith("label-"):
-            data["labels"][kv_pair[0][6:]] = kv_pair[1]
-        else:
-            data[kv_pair[0]] = kv_pair[1]
-
-    return data
+    return items
 
 
 async def _read(buffer: bytes, n: int):
@@ -119,7 +110,14 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
         if name.startswith("x-reduct-time-"):
             timestamp = int(name[14:])
             meta_data = _parse_csv_row(value)
-            content_length = int(meta_data["content-length"])
+            content_length = int(meta_data[0])
+            content_type = meta_data[1]
+
+            labels = {}
+            for label in meta_data[2:]:
+                if "=" in label:
+                    name, value = label.split("=", 1)
+                    labels[name] = value
 
             last = False
             records_count += 1
@@ -147,8 +145,8 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                 timestamp=timestamp,
                 size=content_length,
                 last=last,
-                content_type=meta_data["content-type"],
-                labels=meta_data["labels"],
+                content_type=content_type,
+                labels=labels,
                 read_all=read_all_func,
                 read=read_func,
             )
