@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for batched records, [PR-78](https://github.com/reductstore/reduct-py/pull/78)
 - `extra_headers` to Client constructor, [PR-81](https://github.com/reductstore/reduct-py/pull/81)
 - `head` option to `Bucket.query` and `Bucket.read` to read only metadata, [PR-83](https://github.com/reductstore/reduct-py/pull/83)
+- `head` option to `Bucket.subscribe`, [PR-87](https://github.com/reductstore/reduct-py/pull/87)
 
 ### Fixed:
 
@@ -20,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 
 - Minimum Python version is now 3.8, [PR-84](https://github.com/reductstore/reduct-py/pull/84)
-- Parse shorter header syntax for batched records, [PR-85](https://github.com/reductstore/reduct-py/pull/85)
+- Parse short header syntax for batched records, [PR-85](https://github.com/reductstore/reduct-py/pull/85)
 
 ## [1.4.1] - 2023-06-05
 
