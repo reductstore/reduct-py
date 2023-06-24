@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 
 - Minimum Python version is now 3.8, [PR-84](https://github.com/reductstore/reduct-py/pull/84)
-- Parse shorter header syntax for batched records, [PR-85](https://github.com/reductstore/reduct-py/pull/85)
+- Parse short header syntax for batched records, [PR-85](https://github.com/reductstore/reduct-py/pull/85)
 
 ## [1.4.1] - 2023-06-05
 

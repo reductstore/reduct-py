@@ -296,6 +296,7 @@ class Bucket:
         Keyword Args:
             include (dict): query records which have all labels from this dict
             exclude (dict): query records which doesn't have all labels from this dict
+            head (bool): if True: get only the header of a recod with metadata
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -310,10 +311,11 @@ class Bucket:
             entry_name, start, None, poll_interval * 2 + 1, continuous=True, **kwargs
         )
 
+        method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
         if self._http.api_version and self._http.api_version >= "1.5":
             while True:
                 async with self._http.request(
-                    "GET", f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
                 ) as resp:
                     if resp.status == 204:
                         await asyncio.sleep(poll_interval)
@@ -324,7 +326,7 @@ class Bucket:
         else:
             while True:
                 async with self._http.request(
-                    "GET", f"/b/{self.name}/{entry_name}?q={query_id}"
+                    method, f"/b/{self.name}/{entry_name}?q={query_id}"
                 ) as resp:
                     if resp.status == 204:
                         await asyncio.sleep(poll_interval)
