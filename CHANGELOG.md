@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2023-06-30
+
 ### Added:
 
 - Support for batched records, [PR-78](https://github.com/reductstore/reduct-py/pull/78)
@@ -150,7 +152,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.5.0...HEAD
+
+[1.5.0]: https://github.com/reduct-storage/reduct-py/compare/v1.4.1...v1.5.0
 
 [1.4.1]: https://github.com/reduct-storage/reduct-py/compare/v1.4.0...v1.4.1
 
