@@ -30,7 +30,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
-dependencies = ["aiohttp~=3.8", "pydantic~=1.9", "deprecation~=2.1"]
+dependencies = ["aiohttp~=3.8", "pydantic>=1.9,<3.0", "deprecation~=2.1"]
 
 [project.optional-dependencies]
 test = [
