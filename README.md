@@ -35,7 +35,7 @@ from reduct import Client, Bucket
 
 async def main():
     # Create a client for interacting with a ReductStore service
-    client = Client("http://localhost:80383")
+    client = Client("http://localhost:8383")
 
     # Create a bucket and store a reference to it in the `bucket` variable
     bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
