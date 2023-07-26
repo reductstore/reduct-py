@@ -17,11 +17,12 @@ class HttpClient:
     FILE_SIZE_FOR_100_CONTINUE = 256_000
 
     def __init__(
-        self,
-        url: str,
-        api_token: Optional[str] = None,
-        timeout: Optional[float] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+            self,
+            url: str,
+            api_token: Optional[str] = None,
+            timeout: Optional[float] = None,
+            extra_headers: Optional[Dict[str, str]] = None,
+            session: Optional[aiohttp.ClientSession] = None,
     ):
         self._url = url + API_PREFIX
         self._api_token = api_token
@@ -33,10 +34,11 @@ class HttpClient:
 
         self._timeout = ClientTimeout(timeout)
         self._api_version = None
+        self._session = session
 
     @asynccontextmanager
     async def request(
-        self, method: str, path: str = "", **kwargs
+            self, method: str, path: str = "", **kwargs
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
 
@@ -62,34 +64,43 @@ class HttpClient:
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
 
-        connector = aiohttp.TCPConnector(force_close=True)
-        async with aiohttp.ClientSession(
-            timeout=self._timeout, connector=connector
-        ) as session:
-            try:
-                async with session.request(
+        if self.session is None:
+            connector = aiohttp.TCPConnector(force_close=True)
+            async with aiohttp.ClientSession(
+                    timeout=self._timeout, connector=connector
+            ) as session:
+                with self._request(expect100, extra_headers, kwargs, method, path, session) as response:
+                    yield response
+        else:
+            with self._request(expect100, extra_headers, kwargs, method, path, self._session) as response:
+                yield response
+
+    @asynccontextmanager
+    async def _request(self, expect100, extra_headers, kwargs, method, path, session):
+        try:
+            async with session.request(
                     method,
                     f"{self._url}{path.strip()}",
                     headers=dict(self._headers, **extra_headers),
                     expect100=expect100,
                     **kwargs,
-                ) as response:
-                    if self._api_version is None:
-                        self._api_version = response.headers.get("x-reduct-api")
+            ) as response:
+                if self._api_version is None:
+                    self._api_version = response.headers.get("x-reduct-api")
 
-                    if response.ok:
-                        yield response
-                    else:
-                        if "x-reduct-error" in response.headers:
-                            raise ReductError(
-                                response.status,
-                                response.headers["x-reduct-error"],
-                            )
-                        raise ReductError(response.status, "Unknown error")
-            except ClientConnectorError:
-                raise ReductError(
-                    599, f"Connection failed, server {self._url} cannot be reached"
-                ) from None
+                if response.ok:
+                    yield response
+                else:
+                    if "x-reduct-error" in response.headers:
+                        raise ReductError(
+                            response.status,
+                            response.headers["x-reduct-error"],
+                        )
+                    raise ReductError(response.status, "Unknown error")
+        except ClientConnectorError:
+            raise ReductError(
+                599, f"Connection failed, server {self._url} cannot be reached"
+            ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
@@ -97,7 +108,7 @@ class HttpClient:
             return await response.read()
 
     async def request_chunked(
-        self, method: str, path: str = "", chunk_size=1024, **kwargs
+            self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """Http request"""
         async with self.request(method, path, **kwargs) as response:

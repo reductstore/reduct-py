@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Optional, List, Dict
 
+from aiohttp import ClientSession
 from pydantic import BaseModel
 
 from reduct.bucket import BucketInfo, BucketSettings, Bucket
@@ -94,11 +95,12 @@ class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
-        self,
-        url: str,
-        api_token: Optional[str] = None,
-        timeout: Optional[float] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+            self,
+            url: str,
+            api_token: Optional[str] = None,
+            timeout: Optional[float] = None,
+            extra_headers: Optional[Dict[str, str]] = None,
+            session: Optional[ClientSession] = None,
     ):
         """
         Constructor
@@ -108,12 +110,19 @@ class Client:
             api_token: API token if the storage uses it for authorization
             timeout: total timeout for connection, request and response in seconds
             extra_headers: extra headers to send with each request
-
+            session: an external aiohttp session to use for requests
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
-        self._http = HttpClient(url.rstrip("/"), api_token, timeout, extra_headers)
+        self._http = HttpClient(url.rstrip("/"), api_token, timeout, extra_headers, session)
+
+    async def __aenter__(self):
+        self._http._session = ClientSession
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._http._session.close()
 
     async def info(self) -> ServerInfo:
         """
@@ -154,10 +163,10 @@ class Client:
         return Bucket(name, self._http)
 
     async def create_bucket(
-        self,
-        name: str,
-        settings: Optional[BucketSettings] = None,
-        exist_ok: bool = False,
+            self,
+            name: str,
+            settings: Optional[BucketSettings] = None,
+            exist_ok: bool = False,
     ) -> Bucket:
         """
         Create a new bucket
