@@ -22,7 +22,7 @@ class HttpClient:
         api_token: Optional[str] = None,
         timeout: Optional[float] = None,
         extra_headers: Optional[Dict[str, str]] = None,
-        session: Optional[aiohttp.ClientSession] = None,
+        **kwargs,
     ):
         self._url = url + API_PREFIX
         self._api_token = api_token
@@ -34,7 +34,7 @@ class HttpClient:
 
         self._timeout = ClientTimeout(timeout)
         self._api_version = None
-        self._session = session
+        self._session = kwargs.pop("session", None)
 
     @asynccontextmanager
     async def request(
@@ -70,25 +70,29 @@ class HttpClient:
                 timeout=self._timeout, connector=connector
             ) as session:
                 async with self._request(
-                    expect100, extra_headers, kwargs, method, path, session
+                    method, path, session, extra_headers, expect100=expect100, **kwargs
                 ) as response:
                     yield response
         else:
             async with self._request(
-                expect100, extra_headers, kwargs, method, path, self._session
+                method,
+                path,
+                self._session,
+                extra_headers,
+                expect100=expect100,
+                **kwargs,
             ) as response:
                 yield response
 
     @asynccontextmanager
     async def _request(
-        self, expect100, extra_headers, kwargs, method, path, session
+        self, method, path, session, extra_headers, **kwargs
     ) -> AsyncIterator[ClientResponse]:
         try:
             async with session.request(
                 method,
                 f"{self._url}{path.strip()}",
                 headers=dict(self._headers, **extra_headers),
-                expect100=expect100,
                 **kwargs,
             ) as response:
                 if self._api_version is None:

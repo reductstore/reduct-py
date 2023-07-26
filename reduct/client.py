@@ -100,7 +100,7 @@ class Client:
         api_token: Optional[str] = None,
         timeout: Optional[float] = None,
         extra_headers: Optional[Dict[str, str]] = None,
-        session: Optional[ClientSession] = None,
+        **kwargs,
     ):
         """
         Constructor
@@ -110,13 +110,14 @@ class Client:
             api_token: API token if the storage uses it for authorization
             timeout: total timeout for connection, request and response in seconds
             extra_headers: extra headers to send with each request
+        Kwargs:
             session: an external aiohttp session to use for requests
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
         self._http = HttpClient(
-            url.rstrip("/"), api_token, timeout, extra_headers, session
+            url.rstrip("/"), api_token, timeout, extra_headers, **kwargs
         )
 
     async def __aenter__(self):
