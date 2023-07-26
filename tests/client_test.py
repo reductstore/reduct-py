@@ -66,12 +66,11 @@ async def test__info(client):
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
-    assert info.defaults.bucket.dict() == {
-        "max_block_size": 64000000,
-        "max_block_records": 1024,
-        "quota_size": 0,
-        "quota_type": QuotaType.NONE,
-    }
+    defaults = info.defaults.bucket.dict()
+    assert defaults["max_block_size"] == 64000000
+    assert defaults["max_block_records"] >= 256  # defaults are different in 1.6.0
+    assert defaults["quota_size"] == 0
+    assert defaults["quota_type"] == QuotaType.NONE
 
 
 @pytest.mark.asyncio
@@ -85,15 +84,10 @@ async def test__list(client, bucket_1, bucket_2):
 
 
 @pytest.mark.asyncio
-async def test__create_bucket_default_settings(bucket_1):
+async def test__create_bucket_default_settings(client, bucket_1):
     """Should create a bucket with default settings"""
     settings = await bucket_1.get_settings()
-    assert settings.dict() == {
-        "max_block_size": 64000000,
-        "max_block_records": 1024,
-        "quota_size": 0,
-        "quota_type": QuotaType.NONE,
-    }
+    assert settings.dict() == (await client.info()).defaults.bucket.dict()
 
 
 @pytest.mark.asyncio
@@ -106,11 +100,13 @@ async def test__creat_bucket_exist_ok(client, bucket_1):
 @pytest.mark.asyncio
 async def test__create_bucket_custom_settings(client):
     """Should create a bucket with custom settings"""
-    bucket = await client.create_bucket("bucket", BucketSettings(max_block_size=10000))
+    bucket = await client.create_bucket(
+        "bucket", BucketSettings(max_block_records=10000)
+    )
     settings = await bucket.get_settings()
     assert settings.dict() == {
-        "max_block_size": 10000,
-        "max_block_records": 1024,
+        "max_block_size": 64000000,
+        "max_block_records": 10000,
         "quota_size": 0,
         "quota_type": QuotaType.NONE,
     }
@@ -227,3 +223,11 @@ async def test__me(client):
         "read": [],
         "write": [],
     }
+
+
+@pytest.mark.asyncio
+async def test__with(url, api_token):
+    """Should create a client with context manager"""
+    async with Client(url, api_token=api_token) as client:
+        bucket = await client.create_bucket("bucket-1", exist_ok=True)
+        await bucket.info()

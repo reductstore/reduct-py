@@ -22,6 +22,7 @@ class HttpClient:
         api_token: Optional[str] = None,
         timeout: Optional[float] = None,
         extra_headers: Optional[Dict[str, str]] = None,
+        **kwargs,
     ):
         self._url = url + API_PREFIX
         self._api_token = api_token
@@ -33,6 +34,7 @@ class HttpClient:
 
         self._timeout = ClientTimeout(timeout)
         self._api_version = None
+        self._session = kwargs.pop("session", None)
 
     @asynccontextmanager
     async def request(
@@ -62,34 +64,53 @@ class HttpClient:
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
 
-        connector = aiohttp.TCPConnector(force_close=True)
-        async with aiohttp.ClientSession(
-            timeout=self._timeout, connector=connector
-        ) as session:
-            try:
-                async with session.request(
-                    method,
-                    f"{self._url}{path.strip()}",
-                    headers=dict(self._headers, **extra_headers),
-                    expect100=expect100,
-                    **kwargs,
+        if self._session is None:
+            connector = aiohttp.TCPConnector(force_close=True)
+            async with aiohttp.ClientSession(
+                timeout=self._timeout, connector=connector
+            ) as session:
+                async with self._request(
+                    method, path, session, extra_headers, expect100=expect100, **kwargs
                 ) as response:
-                    if self._api_version is None:
-                        self._api_version = response.headers.get("x-reduct-api")
+                    yield response
+        else:
+            async with self._request(
+                method,
+                path,
+                self._session,
+                extra_headers,
+                expect100=expect100,
+                **kwargs,
+            ) as response:
+                yield response
 
-                    if response.ok:
-                        yield response
-                    else:
-                        if "x-reduct-error" in response.headers:
-                            raise ReductError(
-                                response.status,
-                                response.headers["x-reduct-error"],
-                            )
-                        raise ReductError(response.status, "Unknown error")
-            except ClientConnectorError:
-                raise ReductError(
-                    599, f"Connection failed, server {self._url} cannot be reached"
-                ) from None
+    @asynccontextmanager
+    async def _request(
+        self, method, path, session, extra_headers, **kwargs
+    ) -> AsyncIterator[ClientResponse]:
+        try:
+            async with session.request(
+                method,
+                f"{self._url}{path.strip()}",
+                headers=dict(self._headers, **extra_headers),
+                **kwargs,
+            ) as response:
+                if self._api_version is None:
+                    self._api_version = response.headers.get("x-reduct-api")
+
+                if response.ok:
+                    yield response
+                else:
+                    if "x-reduct-error" in response.headers:
+                        raise ReductError(
+                            response.status,
+                            response.headers["x-reduct-error"],
+                        )
+                    raise ReductError(response.status, "Unknown error")
+        except ClientConnectorError:
+            raise ReductError(
+                599, f"Connection failed, server {self._url} cannot be reached"
+            ) from None
 
     async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
         """Http request"""
