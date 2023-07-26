@@ -30,11 +30,11 @@ async def test__remove_not_exist(client):
 @pytest.mark.asyncio
 async def test__set_settings(bucket_1):
     """Should set new settings"""
-    await bucket_1.set_settings(BucketSettings(max_block_size=10000))
+    await bucket_1.set_settings(BucketSettings(max_block_records=10000))
     new_settings = await bucket_1.get_settings()
     assert new_settings.dict() == {
-        "max_block_size": 10000,
-        "max_block_records": 1024,
+        "max_block_size": 64000000,
+        "max_block_records": 10000,
         "quota_size": 0,
         "quota_type": QuotaType.NONE,
     }
