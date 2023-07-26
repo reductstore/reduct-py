@@ -64,19 +64,19 @@ class HttpClient:
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
 
-        if self.session is None:
+        if self._session is None:
             connector = aiohttp.TCPConnector(force_close=True)
             async with aiohttp.ClientSession(
                     timeout=self._timeout, connector=connector
             ) as session:
-                with self._request(expect100, extra_headers, kwargs, method, path, session) as response:
+                async with self._request(expect100, extra_headers, kwargs, method, path, session) as response:
                     yield response
         else:
-            with self._request(expect100, extra_headers, kwargs, method, path, self._session) as response:
+            async with self._request(expect100, extra_headers, kwargs, method, path, self._session) as response:
                 yield response
 
     @asynccontextmanager
-    async def _request(self, expect100, extra_headers, kwargs, method, path, session):
+    async def _request(self, expect100, extra_headers, kwargs, method, path, session) -> AsyncIterator[ClientResponse]:
         try:
             async with session.request(
                     method,

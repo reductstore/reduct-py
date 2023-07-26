@@ -118,11 +118,11 @@ class Client:
         self._http = HttpClient(url.rstrip("/"), api_token, timeout, extra_headers, session)
 
     async def __aenter__(self):
-        self._http._session = ClientSession
+        self._http._session = ClientSession(timeout=self._http._timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self._http._session.close()
+        return await self._http._session.close()
 
     async def info(self) -> ServerInfo:
         """

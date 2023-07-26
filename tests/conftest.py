@@ -1,5 +1,6 @@
 """Common fixtures"""
 import os
+from typing import Optional
 
 import pytest
 import pytest_asyncio
@@ -22,9 +23,13 @@ def _url() -> str:
     return "http://127.0.0.1:8383"
 
 
-@pytest_asyncio.fixture(name="client")
-async def _make_client(url):
+@pytest.fixture(name="api_token")
+def _token() -> Optional[str]:
     api_token = os.getenv("RS_API_TOKEN", default=None)
+    return api_token
+
+@pytest_asyncio.fixture(name="client")
+async def _make_client(url, api_token):
     client = Client(url, api_token=api_token)
     buckets = await client.list()
     for info in buckets:

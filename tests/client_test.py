@@ -227,3 +227,10 @@ async def test__me(client):
         "read": [],
         "write": [],
     }
+
+
+@pytest.mark.asyncio
+async def test__with(url, api_token):
+    async with Client(url, api_token=api_token) as client:
+        bucket = await client.create_bucket("bucket-1", exist_ok=True)
+        await bucket.info()
