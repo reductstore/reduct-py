@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- Add external session and context manager to Client, [PR-90](https://github.com/reductstore/reduct-py/pull/90)
+
 ## [1.5.0] - 2023-06-30
 
 ### Added:
