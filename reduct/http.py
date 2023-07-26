@@ -17,12 +17,12 @@ class HttpClient:
     FILE_SIZE_FOR_100_CONTINUE = 256_000
 
     def __init__(
-            self,
-            url: str,
-            api_token: Optional[str] = None,
-            timeout: Optional[float] = None,
-            extra_headers: Optional[Dict[str, str]] = None,
-            session: Optional[aiohttp.ClientSession] = None,
+        self,
+        url: str,
+        api_token: Optional[str] = None,
+        timeout: Optional[float] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
+        session: Optional[aiohttp.ClientSession] = None,
     ):
         self._url = url + API_PREFIX
         self._api_token = api_token
@@ -38,7 +38,7 @@ class HttpClient:
 
     @asynccontextmanager
     async def request(
-            self, method: str, path: str = "", **kwargs
+        self, method: str, path: str = "", **kwargs
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
 
@@ -67,23 +67,29 @@ class HttpClient:
         if self._session is None:
             connector = aiohttp.TCPConnector(force_close=True)
             async with aiohttp.ClientSession(
-                    timeout=self._timeout, connector=connector
+                timeout=self._timeout, connector=connector
             ) as session:
-                async with self._request(expect100, extra_headers, kwargs, method, path, session) as response:
+                async with self._request(
+                    expect100, extra_headers, kwargs, method, path, session
+                ) as response:
                     yield response
         else:
-            async with self._request(expect100, extra_headers, kwargs, method, path, self._session) as response:
+            async with self._request(
+                expect100, extra_headers, kwargs, method, path, self._session
+            ) as response:
                 yield response
 
     @asynccontextmanager
-    async def _request(self, expect100, extra_headers, kwargs, method, path, session) -> AsyncIterator[ClientResponse]:
+    async def _request(
+        self, expect100, extra_headers, kwargs, method, path, session
+    ) -> AsyncIterator[ClientResponse]:
         try:
             async with session.request(
-                    method,
-                    f"{self._url}{path.strip()}",
-                    headers=dict(self._headers, **extra_headers),
-                    expect100=expect100,
-                    **kwargs,
+                method,
+                f"{self._url}{path.strip()}",
+                headers=dict(self._headers, **extra_headers),
+                expect100=expect100,
+                **kwargs,
             ) as response:
                 if self._api_version is None:
                     self._api_version = response.headers.get("x-reduct-api")
@@ -108,7 +114,7 @@ class HttpClient:
             return await response.read()
 
     async def request_chunked(
-            self, method: str, path: str = "", chunk_size=1024, **kwargs
+        self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """Http request"""
         async with self.request(method, path, **kwargs) as response:

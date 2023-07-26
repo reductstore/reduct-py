@@ -28,6 +28,7 @@ def _token() -> Optional[str]:
     api_token = os.getenv("RS_API_TOKEN", default=None)
     return api_token
 
+
 @pytest_asyncio.fixture(name="client")
 async def _make_client(url, api_token):
     client = Client(url, api_token=api_token)

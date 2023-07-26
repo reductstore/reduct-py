@@ -95,12 +95,12 @@ class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
-            self,
-            url: str,
-            api_token: Optional[str] = None,
-            timeout: Optional[float] = None,
-            extra_headers: Optional[Dict[str, str]] = None,
-            session: Optional[ClientSession] = None,
+        self,
+        url: str,
+        api_token: Optional[str] = None,
+        timeout: Optional[float] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
+        session: Optional[ClientSession] = None,
     ):
         """
         Constructor
@@ -115,7 +115,9 @@ class Client:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
         """
-        self._http = HttpClient(url.rstrip("/"), api_token, timeout, extra_headers, session)
+        self._http = HttpClient(
+            url.rstrip("/"), api_token, timeout, extra_headers, session
+        )
 
     async def __aenter__(self):
         self._http._session = ClientSession(timeout=self._http._timeout)
@@ -163,10 +165,10 @@ class Client:
         return Bucket(name, self._http)
 
     async def create_bucket(
-            self,
-            name: str,
-            settings: Optional[BucketSettings] = None,
-            exist_ok: bool = False,
+        self,
+        name: str,
+        settings: Optional[BucketSettings] = None,
+        exist_ok: bool = False,
     ) -> Bucket:
         """
         Create a new bucket
