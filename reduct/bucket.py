@@ -149,6 +149,16 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
 
+    async def remove_entry(self, entry_name: str):
+        """
+        Remove entry from bucket
+        Args:
+            entry_name: name of entry
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
+
     @asynccontextmanager
     async def read(
         self, entry_name: str, timestamp: Optional[int] = None, head: bool = False

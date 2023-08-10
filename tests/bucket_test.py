@@ -28,6 +28,13 @@ async def test__remove_not_exist(client):
 
 
 @pytest.mark.asyncio
+async def test__remove_entries(bucket_1):
+    """Should remove all entries in a bucket"""
+    await bucket_1.remove_entry("entry-2")
+    assert "entry-2" not in [entry.name for entry in await bucket_1.get_entry_list()]
+
+
+@pytest.mark.asyncio
 async def test__set_settings(bucket_1):
     """Should set new settings"""
     await bucket_1.set_settings(BucketSettings(max_block_records=10000))
