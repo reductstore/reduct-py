@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added:
 
-- Add external session and context manager to Client, [PR-90](https://github.com/reductstore/reduct-py/pull/90)
+- External session and context manager to Client, [PR-90](https://github.com/reductstore/reduct-py/pull/90)
+- `Bucket.remove_entry` method and `limit` kwarg to `Bucket.query`, [PR-92](https://github.com/reductstore/reduct-py/pull/92)
 
 ## [1.5.0] - 2023-06-30
 
