@@ -7,6 +7,7 @@ from typing import List, Tuple
 import pytest
 
 from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
+from tests.conftest import requires_api
 
 
 @pytest.mark.asyncio
@@ -28,6 +29,7 @@ async def test__remove_not_exist(client):
 
 
 @pytest.mark.asyncio
+@requires_api("1.6")
 async def test__remove_entries(bucket_1):
     """Should remove all entries in a bucket"""
     await bucket_1.remove_entry("entry-2")
