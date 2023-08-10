@@ -7,6 +7,7 @@ from typing import List, Tuple
 import pytest
 
 from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
+from tests.conftest import requires_api
 
 
 @pytest.mark.asyncio
@@ -25,6 +26,14 @@ async def test__remove_not_exist(client):
     await bucket.remove()
     with pytest.raises(ReductError):
         await bucket.remove()
+
+
+@pytest.mark.asyncio
+@requires_api("1.6")
+async def test__remove_entry(bucket_1):
+    """Should remove an entry in a bucket"""
+    await bucket_1.remove_entry("entry-2")
+    assert "entry-2" not in [entry.name for entry in await bucket_1.get_entry_list()]
 
 
 @pytest.mark.asyncio
@@ -258,6 +267,17 @@ async def test_query_records_last(bucket_1):
     ]
     assert len(records) == 1
     assert records[0].timestamp == 4_000_000
+
+
+@pytest.mark.asyncio
+@requires_api("1.6")
+async def test_query_records_limit(bucket_1):
+    """Should query records for until last record"""
+    records: List[Record] = [
+        record async for record in bucket_1.query("entry-1", start=0, limit=1)
+    ]
+    assert len(records) == 1
+    assert records[0].timestamp == 1000000
 
 
 @pytest.mark.asyncio

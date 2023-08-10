@@ -4,6 +4,7 @@ from typing import Optional
 
 import pytest
 import pytest_asyncio
+import requests
 
 from reduct import Client, Bucket
 
@@ -15,6 +16,17 @@ def requires_env(key):
     return pytest.mark.skipif(
         env is None or env == "",
         reason=f"Not suitable environment {key} for current test",
+    )
+
+
+def requires_api(version):
+    """Skip test if API version is not supported"""
+    current_version = requests.get("http://127.0.0.1:8383/info", timeout=1.0).headers[
+        "x-reduct-api"
+    ]
+    return pytest.mark.skipif(
+        version > current_version,
+        reason=f"Not suitable API version {current_version} for current test",
     )
 
 

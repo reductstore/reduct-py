@@ -149,6 +149,16 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
 
+    async def remove_entry(self, entry_name: str):
+        """
+        Remove entry from bucket
+        Args:
+            entry_name: name of entry
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
+
     @asynccontextmanager
     async def read(
         self, entry_name: str, timestamp: Optional[int] = None, head: bool = False
@@ -241,6 +251,7 @@ class Bucket:
             include (dict): query records which have all labels from this dict
             exclude (dict): query records which doesn't have all labels from this
             head (bool): if True: get only the header of a recod with metadata
+            limit (int): limit the number of records
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -352,6 +363,9 @@ class Bucket:
 
         if "continuous" in kwargs:
             params["continuous"] = "true" if kwargs["continuous"] else "false"
+
+        if "limit" in kwargs:
+            params["limit"] = kwargs["limit"]
 
         url = f"/b/{self.name}/{entry_name}"
         data = await self._http.request_all(
