@@ -21,7 +21,9 @@ def requires_env(key):
 
 def requires_api(version):
     """Skip test if API version is not supported"""
-    current_version = requests.get("http://127.0.0.1:8383/info").headers["x-reduct-api"]
+    current_version = requests.get("http://127.0.0.1:8383/info", timeout=1.0).headers[
+        "x-reduct-api"
+    ]
     return pytest.mark.skipif(
         version > current_version,
         reason=f"Not suitable API version {current_version} for current test",
