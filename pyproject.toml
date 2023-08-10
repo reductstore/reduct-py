@@ -37,6 +37,7 @@ test = [
     "pytest~=7.1",
     "pytest-mock~=3.10",
     "pytest-asyncio~=0.18"
+    "requests~=2.26",
 ]
 
 lint = ["pylint~=2.14"]
