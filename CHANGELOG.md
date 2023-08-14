@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2023-08-15
+
 ### Added:
 
 - External session and context manager to Client, [PR-90](https://github.com/reductstore/reduct-py/pull/90)
@@ -157,7 +159,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.6.0...HEAD
+
+[1.6.0]: https://github.com/reduct-storage/reduct-py/compare/v1.5.0...v1.6.0
 
 [1.5.0]: https://github.com/reduct-storage/reduct-py/compare/v1.4.1...v1.5.0
 
