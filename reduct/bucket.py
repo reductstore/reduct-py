@@ -27,16 +27,16 @@ class QuotaType(Enum):
 class BucketSettings(BaseModel):
     """Configuration for a bucket"""
 
-    max_block_size: Optional[int]
+    max_block_size: Optional[int] = None
     """max block size in bytes"""
 
-    max_block_records: Optional[int]
+    max_block_records: Optional[int] = None
     """max number of records in a block"""
 
-    quota_type: Optional[QuotaType]
+    quota_type: Optional[QuotaType] = None
     """quota type"""
 
-    quota_size: Optional[int]
+    quota_size: Optional[int] = None
     """quota size in bytes"""
 
 
