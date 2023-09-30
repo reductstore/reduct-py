@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed:
+
+- Update dependencies and migrate to Pydantic v2, [PR-94](https://github.com/reductstore/reduct-py/pull/94)
+
 ## [1.6.0] - 2023-08-15
 
 ### Added:
