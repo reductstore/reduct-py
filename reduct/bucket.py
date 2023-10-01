@@ -58,6 +58,9 @@ class BucketInfo(BaseModel):
     latest_record: int
     """UNIX timestamp of the latest record in microseconds"""
 
+    is_provisioned: bool = False
+    """bucket is provisioned amd you can't remove it or change its settings"""
+
 
 class EntryInfo(BaseModel):
     """Entry of bucket"""

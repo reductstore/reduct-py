@@ -70,6 +70,9 @@ class Token(BaseModel):
     created_at: datetime
     """creation time of token"""
 
+    is_provisioned: bool = False
+    """token is provisioned and can't be deleted or changed"""
+
 
 class FullTokenInfo(Token):
     """Full information about token with permissions"""

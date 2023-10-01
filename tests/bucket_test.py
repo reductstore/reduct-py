@@ -59,6 +59,7 @@ async def test__get_info(bucket_2):
         "name": "bucket-2",
         "oldest_record": 5000000,
         "size": 22,
+        "is_provisioned": False,
     }
 
 
