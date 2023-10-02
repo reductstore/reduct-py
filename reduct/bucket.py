@@ -259,10 +259,10 @@ class Bucket:
         """
 
         record_headers = {}
-        body = b""
+        content_length = 0
         for time_stamp, record in batch.items():
+            content_length += record.size
             header = f"{record.size},{record.content_type}"
-            body += record.data
             for label, value in record.labels.items():
                 if "," in label or "=" in label:
                     header += f',{label}="{value}"'
@@ -271,11 +271,16 @@ class Bucket:
 
             record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
 
+        async def iter_body():
+            for _, rec in batch.items():
+                yield await rec.read_all()
+
         _, headers = await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}/batch",
-            data=body,
-            headers=record_headers,
+            data=iter_body(),
+            extra_headers=record_headers,
+            content_length=content_length,
         )
 
         errors = {}

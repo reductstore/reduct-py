@@ -23,3 +23,6 @@ class ReductError(Exception):
     def message(self):
         """Return error message"""
         return self._message
+
+    def __eq__(self, other: "ReductError"):
+        return self._code == other._code and self._message == other._message

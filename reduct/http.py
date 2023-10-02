@@ -42,7 +42,7 @@ class HttpClient:
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
 
-        extra_headers = {}
+        extra_headers = kwargs.pop("extra_headers", {})
         expect100 = False
 
         if "content_length" in kwargs:
@@ -120,6 +120,10 @@ class HttpClient:
             method (str): HTTP method
             path (str, optional): Path. Defaults to "".
             **kwargs: kwargs for aiohttp.request
+        Kwargs:
+            data (bytes | AsyncIterator[bytes): request body
+            extra_headers (Dict[str, str]): extra headers
+            content_length (int): content length
         Returns:
             bytes: response body
             Dict[str, str]: response headers

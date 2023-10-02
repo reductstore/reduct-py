@@ -51,12 +51,21 @@ class Batch:
         if labels is None:
             labels = {}
 
-        record = Record()
-        record.timestamp = timestamp
-        record.size = len(data)
-        record.content_type = content_type
-        record.labels = labels
-        record.read_all = lambda: data
+        def read(n: int) -> AsyncIterator[bytes]:
+            raise NotImplementedError()
+
+        async def read_all():
+            return data
+
+        record = Record(
+            timestamp=timestamp,
+            size=len(data),
+            content_type=content_type,
+            labels=labels,
+            read_all=read_all,
+            read=read,
+            last=False,
+        )
 
         self._records[timestamp] = record
 
