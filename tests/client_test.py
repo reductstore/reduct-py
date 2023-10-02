@@ -174,6 +174,7 @@ async def test__get_token(client, with_token):
     """Should get a token by name"""
     token = await client.get_token(with_token)
     assert token.name == with_token
+    assert not token.is_provisioned
     assert token.permissions.dict() == {
         "full_access": True,
         "read": ["bucket-1"],

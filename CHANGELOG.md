@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Added:
+
+- Support for ReductStore HTTP API v1.7, see `Bucket.write_batch` method, [PR-95](https://github.com/reductstore/reduct-py/pull/95)
+
 ### Changed:
 
 - Update dependencies and migrate to Pydantic v2, [PR-94](https://github.com/reductstore/reduct-py/pull/94)

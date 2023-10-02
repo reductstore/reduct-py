@@ -42,7 +42,7 @@ class HttpClient:
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
 
-        extra_headers = {}
+        extra_headers = kwargs.pop("extra_headers", {})
         expect100 = False
 
         if "content_length" in kwargs:
@@ -112,10 +112,26 @@ class HttpClient:
                 599, f"Connection failed, server {self._url} cannot be reached"
             ) from None
 
-    async def request_all(self, method: str, path: str = "", **kwargs) -> bytes:
-        """Http request"""
+    async def request_all(
+        self, method: str, path: str = "", **kwargs
+    ) -> (bytes, Dict[str, str]):
+        """Http request
+        Args:
+            method (str): HTTP method
+            path (str, optional): Path. Defaults to "".
+            **kwargs: kwargs for aiohttp.request
+        Kwargs:
+            data (bytes | AsyncIterator[bytes): request body
+            extra_headers (Dict[str, str]): extra headers
+            content_length (int): content length
+        Returns:
+            bytes: response body
+            Dict[str, str]: response headers
+        Raises:
+            ReductError: if request failed
+        """
         async with self.request(method, path, **kwargs) as response:
-            return await response.read()
+            return await response.read(), response.headers
 
     async def request_chunked(
         self, method: str, path: str = "", chunk_size=1024, **kwargs

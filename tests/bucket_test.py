@@ -7,6 +7,7 @@ from typing import List, Tuple
 import pytest
 
 from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
+from reduct.record import Batch
 from tests.conftest import requires_api
 
 
@@ -59,6 +60,7 @@ async def test__get_info(bucket_2):
         "name": "bucket-2",
         "oldest_record": 5000000,
         "size": 22,
+        "is_provisioned": False,
     }
 
 
@@ -381,3 +383,60 @@ async def test_read_batched_records_in_random_order_chunks(bucket_1, size):
 
             data = await read_chunks(records[2])
             assert data == (b"3" * size)
+
+
+@requires_api("1.7")
+@pytest.mark.asyncio
+async def test_batched_write(bucket_1):
+    """Should write batched records"""
+    batch = Batch()
+    batch.add(1000, b"Hey,", "plain/text", {"label1": "value1"})
+    batch.add(2000, b"how", "plain/text", {"label2": "value2"})
+    batch.add(
+        3000,
+        b"are",
+        "plain/text",
+    )
+    batch.add(4000, b"you?")
+
+    await bucket_1.write_batch("entry-3", batch)
+
+    records = [record async for record in bucket_1.query("entry-3")]
+    frase = b" ".join(
+        [await record.read_all() async for record in bucket_1.query("entry-3")]
+    )
+    assert len(records) == 4
+
+    assert records[0].timestamp == 1000
+    assert records[0].content_type == "plain/text"
+    assert records[0].labels == {"label1": "value1"}
+
+    assert records[1].timestamp == 2000
+    assert records[1].content_type == "plain/text"
+    assert records[1].labels == {"label2": "value2"}
+
+    assert records[2].timestamp == 3000
+    assert records[2].content_type == "plain/text"
+    assert records[2].labels == {}
+
+    assert records[3].timestamp == 4000
+    assert records[3].content_type == "application/octet-stream"
+    assert records[3].labels == {}
+
+    assert frase == b"Hey, how are you?"
+
+
+@requires_api("1.7")
+@pytest.mark.asyncio
+async def test_batched_write_with_errors(bucket_1):
+    """Should write batched records and return errors"""
+
+    await bucket_1.write("entry-3", b"1", timestamp=1)
+
+    batch = Batch()
+    batch.add(1, b"new")
+    batch.add(2, b"reocrd")
+
+    errors = await bucket_1.write_batch("entry-3", batch)
+    assert len(errors) == 1
+    assert errors[1] == ReductError(409, "A record with timestamp 1 already exists")
