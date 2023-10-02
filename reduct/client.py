@@ -140,7 +140,8 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return ServerInfo.parse_raw(await self._http.request_all("GET", "/info"))
+        body, _ = await self._http.request_all("GET", "/info")
+        return ServerInfo.model_validate_json(body)
 
     async def list(self) -> List[BucketInfo]:
         """
@@ -151,9 +152,8 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return BucketList.parse_raw(
-            await self._http.request_all("GET", "/list")
-        ).buckets
+        body, _ = await self._http.request_all("GET", "/list")
+        return BucketList.model_validate_json(body).buckets
 
     async def get_bucket(self, name: str) -> Bucket:
         """
@@ -187,7 +187,7 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        data = settings.json() if settings else None
+        data = settings.model_dump_json() if settings else None
         try:
             await self._http.request_all("POST", f"/b/{name}", data=data)
         except ReductError as err:
@@ -204,9 +204,8 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return TokenList.parse_raw(
-            await self._http.request_all("GET", "/tokens")
-        ).tokens
+        body, _ = await self._http.request_all("GET", "/tokens")
+        return TokenList.model_validate_json(body).tokens
 
     async def get_token(self, name: str) -> FullTokenInfo:
         """
@@ -218,9 +217,8 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return FullTokenInfo.parse_raw(
-            await self._http.request_all("GET", f"/tokens/{name}")
-        )
+        body, _ = await self._http.request_all("GET", f"/tokens/{name}")
+        return FullTokenInfo.model_validate_json(body)
 
     async def create_token(self, name: str, permissions: Permissions) -> str:
         """
@@ -233,11 +231,10 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return TokenCreateResponse.parse_raw(
-            await self._http.request_all(
-                "POST", f"/tokens/{name}", data=permissions.json()
-            )
-        ).value
+        body, _ = await self._http.request_all(
+            "POST", f"/tokens/{name}", data=permissions.model_dump_json()
+        )
+        return TokenCreateResponse.model_validate_json(body).value
 
     async def remove_token(self, name: str) -> None:
         """
@@ -257,4 +254,5 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
-        return FullTokenInfo.parse_raw(await self._http.request_all("GET", "/me"))
+        body, _ = await self._http.request_all("GET", "/me")
+        return FullTokenInfo.model_validate_json(body)

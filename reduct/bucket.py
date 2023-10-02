@@ -9,12 +9,21 @@ from typing import (
     List,
     AsyncIterator,
     Union,
+    Dict,
 )
 
 from pydantic import BaseModel
 
+from reduct.error import ReductError
 from reduct.http import HttpClient
-from reduct.record import Record, parse_batched_records, parse_record
+from reduct.record import (
+    Record,
+    parse_batched_records,
+    parse_record,
+    Batch,
+    TIME_PREFIX,
+    ERROR_PREFIX,
+)
 
 
 class QuotaType(Enum):
@@ -234,6 +243,48 @@ class Bucket:
             **kwargs,
         )
 
+    async def write_batch(
+        self, entry_name: str, batch: Batch
+    ) -> Dict[int, ReductError]:
+        """
+        Write a batch of records to entries in a sole request
+
+        Args:
+            entry_name: name of entry in the bucket
+            batch: list of records
+        Returns:
+            dict of errors with timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP  or communication error
+        """
+
+        record_headers = {}
+        body = b""
+        for time_stamp, record in batch.items():
+            header = f"{record.size},{record.content_type}"
+            body += record.data
+            for label, value in record.labels.items():
+                if "," in label or "=" in label:
+                    header += f',{label}="{value}"'
+                else:
+                    header += f",{label}={value}"
+
+            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
+
+        _, headers = await self._http.request_all(
+            "POST",
+            f"/b/{self.name}/{entry_name}/batch",
+            data=body,
+            headers=record_headers,
+        )
+
+        errors = {}
+        for key, value in headers.items():
+            if key.startswith(ERROR_PREFIX):
+                errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
+
+        return errors
+
     async def query(
         self,
         entry_name: str,
@@ -293,9 +344,8 @@ class Bucket:
         """
         Get full information about bucket (settings, statistics, entries)
         """
-        return BucketFullInfo.parse_raw(
-            await self._http.request_all("GET", f"/b/{self.name}")
-        )
+        body, _ = await self._http.request_all("GET", f"/b/{self.name}")
+        return BucketFullInfo.model_validate_json(body)
 
     async def subscribe(
         self, entry_name: str, start: Optional[int] = None, poll_interval=1.0, **kwargs
@@ -371,7 +421,7 @@ class Bucket:
             params["limit"] = kwargs["limit"]
 
         url = f"/b/{self.name}/{entry_name}"
-        data = await self._http.request_all(
+        data, _ = await self._http.request_all(
             "GET",
             f"{url}/q",
             params=params,

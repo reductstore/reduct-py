@@ -2,7 +2,7 @@
 import asyncio
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, Callable, AsyncIterator, Awaitable
+from typing import Dict, Callable, AsyncIterator, Awaitable, Optional, List, Tuple
 
 from aiohttp import ClientResponse
 
@@ -28,7 +28,46 @@ class Record:
     """labels of record"""
 
 
+class Batch:
+    def __init__(self):
+        self._records: Dict[int, Record] = {}
+
+    def add(
+        self,
+        timestamp: int,
+        data: bytes,
+        content_type: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
+    ):
+        """Add record to batch
+        Args:
+            timestamp: UNIX timestamp in microseconds
+            data: data to store
+            content_type: content type of data (default: application/octet-stream)
+            labels: labels of record (default: {})
+        """
+        if content_type is None:
+            content_type = "application/octet-stream"
+        if labels is None:
+            labels = {}
+
+        record = Record()
+        record.timestamp = timestamp
+        record.size = len(data)
+        record.content_type = content_type
+        record.labels = labels
+        record.read_all = lambda: data
+
+        self._records[timestamp] = record
+
+    def items(self) -> List[Tuple[int, Record]]:
+        """Get records as dict items"""
+        return sorted(self._records.items())
+
+
 LABEL_PREFIX = "x-reduct-label-"
+TIME_PREFIX = "x-reduct-time-"
+ERROR_PREFIX = "x-reduct-error-"
 CHUNK_SIZE = 512_000
 
 
@@ -109,14 +148,12 @@ async def _read_all(buffer):
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
-    records_total = sum(
-        1 for header in resp.headers if header.startswith("x-reduct-time-")
-    )
+    records_total = sum(1 for header in resp.headers if header.startswith(TIME_PREFIX))
     records_count = 0
     head = resp.method == "HEAD"
 
     for name, value in resp.headers.items():
-        if name.startswith("x-reduct-time-"):
+        if name.startswith(TIME_PREFIX):
             timestamp = int(name[14:])
             content_length, content_type, labels = _parse_header_as_csv_row(value)
 
