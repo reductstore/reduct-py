@@ -11,6 +11,7 @@ class ReductError(Exception):
 
     @staticmethod
     def from_header(header: str) -> "ReductError":
+        """Create ReductError from HTTP header with status code and message (batched write)"""
         status_code, message = header.split(",", 1)
         return ReductError(int(status_code), message)
 

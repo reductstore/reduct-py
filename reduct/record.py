@@ -29,6 +29,8 @@ class Record:
 
 
 class Batch:
+    """Batch of records to write them in one request"""
+
     def __init__(self):
         self._records: Dict[int, Record] = {}
 
