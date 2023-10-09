@@ -1,5 +1,5 @@
 """Reduct module"""
-from reduct.record import Record
+from reduct.record import Record, Batch
 
 from reduct.bucket import (
     QuotaType,
