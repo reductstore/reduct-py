@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2023-10-09
+
 ### Fix:
 
 - `Batch` in `__init__.py`, [PR-97](https://github.com/reductstore/reduct-py/pull/97)
@@ -173,7 +175,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.7.1...HEAD
+
+[1.7.1]: https://github.com/reduct-storage/reduct-py/compare/v1.7.0...v1.7.1
 
 [1.7.0]: https://github.com/reduct-storage/reduct-py/compare/v1.6.0...v1.7.0
 
