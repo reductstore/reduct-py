@@ -59,7 +59,7 @@ async def test__get_info(bucket_2):
         "latest_record": 6000000,
         "name": "bucket-2",
         "oldest_record": 5000000,
-        "size": 22,
+        "size": 88,
         "is_provisioned": False,
     }
 
@@ -84,7 +84,7 @@ async def test__get_entries(bucket_1):
         "name": "entry-1",
         "oldest_record": 1000000,
         "record_count": 2,
-        "size": 22,
+        "size": 88,
     }
 
     assert entries[1].dict() == {
@@ -93,7 +93,7 @@ async def test__get_entries(bucket_1):
         "name": "entry-2",
         "oldest_record": 3000000,
         "record_count": 2,
-        "size": 22,
+        "size": 88,
     }
 
 

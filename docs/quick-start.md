@@ -122,5 +122,5 @@ async for record in bucket.query("entry-1", start=start_ts, stop=stop_ts):
 ## Next Steps
 
 You can find more detailed documentation and examples in [the Reference API section](./api/bucket.md). You can also
-refer to the [ReductStore HTTP API](https://docs.reduct.store/http-api) documentation for a complete reference
+refer to the [ReductStore HTTP API](https://reduct.store/docs/http-api) documentation for a complete reference
 of the available API calls.
