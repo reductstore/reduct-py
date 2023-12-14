@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed:
 
 - docs: update link to new website, [PR-98](https://github.com/reductstore/reduct-py/pull/98)
+- Optimized batch read for better memory efficiency. [PR-99](https://github.com/reductstore/reduct-py/pull/99)
 
 ## [1.7.1] - 2023-10-09
 
