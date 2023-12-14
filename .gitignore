@@ -3,3 +3,5 @@ reduct/VERSION
 *.egg-info
 .venv
 .gitignore
+*.pyc
+.vscode
