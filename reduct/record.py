@@ -204,14 +204,14 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
 
 
 async def _read_response(resp, content_length):
-    buffer = b""
+    chunks = []
     count = 0
     while True:
         n = min(CHUNK_SIZE, content_length - count)
         chunk = await resp.content.read(n)
-        buffer += chunk
+        chunks.append(chunk)
         count += len(chunk)
 
         if count == content_length:
             break
-    return buffer
+    return b"".join(chunks)
