@@ -8,6 +8,7 @@ nav:
   - Tutorials:
       - Quick Start: docs/quick-start.md
       - Subscribing: docs/subscribing.md
+      - Replications: docs/replication.md
   - API Reference:
       - Client: docs/api/client.md
       - Bucket: docs/api/bucket.md
