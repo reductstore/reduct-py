@@ -11,7 +11,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
 
@@ -25,7 +25,7 @@ jobs:
     needs: format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip pipx
 
@@ -41,11 +41,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip pipx
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
           name: package
@@ -73,7 +73,7 @@ jobs:
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
           name: package
@@ -112,7 +112,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
         with:
           name: package
@@ -143,9 +143,9 @@ jobs:
 
     if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
     steps:
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: package
           path: ./dist
