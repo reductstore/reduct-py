@@ -94,6 +94,73 @@ class TokenCreateResponse(BaseModel):
     """token for authentication"""
 
 
+class ReplicationInfo(BaseModel):
+    """Replication information"""
+
+    name: str
+    is_provisioned: bool
+    is_active: bool
+    pending_records: int
+
+
+class ReplicationList(BaseModel):
+    """List of replications"""
+
+    replications: List[ReplicationInfo]
+
+
+class ReplicationDiagnosticsError(BaseModel):
+    """Error information for replication"""
+
+    count: int
+    last_message: str
+
+
+class ReplicationDiagnosticsDetail(BaseModel):
+    """Diagnostics information for replication"""
+
+    ok: int
+    errored: int
+    errors: Dict[int, ReplicationDiagnosticsError]
+
+
+class ReplicationDiagnostics(BaseModel):
+    """Detailed diagnostics for replication"""
+
+    hourly: ReplicationDiagnosticsDetail
+
+
+class ReplicationSettingsDetail(BaseModel):
+    """Settings for replication"""
+
+    src_bucket: str
+    dst_bucket: str
+    dst_host: str
+    entries: List[str]
+    include: Dict[str, str]
+    exclude: Dict[str, str]
+
+
+class ReplicationDetailInfo(BaseModel):
+    """Complete information about a replication"""
+
+    diagnostics: ReplicationDiagnostics
+    info: ReplicationInfo
+    settings: ReplicationSettingsDetail
+
+
+class ReplicationSettings(BaseModel):
+    """Settings for creating a replication"""
+
+    src_bucket: str
+    dst_bucket: str
+    dst_host: str
+    dst_token: str = ""
+    entries: List[str] = []
+    include: Dict[str, str] = {}
+    exclude: Dict[str, str] = {}
+
+
 class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
@@ -256,3 +323,73 @@ class Client:
         """
         body, _ = await self._http.request_all("GET", "/me")
         return FullTokenInfo.model_validate_json(body)
+
+    async def get_replications(self) -> List[ReplicationInfo]:
+        """
+        Get a list of replications
+        Returns:
+            List[ReplicationInfo]: List of replications with their statuses
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        body, _ = await self._http.request_all("GET", "/replications")
+        return ReplicationList.model_validate_json(body).replications
+
+    async def get_replication_detail(
+        self, replication_name: str
+    ) -> ReplicationDetailInfo:
+        """
+        Get detailed information about a replication
+        Args:
+            replication_name: Name of the replication to show details
+        Returns:
+            ReplicationDetailInfo: Detailed information about the replication
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        body, _ = await self._http.request_all(
+            "GET", f"/replications/{replication_name}"
+        )
+        return ReplicationDetailInfo.model_validate_json(body)
+
+    async def create_replication(
+        self, replication_name: str, settings: ReplicationSettings
+    ) -> None:
+        """
+        Create a new replication
+        Args:
+            replication_name: Name of the new replication
+            settings: Settings for the new replication
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = settings.model_dump_json()
+        await self._http.request_all(
+            "POST", f"/replications/{replication_name}", data=data
+        )
+
+    async def update_replication(
+        self, replication_name: str, settings: ReplicationSettings
+    ) -> None:
+        """
+        Update an existing replication
+        Args:
+            replication_name: Name of the replication to update
+            settings: New settings for the replication
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = settings.model_dump_json()
+        await self._http.request_all(
+            "PUT", f"/replications/{replication_name}", data=data
+        )
+
+    async def delete_replication(self, replication_name: str) -> None:
+        """
+        Delete a replication
+        Args:
+            replication_name: Name of the replication to delete
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all("DELETE", f"/replications/{replication_name}")
