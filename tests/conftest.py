@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 import requests
 
-from reduct import Client, Bucket
+from reduct import Client, Bucket, ReplicationSettings
 
 
 def requires_env(key):
@@ -74,3 +74,41 @@ async def _bucket_2(client) -> Bucket:
     await bucket.write("entry-1", b"some-data-2", timestamp=6_000_000)
     yield bucket
     await bucket.remove()
+
+
+@pytest_asyncio.fixture(name="replication_1")
+async def _replication_1(client) -> str:
+    replication_name = "replication-1"
+    replication_settings = ReplicationSettings(
+        src_bucket="bucket-1",
+        dst_bucket="bucket-2",
+        dst_host="http://127.0.0.1:8383",
+    )
+    await client.create_replication(replication_name, replication_settings)
+    yield replication_name
+    await client.delete_replication(replication_name)
+
+
+@pytest_asyncio.fixture(name="replication_2")
+async def _replication_2(client) -> str:
+    replication_name = "replication-2"
+    replication_settings = ReplicationSettings(
+        src_bucket="bucket-1",
+        dst_bucket="bucket-2",
+        dst_host="http://127.0.0.1:8383",
+    )
+    await client.create_replication(replication_name, replication_settings)
+    yield replication_name
+    await client.delete_replication(replication_name)
+
+
+@pytest_asyncio.fixture(name="temporary_replication")
+async def _temporary_replication(client) -> str:
+    replication_name = "temp-replication"
+    replication_settings = ReplicationSettings(
+        src_bucket="bucket-1",
+        dst_bucket="bucket-2",
+        dst_host="http://127.0.0.1:8383",
+    )
+    await client.create_replication(replication_name, replication_settings)
+    yield replication_name

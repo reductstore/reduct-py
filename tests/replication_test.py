@@ -1,0 +1,57 @@
+"""Tests for replication endpoints"""
+import pytest
+from reduct import (
+    ReductError,
+    ReplicationInfo,
+    ReplicationDetailInfo,
+    ReplicationSettings,
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+async def test__get_replications(client, replication_1, replication_2):
+    """Test getting a list of replications"""
+    replications = await client.get_replications()
+    assert isinstance(replications, list)
+    for replication in replications:
+        assert isinstance(replication, ReplicationInfo)
+        assert replication.name in [replication_1, replication_2]
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+async def test__get_replication_detail(client, replication_1):
+    """Test create a replication and get its details"""
+    replication_detail = await client.get_replication_detail(replication_1)
+    assert isinstance(replication_detail, ReplicationDetailInfo)
+    assert replication_detail.info.name == replication_1
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+async def test__update_replication(client, replication_1):
+    """Test updating an existing replication"""
+    new_settings = ReplicationSettings(
+        src_bucket="bucket-2",
+        dst_bucket="bucket-1",
+        dst_host="https://play.reduct.store",
+    )
+    await client.update_replication(replication_1, new_settings)
+    replication_detail = await client.get_replication_detail(replication_1)
+    assert replication_detail.settings.src_bucket == new_settings.src_bucket
+    assert replication_detail.settings.dst_bucket == new_settings.dst_bucket
+    assert replication_detail.settings.dst_host == new_settings.dst_host
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+async def test_delete_replication(client, temporary_replication):
+    """Test deleting a replication"""
+    await client.delete_replication(temporary_replication)
+    with pytest.raises(ReductError) as reduct_err:
+        await client.get_replication_detail(temporary_replication)
+    assert (
+        str(reduct_err.value)
+        == f"Status 404: Replication '{temporary_replication}' does not exist"
+    )

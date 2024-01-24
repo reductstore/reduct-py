@@ -17,6 +17,9 @@ from reduct.client import (
     Token,
     Permissions,
     FullTokenInfo,
+    ReplicationInfo,
+    ReplicationDetailInfo,
+    ReplicationSettings,
 )
 
 from reduct.error import ReductError
