@@ -110,6 +110,8 @@ class ReplicationList(BaseModel):
 
 
 class ReplicationDiagnosticsError(BaseModel):
+    """Error information for replication"""
+
     count: int
     last_message: str
 
