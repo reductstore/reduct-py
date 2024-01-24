@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2023-01-24
+
+### Added:
+
+- Support for ReductStore HTTP API v1.8 with replication endpoints, [PR-100](https://github.com/reductstore/reduct-py/pull/100)
+
 ### Changed:
 
 - docs: update link to new website, [PR-98](https://github.com/reductstore/reduct-py/pull/98)
 - Optimize batch read for better memory efficiency, [PR-99](https://github.com/reductstore/reduct-py/pull/99)
-- Support for ReductStore HTTP API v1.8 with replication endpoints, [PR-100](https://github.com/reductstore/reduct-py/pull/100)
 
 ## [1.7.1] - 2023-10-09
 
@@ -181,7 +186,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.8.0...HEAD
+
+[1.8.0]: https://github.com/reduct-storage/reduct-py/compare/v1.7.1...v1.8.0
 
 [1.7.1]: https://github.com/reduct-storage/reduct-py/compare/v1.7.0...v1.7.1
 
