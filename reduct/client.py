@@ -130,25 +130,6 @@ class ReplicationDiagnostics(BaseModel):
     hourly: ReplicationDiagnosticsDetail
 
 
-class ReplicationSettingsDetail(BaseModel):
-    """Settings for replication"""
-
-    src_bucket: str
-    dst_bucket: str
-    dst_host: str
-    entries: List[str]
-    include: Dict[str, str]
-    exclude: Dict[str, str]
-
-
-class ReplicationDetailInfo(BaseModel):
-    """Complete information about a replication"""
-
-    diagnostics: ReplicationDiagnostics
-    info: ReplicationInfo
-    settings: ReplicationSettingsDetail
-
-
 class ReplicationSettings(BaseModel):
     """Settings for creating a replication"""
 
@@ -159,6 +140,14 @@ class ReplicationSettings(BaseModel):
     entries: List[str] = []
     include: Dict[str, str] = {}
     exclude: Dict[str, str] = {}
+
+
+class ReplicationDetailInfo(BaseModel):
+    """Complete information about a replication"""
+
+    diagnostics: ReplicationDiagnostics
+    info: ReplicationInfo
+    settings: ReplicationSettings
 
 
 class Client:
