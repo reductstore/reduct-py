@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed:
+
+- Remove duplicated `ReplicationDeailSettings` [PR-101](https://github.com/reductstore/reduct-py/pull/101)
+
 ## [1.8.0] - 2023-01-24
 
 ### Added:
