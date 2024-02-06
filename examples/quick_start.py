@@ -37,7 +37,7 @@ async def main():
                         break
                     yield data
 
-        ts = int(time_ns() / 10000)
+        ts = int(time_ns() / 1000)
         await bucket.write(
             "entry-1",
             file_reader(),
