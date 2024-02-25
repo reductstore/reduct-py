@@ -62,7 +62,7 @@ async def test__info(client):
     assert info.version >= "1.2.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
-    assert info.usage == 264
+    assert info.usage == 324
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
