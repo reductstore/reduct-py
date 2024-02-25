@@ -110,10 +110,8 @@ class HttpClient:
                             response.headers["x-reduct-error"],
                         )
                     raise ReductError(response.status, "Unknown error")
-        except ClientConnectorError:
-            raise ReductError(
-                599, f"Connection failed, server {self._url} cannot be reached"
-            ) from None
+        except ClientConnectorError as error:
+            raise ReductError(599, str(error)) from None
 
     async def request_all(
         self, method: str, path: str = "", **kwargs

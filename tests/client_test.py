@@ -37,7 +37,7 @@ async def test__bad_url():
     """Should raise an error"""
     client = Client("http://127.0.0.1:65535")
 
-    with pytest.raises(ReductError, match="Connection failed"):
+    with pytest.raises(ReductError, match="Cannot connect "):
         await client.info()
 
 
