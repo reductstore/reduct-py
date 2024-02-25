@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- RS-182: Add flag verify_ssl to Client, [PR-102](https://github.com/reductstore/reduct-py/pull/102)
+
 ## [1.8.1] - 2023-01-31
 
 ### Fixed:

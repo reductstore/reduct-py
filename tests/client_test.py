@@ -37,7 +37,7 @@ async def test__bad_url():
     """Should raise an error"""
     client = Client("http://127.0.0.1:65535")
 
-    with pytest.raises(ReductError, match="Connection failed"):
+    with pytest.raises(ReductError, match="Cannot connect "):
         await client.info()
 
 
@@ -62,7 +62,7 @@ async def test__info(client):
     assert info.version >= "1.2.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
-    assert info.usage == 264
+    assert info.usage == 324
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
