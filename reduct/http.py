@@ -14,7 +14,7 @@ API_PREFIX = "/api/v1"
 class HttpClient:
     """Wrapper for HTTP calls"""
 
-    FILE_SIZE_FOR_100_CONTINUE = 256_000
+    FILE_SIZE_FOR_100_CONTINUE = 64_000_000
 
     def __init__(
         self,
