@@ -35,6 +35,7 @@ class HttpClient:
         self._timeout = ClientTimeout(timeout)
         self._api_version = None
         self._session = kwargs.pop("session", None)
+        self._verify_ssl = kwargs.pop("verify_ssl", True)
 
     @asynccontextmanager
     async def request(
@@ -63,6 +64,8 @@ class HttpClient:
                 for name, value in kwargs["labels"].items():
                     extra_headers[f"x-reduct-label-{name}"] = str(value)
             del kwargs["labels"]
+
+        kwargs["verify_ssl"] = self._verify_ssl
 
         if self._session is None:
             connector = aiohttp.TCPConnector(force_close=True)

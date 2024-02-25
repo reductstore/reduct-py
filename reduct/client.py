@@ -171,6 +171,7 @@ class Client:
             extra_headers: extra headers to send with each request
         Kwargs:
             session: an external aiohttp session to use for requests
+            verify_ssl: verify SSL certificates
         Examples:
             >>> client = Client("http://127.0.0.1:8383")
             >>> info = await client.info()
