@@ -72,6 +72,7 @@ jobs:
         python: ["3.8", "3.9", "3.10", "3.11"]
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
+        license: ["", "lic.key"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
@@ -88,8 +89,11 @@ jobs:
       - name: Install dependencies
         run: pip3 install .[test]
 
+      - name: Generate license
+        run: echo ${{secrets.LICENSE_KEY}} > lic.key
+
       - name: Run ReductStore
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} --env RS_LOG_LEVEL=DEBUG -d reduct/store:main
+        run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{matrix.token}} --env RS_LOG_LEVEL=DEBUG --RS_LICENSE_PAT=${{matrix.license}} -d reduct/store:main
 
       - name: Run Tests
         run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} pytest tests
