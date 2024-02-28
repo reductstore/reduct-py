@@ -17,6 +17,31 @@ class Defaults(BaseModel):
     """settings for a new bucket"""
 
 
+class LicenseInfo(BaseModel):
+    """License information"""
+
+    licensee: str
+    """Licensee usually is the company name"""
+
+    invoice: str
+    """Invoice number"""
+
+    expiry_date: datetime
+    """Expiry date of the license in ISO 8601 format (UTC)"""
+
+    plan: str
+    """Plan name"""
+
+    device_number: int
+    """Number of devices (0 for unlimited)"""
+
+    disk_quota: int
+    """Disk quota in TB (0 for unlimited)"""
+
+    fingerprint: str
+    """License fingerprint"""
+
+
 class ServerInfo(BaseModel):
     """Server stats"""
 
@@ -37,6 +62,9 @@ class ServerInfo(BaseModel):
 
     latest_record: int
     """UNIX timestamp of the latest record in microseconds"""
+
+    license: Optional[LicenseInfo] = None
+    """license information"""
 
     defaults: Defaults
     """Default server settings"""
@@ -154,12 +182,12 @@ class Client:
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
-        self,
-        url: str,
-        api_token: Optional[str] = None,
-        timeout: Optional[float] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
-        **kwargs,
+            self,
+            url: str,
+            api_token: Optional[str] = None,
+            timeout: Optional[float] = None,
+            extra_headers: Optional[Dict[str, str]] = None,
+            **kwargs,
     ):
         """
         Constructor
@@ -226,10 +254,10 @@ class Client:
         return Bucket(name, self._http)
 
     async def create_bucket(
-        self,
-        name: str,
-        settings: Optional[BucketSettings] = None,
-        exist_ok: bool = False,
+            self,
+            name: str,
+            settings: Optional[BucketSettings] = None,
+            exist_ok: bool = False,
     ) -> Bucket:
         """
         Create a new bucket
@@ -326,7 +354,7 @@ class Client:
         return ReplicationList.model_validate_json(body).replications
 
     async def get_replication_detail(
-        self, replication_name: str
+            self, replication_name: str
     ) -> ReplicationDetailInfo:
         """
         Get detailed information about a replication
@@ -343,7 +371,7 @@ class Client:
         return ReplicationDetailInfo.model_validate_json(body)
 
     async def create_replication(
-        self, replication_name: str, settings: ReplicationSettings
+            self, replication_name: str, settings: ReplicationSettings
     ) -> None:
         """
         Create a new replication
@@ -359,7 +387,7 @@ class Client:
         )
 
     async def update_replication(
-        self, replication_name: str, settings: ReplicationSettings
+            self, replication_name: str, settings: ReplicationSettings
     ) -> None:
         """
         Update an existing replication

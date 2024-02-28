@@ -66,12 +66,26 @@ async def test__info(client):
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
-    defaults = info.defaults.bucket.dict()
+    defaults = info.defaults.bucket.model_dump()
     assert defaults["max_block_size"] == 64000000
     assert defaults["max_block_records"] >= 256  # defaults are different in 1.6.0
     assert defaults["quota_size"] == 0
     assert defaults["quota_type"] == QuotaType.NONE
 
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_env("RS_LICENSE_PATH")
+async def test__info_with_license(client):
+    """Should get information about storage with license"""
+    info: ServerInfo = await client.info()
+    assert info.license is not None
+    assert info.license.model_dump() == {
+        "type": "trial",
+        "expires_at": "2022-12-31T23:59:59Z",
+        "max_buckets": 100,
+        "max_usage": 1000000000,
+    }
 
 @pytest.mark.asyncio
 async def test__list(client, bucket_1, bucket_2):
@@ -87,7 +101,7 @@ async def test__list(client, bucket_1, bucket_2):
 async def test__create_bucket_default_settings(client, bucket_1):
     """Should create a bucket with default settings"""
     settings = await bucket_1.get_settings()
-    assert settings.dict() == (await client.info()).defaults.bucket.dict()
+    assert settings.model_dump() == (await client.info()).defaults.bucket.dict()
 
 
 @pytest.mark.asyncio
@@ -219,7 +233,7 @@ async def test__me(client):
     """Should get user info"""
     current_token: FullTokenInfo = await client.me()
     assert current_token.name == "init-token"
-    assert current_token.permissions.dict() == {
+    assert current_token.permissions.model_dump() == {
         "full_access": True,
         "read": [],
         "write": [],
