@@ -82,17 +82,16 @@ async def test__info_with_license(client):
     """Should get information about storage with license"""
     info: ServerInfo = await client.info()
     assert info.license is not None
-    assert info.license.model_dump() == {
-        "device_number": 1,
-        "disk_quota": 0,
-        "expiry_date": datetime.fromisoformat("2022-12-31T23:59:59+00:00").replace(
-            tzinfo=timezone.utc
-        ),
-        "fingerprint": "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9",  # pylint: disable=line-too-long
-        "invoice": "xxxxxx",
-        "licensee": "ReductStore,LLC",
-        "plan": "UNLIMITED",
-    }
+    assert info.license.device_number == 1
+    assert info.license.disk_quota == 0
+    assert info.license.expiry_date.isoformat() == "2035-12-31T23:59:59+00:00"
+    assert (
+        info.license.fingerprint
+        == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9"
+    )
+    assert info.license.invoice == "xxxxxx"
+    assert info.license.licensee == "ReductStore,LLC"
+    assert info.license.plan == "UNLIMITED"
 
 
 @pytest.mark.asyncio
