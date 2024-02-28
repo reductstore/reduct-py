@@ -1,6 +1,5 @@
 """Tests for Client"""
 from asyncio import sleep
-from datetime import datetime, timezone
 from typing import List
 
 import pytest
@@ -84,7 +83,7 @@ async def test__info_with_license(client):
     assert info.license is not None
     assert info.license.device_number == 1
     assert info.license.disk_quota == 0
-    assert info.license.expiry_date.isoformat() == "2035-12-31T23:59:59+00:00"
+    assert info.license.expiry_date.isoformat() == "2035-01-01T00:00:00+00:00"
     assert (
         info.license.fingerprint
         == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9"
