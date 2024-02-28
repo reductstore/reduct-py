@@ -15,7 +15,7 @@ from reduct import (
     Permissions,
     FullTokenInfo,
 )
-from .conftest import requires_env
+from .conftest import requires_env, requires_api
 
 
 @pytest_asyncio.fixture(name="with_token")
@@ -66,11 +66,31 @@ async def test__info(client):
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
-    defaults = info.defaults.bucket.dict()
+    defaults = info.defaults.bucket.model_dump()
     assert defaults["max_block_size"] == 64000000
     assert defaults["max_block_records"] >= 256  # defaults are different in 1.6.0
     assert defaults["quota_size"] == 0
     assert defaults["quota_type"] == QuotaType.NONE
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_env("RS_LICENSE_PATH")
+@requires_api("1.9")
+async def test__info_with_license(client):
+    """Should get information about storage with license"""
+    info: ServerInfo = await client.info()
+    assert info.license is not None
+    assert info.license.device_number == 1
+    assert info.license.disk_quota == 0
+    assert info.license.expiry_date.isoformat() == "2035-01-01T00:00:00+00:00"
+    assert (
+        info.license.fingerprint
+        == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9"
+    )
+    assert info.license.invoice == "xxxxxx"
+    assert info.license.licensee == "ReductStore,LLC"
+    assert info.license.plan == "UNLIMITED"
 
 
 @pytest.mark.asyncio
@@ -87,7 +107,7 @@ async def test__list(client, bucket_1, bucket_2):
 async def test__create_bucket_default_settings(client, bucket_1):
     """Should create a bucket with default settings"""
     settings = await bucket_1.get_settings()
-    assert settings.dict() == (await client.info()).defaults.bucket.dict()
+    assert settings.model_dump() == (await client.info()).defaults.bucket.dict()
 
 
 @pytest.mark.asyncio
@@ -219,7 +239,7 @@ async def test__me(client):
     """Should get user info"""
     current_token: FullTokenInfo = await client.me()
     assert current_token.name == "init-token"
-    assert current_token.permissions.dict() == {
+    assert current_token.permissions.model_dump() == {
         "full_access": True,
         "read": [],
         "write": [],
