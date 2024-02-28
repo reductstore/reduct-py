@@ -83,17 +83,17 @@ async def test__info_with_license(client):
     info: ServerInfo = await client.info()
     assert info.license is not None
     assert info.license.model_dump() == {
-        'expires_at': '2022-12-31T23:59:59Z',
-        'max_buckets': 100,
-        'max_usage': 1000000000,
-        'type': 'trial',
-        'device_number': 1,
-        'disk_quota': 0,
-        'expiry_date': datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc),
-        'fingerprint': 'df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9',
-        'invoice': 'xxxxxx',
-        'licensee': 'ReductStore,LLC',
-        'plan': 'UNLIMITED',
+        "expires_at": "2022-12-31T23:59:59Z",
+        "max_buckets": 100,
+        "max_usage": 1000000000,
+        "type": "trial",
+        "device_number": 1,
+        "disk_quota": 0,
+        "expiry_date": datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc),
+        "fingerprint": "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9",
+        "invoice": "xxxxxx",
+        "licensee": "ReductStore,LLC",
+        "plan": "UNLIMITED",
     }
 
 
@@ -184,7 +184,7 @@ async def test__create_token(client):
 async def test__create_token_with_error(client, with_token):
     """Should raise an error, if token exists"""
     with pytest.raises(
-            ReductError, match="Status 409: Token 'test-token' already exists"
+        ReductError, match="Status 409: Token 'test-token' already exists"
     ):
         await client.create_token(
             with_token, Permissions(full_access=True, read=[], write=[])
@@ -232,7 +232,7 @@ async def test__remove_token(client, with_token):
     """Should delete a token"""
     await client.remove_token(with_token)
     with pytest.raises(
-            ReductError, match="Status 404: Token 'test-token' doesn't exist"
+        ReductError, match="Status 404: Token 'test-token' doesn't exist"
     ):
         await client.get_token(with_token)
 
