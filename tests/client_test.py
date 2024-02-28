@@ -1,4 +1,5 @@
 """Tests for Client"""
+
 from asyncio import sleep
 from typing import List
 

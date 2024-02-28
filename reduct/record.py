@@ -1,4 +1,5 @@
 """Record representation and its parsing"""
+
 import asyncio
 from dataclasses import dataclass
 from functools import partial

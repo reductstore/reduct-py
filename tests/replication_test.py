@@ -1,4 +1,5 @@
 """Tests for replication endpoints"""
+
 import pytest
 from reduct import (
     ReductError,

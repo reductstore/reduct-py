@@ -1,4 +1,5 @@
 """Common fixtures"""
+
 import os
 from typing import Optional
 

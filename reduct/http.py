@@ -1,4 +1,5 @@
 """Internal HTTP helper"""
+
 from contextlib import asynccontextmanager
 from typing import Optional, AsyncIterator, Dict
 
