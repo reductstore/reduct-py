@@ -15,7 +15,7 @@ from reduct import (
     Permissions,
     FullTokenInfo,
 )
-from .conftest import requires_env
+from .conftest import requires_env, requires_api
 
 
 @pytest_asyncio.fixture(name="with_token")
@@ -76,6 +76,7 @@ async def test__info(client):
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
 @requires_env("RS_LICENSE_PATH")
+@requires_api("1.9")
 async def test__info_with_license(client):
     """Should get information about storage with license"""
     info: ServerInfo = await client.info()
