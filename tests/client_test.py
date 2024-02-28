@@ -88,6 +88,7 @@ async def test__info_with_license(client):
         "max_usage": 1000000000,
     }
 
+
 @pytest.mark.asyncio
 async def test__list(client, bucket_1, bucket_2):
     """Should browse buckets"""
