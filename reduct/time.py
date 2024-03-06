@@ -1,4 +1,5 @@
 """Helper functions for time-related operations."""
+
 from datetime import datetime
 
 TIME_PRECISION = 1_000_000
