@@ -4,6 +4,7 @@ import asyncio
 import json
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime
 from enum import Enum
 from typing import (
     Optional,
@@ -25,6 +26,7 @@ from reduct.record import (
     TIME_PREFIX,
     ERROR_PREFIX,
 )
+from reduct.time import unix_timestamp_from_any
 
 
 class QuotaType(Enum):
@@ -174,12 +176,17 @@ class Bucket:
 
     @asynccontextmanager
     async def read(
-        self, entry_name: str, timestamp: Optional[int] = None, head: bool = False
+        self,
+        entry_name: str,
+        timestamp: Optional[int | datetime | float | str] = None,
+        head: bool = False,
     ) -> Record:
         """
         Read a record from entry
         Args:
-            entry_name: name of entry in the bucket
+            entry_name: name of entry in the bucket. If None: get the latest record.
+                The timestamp can be int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), or str (ISO 8601 string).
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
             head: if True: get only the header of a recod with metadata
         Returns:
@@ -191,7 +198,7 @@ class Bucket:
             >>>     async with bucket.read("entry", timestamp=123456789) as record:
             >>>         data = await record.read_all()
         """
-        params = {"ts": int(timestamp)} if timestamp else None
+        params = {"ts": unix_timestamp_from_any(timestamp)} if timestamp else None
         method = "HEAD" if head else "GET"
         async with self._http.request(
             method, f"/b/{self.name}/{entry_name}", params=params
@@ -202,7 +209,7 @@ class Bucket:
         self,
         entry_name: str,
         data: Union[bytes, AsyncIterator[bytes]],
-        timestamp: Optional[int] = None,
+        timestamp: Optional[int | datetime | float | str] = None,
         content_length: Optional[int] = None,
         **kwargs,
     ):
@@ -212,7 +219,8 @@ class Bucket:
         Args:
             entry_name: name of entry in the bucket
             data: bytes to write or async iterator
-            timestamp: UNIX time stamp in microseconds. Current time if it's None
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string). If None: current time
             content_length: content size in bytes,
                 needed only when the data is an iterator
         Keyword Args:
@@ -222,7 +230,7 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.write("entry-1", b"some_data", timestamp=19231023101)
+            >>> await bucket.write("entry-1", b"some_data", timestamp="2021-09-10T10:30:00")
             >>>
             >>> # You can write data chunk-wise using an asynchronous iterator and the
             >>> # size of the content:
@@ -233,8 +241,10 @@ class Bucket:
             >>> await bucket.write("entry-1", sender(), content_length=15)
 
         """
-        timestamp = timestamp if timestamp else time.time_ns() / 1000
-        params = {"ts": int(timestamp)}
+        timestamp = unix_timestamp_from_any(
+            timestamp if timestamp else int(time.time_ns() / 1000)
+        )
+        params = {"ts": timestamp}
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
@@ -294,18 +304,19 @@ class Bucket:
     async def query(
         self,
         entry_name: str,
-        start: Optional[int] = None,
-        stop: Optional[int] = None,
+        start: Optional[int | datetime | float | str] = None,
+        stop: Optional[int | datetime | float | str] = None,
         ttl: Optional[int] = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
         Query data for a time interval
-
+        The time interval is defined by the start and stop parameters and can be int (UNIX timestamp in microseconds),
+        datetime, float (UNIX timestamp in seconds) or str (ISO 8601 string).
         Args:
             entry_name: name of entry in the bucket
-            start: the beginning of the time interval
-            stop: the end of the time interval
+            start: the beginning of the time interval. If None, then from the first record
+            stop: the end of the time interval. If None, then to the latest record
             ttl: Time To Live of the request in seconds
         Keyword Args:
             include (dict): query records which have all labels from this dict
@@ -322,6 +333,9 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
+        start = unix_timestamp_from_any(start) if start else None
+        stop = unix_timestamp_from_any(stop) if stop else None
+
         query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
         method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
@@ -354,14 +368,20 @@ class Bucket:
         return BucketFullInfo.model_validate_json(body)
 
     async def subscribe(
-        self, entry_name: str, start: Optional[int] = None, poll_interval=1.0, **kwargs
+        self,
+        entry_name: str,
+        start: Optional[int | datetime | float | str] = None,
+        poll_interval=1.0,
+        **kwargs,
     ) -> AsyncIterator[Record]:
         """
         Query records from the start timestamp and wait for new records
+        The time interval is defined by the start and stop parameters and can be int (UNIX timestamp in microseconds),
+        datetime, float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
             entry_name: name of entry in the bucket
-            start: the beginning timestamp to read records
+            start: the beginning timestamp to read records. If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
         Keyword Args:
             include (dict): query records which have all labels from this dict

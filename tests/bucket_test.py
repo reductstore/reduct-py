@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from datetime import datetime
 
 from typing import List, Tuple
 
@@ -119,10 +120,14 @@ async def test__read_latest(bucket_1):
 
 
 @pytest.mark.asyncio
-async def test__write_by_timestamp(bucket_2):
+@pytest.mark.parametrize(
+    "timestamp",
+    [5_000_000, datetime.now(), "2021-01-01T00:00:00Z", datetime.now().timestamp()],
+)
+async def test__write_by_timestamp(bucket_2, timestamp):
     """Should write a record by timestamp"""
-    await bucket_2.write("entry-3", b"test-data", timestamp=5_000_000)
-    async with bucket_2.read("entry-3", timestamp=5_000_000) as record:
+    await bucket_2.write("entry-3", b"test-data", timestamp=timestamp)
+    async with bucket_2.read("entry-3", timestamp=timestamp) as record:
         data = await record.read_all()
         assert data == b"test-data"
 
@@ -188,13 +193,22 @@ async def test_write_big_blob(bucket_1):
 @pytest.mark.parametrize(
     "head, content", [(True, [b"", b""]), (False, [b"some-data-3", b"some-data-4"])]
 )
+@pytest.mark.parametrize(
+    "start, stop",
+    [
+        (0, 5_000_000),
+        (datetime.fromtimestamp(0), datetime.fromtimestamp(5)),
+        (datetime.fromtimestamp(0).isoformat(), datetime.fromtimestamp(5).isoformat()),
+        (0, 5.0),
+    ],
+)
 @pytest.mark.asyncio
-async def test_query_records(bucket_1, head, content):
+async def test_query_records(bucket_1, head, content, start, stop):
     """Should query records for a time interval"""
     records: List[Tuple[Record, bytes]] = [
         (record, await record.read_all())
         async for record in bucket_1.query(
-            "entry-2", start=0, stop=5_000_000, ttl=5, head=head
+            "entry-2", start=start, stop=stop, ttl=5, head=head
         )
     ]
     assert len(records) == 2

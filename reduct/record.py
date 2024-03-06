@@ -2,10 +2,13 @@
 
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 from functools import partial
 from typing import Dict, Callable, AsyncIterator, Awaitable, Optional, List, Tuple
 
 from aiohttp import ClientResponse
+
+from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any
 
 
 @dataclass
@@ -28,6 +31,13 @@ class Record:
     labels: Dict[str, str]
     """labels of record"""
 
+    def get_datetime(self) -> datetime:
+        """Get timestamp of record as datetime
+        Returns:
+            datetime: timestamp as datetime
+        """
+        return unix_timestamp_to_datetime(self.timestamp)
+
 
 class Batch:
     """Batch of records to write them in one request"""
@@ -37,14 +47,15 @@ class Batch:
 
     def add(
         self,
-        timestamp: int,
+        timestamp: int | datetime | float | str,
         data: bytes,
         content_type: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
     ):
         """Add record to batch
         Args:
-            timestamp: UNIX timestamp in microseconds
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds), d
+                atetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
             data: data to store
             content_type: content type of data (default: application/octet-stream)
             labels: labels of record (default: {})
@@ -61,7 +72,7 @@ class Batch:
             return data
 
         record = Record(
-            timestamp=timestamp,
+            timestamp=unix_timestamp_from_any(timestamp),
             size=len(data),
             content_type=content_type,
             labels=labels,
