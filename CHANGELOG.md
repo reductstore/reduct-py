@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-182: Add flag verify_ssl to Client, [PR-102](https://github.com/reductstore/reduct-py/pull/102)
 - RS-176: Add license field to ServerInfo, [PR-105](https://github.com/reductstore/reduct-py/pull/105)
+- RS-196: accept timestamps in many formats, [PR-196](https://github.com/reductstore/reduct-py/pull/106)
 
 ## [1.8.1] - 2023-01-31
 

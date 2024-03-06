@@ -29,7 +29,7 @@ pip install reduct-py
 Here is an example of how to use this package to create a bucket, write data to it, and read data from it:
 
 ```python
-import time
+from datetime import datetime
 import asyncio
 from reduct import Client, Bucket
 
@@ -41,7 +41,7 @@ async def main():
     bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
 
     # Write data to the bucket
-    ts = time.time_ns() / 1000
+    ts = datetime.now()
     await bucket.write("entry-1", b"Hey!!", ts)
 
     # Read data from the bucket
