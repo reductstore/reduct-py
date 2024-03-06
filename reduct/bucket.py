@@ -220,7 +220,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             data: bytes to write or async iterator
             timestamp: timestamp of record. int (UNIX timestamp in microseconds),
-                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string). If None: current time
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string).
+                If None: current time
             content_length: content size in bytes,
                 needed only when the data is an iterator
         Keyword Args:
@@ -230,7 +231,8 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.write("entry-1", b"some_data", timestamp="2021-09-10T10:30:00")
+            >>> await bucket.write("entry-1", b"some_data",
+            >>>    timestamp="2021-09-10T10:30:00")
             >>>
             >>> # You can write data chunk-wise using an asynchronous iterator and the
             >>> # size of the content:
@@ -311,11 +313,14 @@ class Bucket:
     ) -> AsyncIterator[Record]:
         """
         Query data for a time interval
-        The time interval is defined by the start and stop parameters and can be int (UNIX timestamp in microseconds),
-        datetime, float (UNIX timestamp in seconds) or str (ISO 8601 string).
+        The time interval is defined by the start and stop parameters that can be:
+        int (UNIX timestamp in microseconds), datetime,
+        float (UNIX timestamp in seconds) or str (ISO 8601 string).
+
         Args:
             entry_name: name of entry in the bucket
-            start: the beginning of the time interval. If None, then from the first record
+            start: the beginning of the time interval.
+                If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
             ttl: Time To Live of the request in seconds
         Keyword Args:
@@ -376,12 +381,14 @@ class Bucket:
     ) -> AsyncIterator[Record]:
         """
         Query records from the start timestamp and wait for new records
-        The time interval is defined by the start and stop parameters and can be int (UNIX timestamp in microseconds),
-        datetime, float (UNIX timestamp in seconds) or str (ISO 8601 string).
+        The time interval is defined by the start and stop parameters
+        that can be: int (UNIX timestamp in microseconds) datetime,
+        float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
             entry_name: name of entry in the bucket
-            start: the beginning timestamp to read records. If None, then from the first record.
+            start: the beginning timestamp to read records.
+                If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
         Keyword Args:
             include (dict): query records which have all labels from this dict
