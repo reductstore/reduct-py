@@ -1,11 +1,12 @@
 """Helper functions for time-related operations."""
 
 from datetime import datetime
+from typing import Union
 
 TIME_PRECISION = 1_000_000
 
 
-def unix_timestamp_from_any(timestamp: int | datetime | float | str) -> int:
+def unix_timestamp_from_any(timestamp: Union[int, datetime, float, str]) -> int:
     """Convert timestamp to UNIX timestamp in microseconds
     Args:
         timestamp (int | datetime | float | str): int (UNIX timestamp in microseconds),

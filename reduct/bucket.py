@@ -178,7 +178,7 @@ class Bucket:
     async def read(
         self,
         entry_name: str,
-        timestamp: Optional[int | datetime | float | str] = None,
+        timestamp: Optional[Union[int, datetime, float, str]] = None,
         head: bool = False,
     ) -> Record:
         """
@@ -209,7 +209,7 @@ class Bucket:
         self,
         entry_name: str,
         data: Union[bytes, AsyncIterator[bytes]],
-        timestamp: Optional[int | datetime | float | str] = None,
+        timestamp: Optional[Union[int, datetime, float, str]] = None,
         content_length: Optional[int] = None,
         **kwargs,
     ):
@@ -306,8 +306,8 @@ class Bucket:
     async def query(
         self,
         entry_name: str,
-        start: Optional[int | datetime | float | str] = None,
-        stop: Optional[int | datetime | float | str] = None,
+        start: Optional[Union[int, datetime, float, str]] = None,
+        stop: Optional[Union[int, datetime, float, str]] = None,
         ttl: Optional[int] = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
@@ -375,7 +375,7 @@ class Bucket:
     async def subscribe(
         self,
         entry_name: str,
-        start: Optional[int | datetime | float | str] = None,
+        start: Optional[Union[int, datetime, float, str]] = None,
         poll_interval=1.0,
         **kwargs,
     ) -> AsyncIterator[Record]:

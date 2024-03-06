@@ -4,7 +4,16 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
-from typing import Dict, Callable, AsyncIterator, Awaitable, Optional, List, Tuple
+from typing import (
+    Dict,
+    Callable,
+    AsyncIterator,
+    Awaitable,
+    Optional,
+    List,
+    Tuple,
+    Union,
+)
 
 from aiohttp import ClientResponse
 
@@ -47,7 +56,7 @@ class Batch:
 
     def add(
         self,
-        timestamp: int | datetime | float | str,
+        timestamp: Union[int, datetime, float, str],
         data: bytes,
         content_type: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
