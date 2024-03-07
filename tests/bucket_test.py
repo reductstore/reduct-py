@@ -102,7 +102,7 @@ async def test__get_entries(bucket_1):
 @pytest.mark.parametrize("head, content", [(True, b""), (False, b"some-data-3")])
 @pytest.mark.parametrize(
     "timestamp",
-    [5_000_000, datetime.now(), "2021-01-01T00:00:00Z", datetime.now().timestamp()],
+    [3_000_000, datetime.fromtimestamp(3), 3.0, datetime.fromtimestamp(3).isoformat()],
 )
 @pytest.mark.asyncio
 async def test__read_by_timestamp(bucket_1, head, content, timestamp):
@@ -309,8 +309,8 @@ async def test_query_records_all(bucket_1):
 
 
 @pytest.mark.asyncio
-async def test_read_record(bucket_1):
-    """Should provide records with read method"""
+async def test_read_record_in_chunks(bucket_1):
+    """Should provide records with read method and read in chunks"""
     data = [await record.read_all() async for record in bucket_1.query("entry-2")]
     assert data == [b"some-data-3", b"some-data-4"]
 
@@ -321,6 +321,21 @@ async def test_read_record(bucket_1):
             data.append(chunk)
 
     assert data == [b"some", b"-dat", b"a-3", b"some", b"-dat", b"a-4"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [1, 100, 10_000, 1_000_000])
+async def test_read_record_in_chunks_full(bucket_1, size):
+    """Should provide records with read method and read with max size"""
+    blob = b"1" * size
+    await bucket_1.write("entry-5", blob, timestamp=1)
+
+    data = b""
+    async for record in bucket_1.query("entry-5"):
+        async for chunk in record.read(n=record.size):
+            data += chunk
+
+    assert data == blob
 
 
 @pytest.mark.asyncio

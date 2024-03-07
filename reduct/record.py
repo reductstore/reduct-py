@@ -35,7 +35,7 @@ class Record:
     read_all: Callable[[None], Awaitable[bytes]]
     """read all data"""
     read: Callable[[int], AsyncIterator[bytes]]
-    """read data in chunks"""
+    """read data in chunks where each chunk has size <= n bytes"""
 
     labels: Dict[str, str]
     """labels of record"""
