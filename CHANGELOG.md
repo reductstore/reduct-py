@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RS-176: Add license field to ServerInfo, [PR-105](https://github.com/reductstore/reduct-py/pull/105)
 - RS-196: accept timestamps in many formats, [PR-196](https://github.com/reductstore/reduct-py/pull/106)
 
+### Changed:
+
+- RS-197: update docs for `Record.read` method, [PR-108](https://github.com/reductstore/reduct-py/pull/108)
+
 ## [1.8.1] - 2023-01-31
 
 ### Fixed:
