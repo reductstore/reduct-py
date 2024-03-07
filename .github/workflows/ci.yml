@@ -60,6 +60,9 @@ jobs:
       - name: Run ReductStore
         run: docker run -p 8383:8383 -d reduct/store:main
 
+      - name: Sleep
+        run: sleep 5
+
       - name: Run examples
         run: find examples/ -name *.py | xargs python3
 
@@ -93,10 +96,10 @@ jobs:
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key
 
       - name: Run ReductStore
-        run: docker run -p 8383:8383 -v ${PWD}:/workdir 
-          --env RS_API_TOKEN=${{matrix.token}} 
-          --env RS_LOG_LEVEL=DEBUG 
-          --env RS_LICENSE_PATH=${{matrix.license}} 
+        run: docker run -p 8383:8383 -v ${PWD}:/workdir
+          --env RS_API_TOKEN=${{matrix.token}}
+          --env RS_LOG_LEVEL=DEBUG
+          --env RS_LICENSE_PATH=${{matrix.license}}
           -d reduct/store:main
 
       - name: Run Tests
