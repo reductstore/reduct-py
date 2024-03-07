@@ -44,7 +44,7 @@ async def test__set_settings(bucket_1):
     """Should set new settings"""
     await bucket_1.set_settings(BucketSettings(max_block_records=10000))
     new_settings = await bucket_1.get_settings()
-    assert new_settings.dict() == {
+    assert new_settings.model_dump() == {
         "max_block_size": 64000000,
         "max_block_records": 10000,
         "quota_size": 0,
@@ -56,7 +56,7 @@ async def test__set_settings(bucket_1):
 async def test__get_info(bucket_2):
     """Should get info about bucket"""
     info = await bucket_2.info()
-    assert info.dict() == {
+    assert info.model_dump() == {
         "entry_count": 1,
         "latest_record": 6000000,
         "name": "bucket-2",
@@ -80,7 +80,7 @@ async def test__get_entries(bucket_1):
     """Should get list of entries"""
     entries = await bucket_1.get_entry_list()
     assert len(entries) == 2
-    assert entries[0].dict() == {
+    assert entries[0].model_dump() == {
         "block_count": 1,
         "latest_record": 2000000,
         "name": "entry-1",
@@ -89,7 +89,7 @@ async def test__get_entries(bucket_1):
         "size": 108,
     }
 
-    assert entries[1].dict() == {
+    assert entries[1].model_dump() == {
         "block_count": 1,
         "latest_record": 4000000,
         "name": "entry-2",
@@ -100,10 +100,14 @@ async def test__get_entries(bucket_1):
 
 
 @pytest.mark.parametrize("head, content", [(True, b""), (False, b"some-data-3")])
+@pytest.mark.parametrize(
+    "timestamp",
+    [3_000_000, datetime.fromtimestamp(3), 3.0, datetime.fromtimestamp(3).isoformat()],
+)
 @pytest.mark.asyncio
-async def test__read_by_timestamp(bucket_1, head, content):
+async def test__read_by_timestamp(bucket_1, head, content, timestamp):
     """Should read a record by timestamp"""
-    async with bucket_1.read("entry-2", timestamp=3_000_000, head=head) as record:
+    async with bucket_1.read("entry-2", timestamp=timestamp, head=head) as record:
         data = await record.read_all()
         assert data == content
         assert record.timestamp == 3_000_000
@@ -305,8 +309,8 @@ async def test_query_records_all(bucket_1):
 
 
 @pytest.mark.asyncio
-async def test_read_record(bucket_1):
-    """Should provide records with read method"""
+async def test_read_record_in_chunks(bucket_1):
+    """Should provide records with read method and read in chunks"""
     data = [await record.read_all() async for record in bucket_1.query("entry-2")]
     assert data == [b"some-data-3", b"some-data-4"]
 
@@ -317,6 +321,21 @@ async def test_read_record(bucket_1):
             data.append(chunk)
 
     assert data == [b"some", b"-dat", b"a-3", b"some", b"-dat", b"a-4"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("size", [1, 100, 10_000, 1_000_000])
+async def test_read_record_in_chunks_full(bucket_1, size):
+    """Should provide records with read method and read with max size"""
+    blob = b"1" * size
+    await bucket_1.write("entry-5", blob, timestamp=1)
+
+    data = b""
+    async for record in bucket_1.query("entry-5"):
+        async for chunk in record.read(n=record.size):
+            data += chunk
+
+    assert data == blob
 
 
 @pytest.mark.asyncio
