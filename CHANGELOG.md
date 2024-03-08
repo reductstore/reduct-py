@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2023-03-08
+
 ### Added:
 
 - RS-182: Add flag verify_ssl to Client, [PR-102](https://github.com/reductstore/reduct-py/pull/102)
@@ -202,7 +204,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.9.0...HEAD
+
+[1.9.0]: https://github.com/reduct-storage/reduct-py/compare/v1.8.1...v1.9.0
 
 [1.8.1]: https://github.com/reduct-storage/reduct-py/compare/v1.8.0...v1.8.1
 
