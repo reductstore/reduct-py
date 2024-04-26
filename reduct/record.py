@@ -90,7 +90,7 @@ class Batch:
             last=False,
         )
 
-        self._records[timestamp] = record
+        self._records[record.timestamp] = record
 
     def items(self) -> List[Tuple[int, Record]]:
         """Get records as dict items"""

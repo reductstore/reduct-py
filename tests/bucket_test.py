@@ -424,10 +424,11 @@ async def test_read_batched_records_in_random_order_chunks(bucket_1, size):
 async def test_batched_write(bucket_1):
     """Should write batched records"""
     batch = Batch()
+    # use different timestamp formats
     batch.add(1000, b"Hey,", "plain/text", {"label1": "value1"})
-    batch.add(2000, b"how", "plain/text", {"label2": "value2"})
+    batch.add(datetime.fromtimestamp(0.002), b"how", "plain/text", {"label2": "value2"})
     batch.add(
-        3000,
+        datetime.fromtimestamp(0.003).isoformat(),
         b"are",
         "plain/text",
     )
