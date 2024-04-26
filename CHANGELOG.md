@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## Fixed:
+
+- Timestamps in batch writing, [PR-109](https://github.com/reductstore/reduct-py/pull/109)
+
 ## [1.9.0] - 2023-03-08
 
 ### Added:
