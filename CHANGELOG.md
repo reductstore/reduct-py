@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2024-04-26
 
 ## Fixed:
 
 - Timestamps in batch writing, [PR-109](https://github.com/reductstore/reduct-py/pull/109)
 
-## [1.9.0] - 2023-03-08
+## [1.9.0] - 2024-03-08
 
 ### Added:
 
@@ -24,13 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-197: update docs for `Record.read` method, [PR-108](https://github.com/reductstore/reduct-py/pull/108)
 
-## [1.8.1] - 2023-01-31
+## [1.8.1] - 2024-01-31
 
 ### Fixed:
 
 - Remove duplicated `ReplicationDeailSettings` [PR-101](https://github.com/reductstore/reduct-py/pull/101)
 
-## [1.8.0] - 2023-01-24
+## [1.8.0] - 2024-01-24
 
 ### Added:
 
@@ -209,7 +210,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.9.1...HEAD
+
+[1.9.1]: https://github.com/reduct-storage/reduct-py/compare/v1.9.0...v1.9.1
 
 [1.9.0]: https://github.com/reduct-storage/reduct-py/compare/v1.8.1...v1.9.0
 
