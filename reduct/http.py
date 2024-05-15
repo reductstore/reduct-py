@@ -39,7 +39,7 @@ class HttpClient:
         self._verify_ssl = kwargs.pop("verify_ssl", True)
 
     @asynccontextmanager
-    async def request(
+    async def request(  # pylint: disable=contextmanager-generator-missing-cleanup
         self, method: str, path: str = "", **kwargs
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
@@ -135,7 +135,7 @@ class HttpClient:
         async with self.request(method, path, **kwargs) as response:
             return await response.read(), response.headers
 
-    async def request_chunked(
+    async def request_chunked(  # pylint: disable=contextmanager-generator-missing-cleanup
         self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """Http request"""
