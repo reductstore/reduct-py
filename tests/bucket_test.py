@@ -91,11 +91,11 @@ async def test__get_entries(bucket_1):
 
     assert entries[1].model_dump() == {
         "block_count": 1,
-        "latest_record": 4000000,
+        "latest_record": 5000000,
         "name": "entry-2",
         "oldest_record": 3000000,
-        "record_count": 2,
-        "size": 108,
+        "record_count": 3,
+        "size": 157,
     }
 
 
@@ -120,7 +120,7 @@ async def test__read_latest(bucket_1):
     """Should read the latest record if no timestamp"""
     async with bucket_1.read("entry-2") as record:
         data = await record.read_all()
-        assert data == b"some-data-4"
+        assert data == b"some-data-5"
 
 
 @pytest.mark.asyncio
@@ -284,10 +284,10 @@ async def test_query_records_excluded_labels(bucket_2):
 async def test_query_records_last(bucket_1):
     """Should query records for until last record"""
     records: List[Record] = [
-        record async for record in bucket_1.query("entry-2", start=4_000_000)
+        record async for record in bucket_1.query("entry-2", start=5_000_000)
     ]
     assert len(records) == 1
-    assert records[0].timestamp == 4_000_000
+    assert records[0].timestamp == 5_000_000
 
 
 @pytest.mark.asyncio
@@ -305,14 +305,14 @@ async def test_query_records_limit(bucket_1):
 async def test_query_records_all(bucket_1):
     """Should query records all data"""
     records = [record async for record in bucket_1.query("entry-2")]
-    assert len(records) == 2
+    assert len(records) == 3
 
 
 @pytest.mark.asyncio
 async def test_read_record_in_chunks(bucket_1):
     """Should provide records with read method and read in chunks"""
     data = [await record.read_all() async for record in bucket_1.query("entry-2")]
-    assert data == [b"some-data-3", b"some-data-4"]
+    assert data == [b"some-data-3", b"some-data-4", b"some-data-5"]
 
     data = []
 
@@ -320,7 +320,17 @@ async def test_read_record_in_chunks(bucket_1):
         async for chunk in record.read(n=4):
             data.append(chunk)
 
-    assert data == [b"some", b"-dat", b"a-3", b"some", b"-dat", b"a-4"]
+    assert data == [
+        b"some",
+        b"-dat",
+        b"a-3",
+        b"some",
+        b"-dat",
+        b"a-4",
+        b"some",
+        b"-dat",
+        b"a-5",
+    ]
 
 
 @pytest.mark.asyncio
@@ -360,10 +370,10 @@ async def test_subscribe(bucket_1):
                 break
 
     await asyncio.gather(
-        subscriber(), bucket_1.write("entry-2", b"some-data-5", labels={"stop": "true"})
+        subscriber(), bucket_1.write("entry-2", b"some-data-6", labels={"stop": "true"})
     )
 
-    assert data == [b"some-data-3", b"some-data-4", b"some-data-5"]
+    assert data == [b"some-data-3", b"some-data-4", b"some-data-5", b"some-data-6"]
 
 
 @pytest.mark.asyncio
