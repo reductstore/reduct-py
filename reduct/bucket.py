@@ -327,6 +327,8 @@ class Bucket:
             include (dict): query records which have all labels from this dict
             exclude (dict): query records which doesn't have all labels from this
             head (bool): if True: get only the header of a recod with metadata
+            each_s(Union[int, float]): return a record for each S seconds
+            each_n(int): return each N-th record
             limit (int): limit the number of records
         Returns:
              AsyncIterator[Record]: iterator to the records
@@ -345,7 +347,11 @@ class Bucket:
         last = False
         method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
 
-        if self._http.api_version and self._http.api_version >= "1.5":
+        if (
+            self._http.api_version
+            and self._http.api_version[0] == 1
+            and self._http.api_version[1] >= 5
+        ):
             while not last:
                 async with self._http.request(
                     method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
@@ -409,7 +415,11 @@ class Bucket:
         )
 
         method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
-        if self._http.api_version and self._http.api_version >= "1.5":
+        if (
+            self._http.api_version
+            and self._http.api_version[0] == 1
+            and self._http.api_version[1] >= 5
+        ):
             while True:
                 async with self._http.request(
                     method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
@@ -437,8 +447,6 @@ class Bucket:
             params["start"] = int(start)
         if stop:
             params["stop"] = int(stop)
-        if ttl:
-            params["ttl"] = int(ttl)
 
         if "include" in kwargs:
             for name, value in kwargs["include"].items():
@@ -447,11 +455,20 @@ class Bucket:
             for name, value in kwargs["exclude"].items():
                 params[f"exclude-{name}"] = str(value)
 
-        if "continuous" in kwargs:
-            params["continuous"] = "true" if kwargs["continuous"] else "false"
+        if "each_s" in kwargs:
+            params["each_s"] = float(kwargs["each_s"])
+
+        if "each_n" in kwargs:
+            params["each_n"] = int(kwargs["each_n"])
 
         if "limit" in kwargs:
             params["limit"] = kwargs["limit"]
+
+        if ttl:
+            params["ttl"] = int(ttl)
+
+        if "continuous" in kwargs:
+            params["continuous"] = "true" if kwargs["continuous"] else "false"
 
         url = f"/b/{self.name}/{entry_name}"
         data, _ = await self._http.request_all(

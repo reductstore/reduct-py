@@ -8,6 +8,7 @@ import pytest_asyncio
 import requests
 
 from reduct import Client, Bucket, ReplicationSettings
+from reduct.http import extract_api_version
 
 
 def requires_env(key):
@@ -26,7 +27,7 @@ def requires_api(version):
         "x-reduct-api"
     ]
     return pytest.mark.skipif(
-        version > current_version,
+        extract_api_version(version)[1] > extract_api_version(current_version)[1],
         reason=f"Not suitable API version {current_version} for current test",
     )
 
@@ -64,6 +65,8 @@ async def _bucket_1(client) -> Bucket:
     await bucket.write("entry-1", b"some-data-2", timestamp=2_000_000)
     await bucket.write("entry-2", b"some-data-3", timestamp=3_000_000)
     await bucket.write("entry-2", b"some-data-4", timestamp=4_000_000)
+    await bucket.write("entry-2", b"some-data-5", timestamp=5_000_000)
+
     yield bucket
     await bucket.remove()
 

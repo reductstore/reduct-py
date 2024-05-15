@@ -4,17 +4,18 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/reduct-py)](https://pypi.org/project/reduct-py/)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/reductstore/reduct-py/ci.yml?branch=main)](https://github.com/reductstore/reduct-py/actions)
 
-This package provides an asynchronous HTTP client for interacting with the [ReductStore](https://www.reduct.store) service.
+This package provides an asynchronous HTTP client for interacting with  [ReductStore](https://www.reduct.store) in Python.
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.9](https://reduct.store/docs/http-api)
+* Supports the [ReductStore HTTP API v1.10](https://reduct.store/docs/http-api)
 * Bucket management
 * API Token management
 * Write, read and query data
-* Labels
+* Labeling records
 * Batching records for read and write operations
-* Subscription on new data
+* Subscription
+* Replication management
 
 ## Install
 

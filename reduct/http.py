@@ -1,7 +1,7 @@
 """Internal HTTP helper"""
 
 from contextlib import asynccontextmanager
-from typing import Optional, AsyncIterator, Dict
+from typing import Optional, AsyncIterator, Dict, Tuple
 
 import aiohttp
 from aiohttp import ClientTimeout, ClientResponse
@@ -39,7 +39,7 @@ class HttpClient:
         self._verify_ssl = kwargs.pop("verify_ssl", True)
 
     @asynccontextmanager
-    async def request(
+    async def request(  # pylint: disable=contextmanager-generator-missing-cleanup
         self, method: str, path: str = "", **kwargs
     ) -> AsyncIterator[ClientResponse]:
         """HTTP request with ReductError exception"""
@@ -135,7 +135,7 @@ class HttpClient:
         async with self.request(method, path, **kwargs) as response:
             return await response.read(), response.headers
 
-    async def request_chunked(
+    async def request_chunked(  # pylint: disable=contextmanager-generator-missing-cleanup
         self, method: str, path: str = "", chunk_size=1024, **kwargs
     ) -> AsyncIterator[bytes]:
         """Http request"""
@@ -145,6 +145,14 @@ class HttpClient:
         return
 
     @property
-    def api_version(self) -> Optional[str]:
+    def api_version(self) -> Optional[Tuple[int, int]]:
         """API version"""
-        return self._api_version
+        if self._api_version is None:
+            return None
+        return extract_api_version(self._api_version)
+
+
+def extract_api_version(version: str) -> Tuple[int, int]:
+    """Extract version"""
+    major, minor = version.split(".")
+    return int(major), int(minor)
