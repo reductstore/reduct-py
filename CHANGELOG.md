@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Added:
+
+- RS-261: Support each_n and each_s query parameters, [PR-110](https://github.com/reductstore/reduct-py/pull/110)
+
 ## [1.9.1] - 2024-04-26
 
 ## Fixed:
