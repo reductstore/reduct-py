@@ -60,7 +60,7 @@ async def test__info(client):
     await sleep(1)
 
     info: ServerInfo = await client.info()
-    assert info.version >= "1.2.0"
+    assert info.version >= "1.10.0"
     assert info.uptime >= 1
     assert info.bucket_count == 2
     assert info.usage == 324

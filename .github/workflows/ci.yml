@@ -100,7 +100,7 @@ jobs:
           --env RS_API_TOKEN=${{matrix.token}}
           --env RS_LOG_LEVEL=DEBUG
           --env RS_LICENSE_PATH=${{matrix.license}}
-          -d reduct/store:main
+          -d reduct/store:${{matrix.reductstore_version}}
 
       - name: Run Tests
         run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} RS_LICENSE_PATH=${{matrix.license}}  pytest tests

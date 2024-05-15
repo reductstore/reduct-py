@@ -8,6 +8,7 @@ import pytest_asyncio
 import requests
 
 from reduct import Client, Bucket, ReplicationSettings
+from reduct.http import extract_api_version
 
 
 def requires_env(key):
@@ -26,7 +27,7 @@ def requires_api(version):
         "x-reduct-api"
     ]
     return pytest.mark.skipif(
-        version > current_version,
+        extract_api_version(version)[1] > extract_api_version(current_version)[1],
         reason=f"Not suitable API version {current_version} for current test",
     )
 
