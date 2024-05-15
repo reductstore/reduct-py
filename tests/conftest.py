@@ -65,6 +65,8 @@ async def _bucket_1(client) -> Bucket:
     await bucket.write("entry-1", b"some-data-2", timestamp=2_000_000)
     await bucket.write("entry-2", b"some-data-3", timestamp=3_000_000)
     await bucket.write("entry-2", b"some-data-4", timestamp=4_000_000)
+    await bucket.write("entry-2", b"some-data-5", timestamp=5_000_000)
+
     yield bucket
     await bucket.remove()
 

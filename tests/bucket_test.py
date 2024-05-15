@@ -475,3 +475,26 @@ async def test_batched_write_with_errors(bucket_1):
     errors = await bucket_1.write_batch("entry-3", batch)
     assert len(errors) == 1
     assert errors[1] == ReductError(409, "A record with timestamp 1 already exists")
+
+
+@pytest.mark.asyncio
+@requires_api("1.10")
+async def test_query_records_each_s(bucket_1):
+    """Should query a record per 2 seconds"""
+    records: List[Record] = [
+        record async for record in bucket_1.query("entry-2", start=0, each_s=2.0)
+    ]
+    assert len(records) == 2
+    assert records[0].timestamp == 3000000
+    assert records[1].timestamp == 5000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.10")
+async def test_query_records_each_n(bucket_1):
+    """Should query each 3d records"""
+    records: List[Record] = [
+        record async for record in bucket_1.query("entry-2", start=0, each_n=3)
+    ]
+    assert len(records) == 1
+    assert records[0].timestamp == 3000000
