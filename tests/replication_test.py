@@ -7,6 +7,7 @@ from reduct import (
     ReplicationDetailInfo,
     ReplicationSettings,
 )
+from tests.conftest import requires_api
 
 
 @pytest.mark.asyncio
@@ -56,3 +57,24 @@ async def test_delete_replication(client, temporary_replication):
         str(reduct_err.value)
         == f"Status 404: Replication '{temporary_replication}' does not exist"
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.10")
+async def test__each_n_and_each_s_setting(client):
+    """Test creating a replication"""
+    replication_name = "replication-1"
+    settings = ReplicationSettings(
+        src_bucket="bucket-1",
+        dst_bucket="bucket-2",
+        dst_host="https://play.reduct.store",
+        each_n=10,
+        each_s=0.5,
+    )
+
+    await client.create_replication(replication_name, settings)
+    replication = await client.get_replication_detail(replication_name)
+
+    assert replication.settings.each_n == 10
+    assert replication.settings.each_s == 0.5
