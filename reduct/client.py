@@ -179,7 +179,8 @@ class ReplicationSettings(BaseModel):
     dst_token: str = ""
     """access token for the destination instance"""
     entries: List[str] = []
-    """list of entries to replicate. If empty, all entries are replicated. Wildcards are supported"""
+    """list of entries to replicate. If empty, all entries are replicated.
+    Wildcards are supported"""
     include: Dict[str, str] = {}
     """replicate only records with these labels"""
     exclude: Dict[str, str] = {}
