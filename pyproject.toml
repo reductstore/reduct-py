@@ -53,11 +53,11 @@ docs = [
 
 [project.urls]
 ReductStore = "https://www.reduct.store"
-Documentation = "https://py.reduct.store/"
+Documentation = "https://www.reduct.store/docs"
 Source = "https://github.com/reductstore/reduct-py"
 Changelog = "https://github.com/reductstore/reduct-py/blob/main/CHANGELOG.md"
 Twitter = "https://twitter.com/ReductStore"
-Blog = "https://dev.to/reductstore"
+Blog = "https://www.reduct.store/blog"
 
 
 [tool.pytest.ini_options]
