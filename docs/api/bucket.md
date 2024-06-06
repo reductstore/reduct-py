@@ -1,2 +1,0 @@
-::: reduct.Bucket
-    handler: python

@@ -55,9 +55,4 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 
-For more examples, see the [Quick Start](https://py.reduct.store/en/latest/docs/quick-start/).
-
-## References
-
-* [Documentation](https://py.reduct.store/)
-* [ReductStore HTTP API](https://reduct.store/docs/http-api)
+For more examples, see the [Quick Start](https://www.reduct.store/docs/getting-started/with-python) guide.
