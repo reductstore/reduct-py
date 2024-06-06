@@ -30,29 +30,38 @@ pip install reduct-py
 Here is an example of how to use this package to create a bucket, write data to it, and read data from it:
 
 ```python
-from datetime import datetime
-import asyncio
-from reduct import Client, Bucket
+from reduct import Client, BucketSettings, QuotaType
+
 
 async def main():
-    # Create a client for interacting with a ReductStore service
-    client = Client("http://localhost:8383")
+    # 1. Create a ReductStore client
+    async with Client("http://localhost:8383", api_token="my-token") as client:
+        # 2. Get or create a bucket with 1Gb quota
+        bucket = await client.create_bucket(
+            "my-bucket",
+            BucketSettings(quota_type=QuotaType.FIFO, quota_size=1_000_000_000),
+            exist_ok=True,
+        )
 
-    # Create a bucket and store a reference to it in the `bucket` variable
-    bucket: Bucket = await client.create_bucket("my-bucket", exist_ok=True)
+        # 3. Write some data with timestamps in the 'entry-1' entry
+        await bucket.write("sensor-1", b"Record #1", timestamp="2024-01-01T10:00:00Z")
+        await bucket.write("sensor-1", b"Record #2", timestamp="2024-01-01T10:00:01Z")
 
-    # Write data to the bucket
-    ts = datetime.now()
-    await bucket.write("entry-1", b"Hey!!", ts)
+        # 4. Query the data by time range
+        async for record in bucket.query("sensor-1",
+                                         start="2024-01-01T10:00:00Z",
+                                         end="2024-01-01T10:00:02Z"):
+            print(f"Record timestamp: {record.timestamp}")
+            print(f"Record size: {record.size}")
+            print(await record.read_all())
 
-    # Read data from the bucket
-    async with bucket.read("entry-1", ts) as record:
-        data = await record.read_all()
-        print(data)
 
-# Run the main function
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+# 5. Run the main function
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
+
 ```
 
 For more examples, see the [Quick Start](https://www.reduct.store/docs/getting-started/with-python) guide.
