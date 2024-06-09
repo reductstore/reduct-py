@@ -8,7 +8,7 @@ This package provides an asynchronous HTTP client for interacting with  [ReductS
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.10](https://reduct.store/docs/http-api)
+* Supports the [ReductStore HTTP API v1.10](https://www.reduct.store/docs/http-api)
 * Bucket management
 * API Token management
 * Write, read and query data
@@ -64,4 +64,4 @@ if __name__ == "__main__":
 
 ```
 
-For more examples, see the [Quick Start](https://www.reduct.store/docs/getting-started/with-python) guide.
+For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
