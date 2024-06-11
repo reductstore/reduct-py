@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2024-06-11
 
 ### Added:
 
 - RS-261: support `each_n` and `each_s` query parameters, [PR-110](https://github.com/reductstore/reduct-py/pull/110)
-- RS-311: add `each_s` and `each_n` replication settings, [PR-111](https://github.com/reductstore/reduct-py/pull/111)
+- RS-311: support `each_s` and `each_n` replication settings, [PR-111](https://github.com/reductstore/reduct-py/pull/111)
 
 ### Changed:
 
@@ -27,8 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added:
 
-- RS-182: Add flag verify_ssl to Client, [PR-102](https://github.com/reductstore/reduct-py/pull/102)
-- RS-176: Add license field to ServerInfo, [PR-105](https://github.com/reductstore/reduct-py/pull/105)
+- RS-182: flag `verify_ssl` to Client, [PR-102](https://github.com/reductstore/reduct-py/pull/102)
+- RS-176: license field to ServerInfo, [PR-105](https://github.com/reductstore/reduct-py/pull/105)
 - RS-196: accept timestamps in many formats, [PR-196](https://github.com/reductstore/reduct-py/pull/106)
 
 ### Changed:
@@ -220,7 +221,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.9.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.10.0...HEAD
+
+[1.10.0]: https://github.com/reduct-storage/reduct-py/compare/v1.9.1...v1.10.0
 
 [1.9.1]: https://github.com/reduct-storage/reduct-py/compare/v1.9.0...v1.9.1
 
