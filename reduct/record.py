@@ -57,7 +57,7 @@ class Batch:
     def add(
         self,
         timestamp: Union[int, datetime, float, str],
-        data: bytes,
+        data: bytes = b"",
         content_type: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
     ):
@@ -70,7 +70,8 @@ class Batch:
             labels: labels of record (default: {})
         """
         if content_type is None:
-            content_type = "application/octet-stream"
+            content_type = ""
+
         if labels is None:
             labels = {}
 

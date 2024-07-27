@@ -508,3 +508,35 @@ async def test_query_records_each_n(bucket_1):
     ]
     assert len(records) == 1
     assert records[0].timestamp == 3000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.11")
+async def test_update_labels(bucket_1):
+    """Should update labels of a record"""
+    await bucket_1.update(
+        "entry-2", 3000000, {"label1": "new-value", "label2": "", "label3": "value3"}
+    )
+
+    async with bucket_1.read("entry-2", timestamp=3000000) as record:
+        assert record.labels == {"label1": "new-value", "label3": "value3"}
+
+
+@pytest.mark.asyncio
+@requires_api("1.11")
+async def test_update_labels_batch(bucket_1):
+    """Should update labels of records in a batch"""
+    batch = Batch()
+    batch.add(3000000, labels={"label1": "new-value", "label2": "", "label3": "value3"})
+    batch.add(4000000, labels={"label1": "new-value", "label2": "", "label4": "value4"})
+    batch.add(8000000)
+
+    errors = await bucket_1.update_batch("entry-2", batch)
+    assert len(errors) == 1
+    assert errors[8000000] == ReductError(404, "No record with timestamp 8000000")
+
+    async with bucket_1.read("entry-2", timestamp=3000000) as record:
+        assert record.labels == {"label1": "new-value", "label3": "value3"}
+
+    async with bucket_1.read("entry-2", timestamp=4000000) as record:
+        assert record.labels == {"label1": "new-value", "label4": "value4"}

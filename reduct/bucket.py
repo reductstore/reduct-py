@@ -12,6 +12,7 @@ from typing import (
     AsyncIterator,
     Union,
     Dict,
+    Tuple,
 )
 
 from pydantic import BaseModel
@@ -271,23 +272,11 @@ class Bucket:
             ReductError: if there is an HTTP  or communication error
         """
 
-        record_headers = {}
-        content_length = 0
-        for time_stamp, record in batch.items():
-            content_length += record.size
-            header = f"{record.size},{record.content_type}"
-            for label, value in record.labels.items():
-                if "," in label or "=" in label:
-                    header += f',{label}="{value}"'
-                else:
-                    header += f",{label}={value}"
-
-            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
-
         async def iter_body():
             for _, rec in batch.items():
                 yield await rec.read_all()
 
+        content_length, record_headers = self._make_headers(batch)
         _, headers = await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}/batch",
@@ -296,12 +285,65 @@ class Bucket:
             content_length=content_length,
         )
 
-        errors = {}
-        for key, value in headers.items():
-            if key.startswith(ERROR_PREFIX):
-                errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
+        return self._parse_errors_from_headers(headers)
 
-        return errors
+    async def update(
+        self,
+        entry_name: str,
+        timestamp: Union[int, datetime, float, str],
+        labels: Dict[str, str],
+    ):
+        """Update labels of an existing record
+        If a label doesn't exist, it will be created.
+        If a label is empty, it will be removed.
+
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: timestamp of record in microseconds
+            labels: new labels
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> await bucket.update("entry-1", "2022-01-01T01:00:00", {"label1": "value1", "label2": ""})
+
+        """
+        timestamp = unix_timestamp_from_any(timestamp)
+        await self._http.request_all(
+            "PATCH", f"/b/{self.name}/{entry_name}?ts={timestamp}", labels=labels
+        )
+
+    async def update_batch(
+        self, entry_name: str, batch: Batch
+    ) -> Dict[int, ReductError]:
+        """Update labels of existing records
+        If a label doesn't exist, it will be created.
+        If a label is empty, it will be removed.
+
+        Args:
+            entry_name: name of entry in the bucket
+            batch: dict of timestamps as keys and labels as values
+        Returns:
+            dict of errors with timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> batch = Batch()
+            >>> batch.add(1640995200000000, labels={"label1": "value1", "label2": ""})
+            >>> await bucket.update_batch("entry-1", batch)
+
+        """
+
+        content_length, record_headers = self._make_headers(batch)
+        _, headers = await self._http.request_all(
+            "PATCH",
+            f"/b/{self.name}/{entry_name}/batch",
+            extra_headers=record_headers,
+            content_length=content_length,
+        )
+
+        return self._parse_errors_from_headers(headers)
 
     async def query(
         self,
@@ -478,3 +520,30 @@ class Bucket:
         )
         query_id = json.loads(data)["id"]
         return query_id
+
+    @staticmethod
+    def _make_headers(batch: Batch) -> Tuple[int, Dict[str, str]]:
+        """Make headers for batch"""
+        record_headers = {}
+        content_length = 0
+        for time_stamp, record in batch.items():
+            content_length += record.size
+            header = f"{record.size},{record.content_type}"
+            for label, value in record.labels.items():
+                if "," in label or "=" in label:
+                    header += f',{label}="{value}"'
+                else:
+                    header += f",{label}={value}"
+
+            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
+
+        record_headers["Content-Type"] = "application/octet-stream"
+        return content_length, record_headers
+
+    @staticmethod
+    def _parse_errors_from_headers(headers):
+        errors = {}
+        for key, value in headers.items():
+            if key.startswith(ERROR_PREFIX):
+                errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
+        return errors
