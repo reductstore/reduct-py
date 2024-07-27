@@ -305,7 +305,8 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.update("entry-1", "2022-01-01T01:00:00", {"label1": "value1", "label2": ""})
+            >>> await bucket.update("entry-1", "2022-01-01T01:00:00",
+                    {"label1": "value1", "label2": ""})
 
         """
         timestamp = unix_timestamp_from_any(timestamp)
