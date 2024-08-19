@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2024-08-19
+
 ### Added:
 
 - RS-31: `Bucket.update` and `Bucket.update_batch` method for changing labels, [PR-113](https://github.com/reductstore/reduct-py/pull/113)
@@ -225,7 +227,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.11.0...HEAD
+
+[1.11.0]: https://github.com/reduct-storage/reduct-py/compare/v1.10.0...v1.11.0
 
 [1.10.0]: https://github.com/reduct-storage/reduct-py/compare/v1.9.1...v1.10.0
 
