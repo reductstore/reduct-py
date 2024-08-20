@@ -186,7 +186,8 @@ async def test__write_with_content_type(bucket_1):
         assert record.content_type == "text/plain"
 
 
-@pytest.mark.skip  # This test is not working see https://github.com/reductstore/reductstore/issues/547
+# This test is not working see https://github.com/reductstore/reductstore/issues/547
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_write_big_blob(bucket_1):
     """Should write big blob and stop upload if http status is not 200"""
