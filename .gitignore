@@ -5,3 +5,4 @@ reduct/VERSION
 .gitignore
 *.pyc
 .vscode
+venv/
