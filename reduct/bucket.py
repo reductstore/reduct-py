@@ -191,6 +191,61 @@ class Bucket:
             "DELETE", f"/b/{self.name}/{entry_name}?ts={timestamp}"
         )
 
+    async def remove_batch(
+        self, entry_name: str, batch: Batch
+    ) -> Dict[int, ReductError]:
+        """
+        Remove batch of records from entries in a sole request
+        Args:
+            entry_name: name of entry in the bucket
+            batch: list of timestamps
+        Returns:
+            dict of errors with timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        _, record_headers = self._make_headers(batch)
+        _, headers = await self._http.request_all(
+            "DELETE",
+            f"/b/{self.name}/{entry_name}/batch",
+            extra_headers=record_headers,
+        )
+
+        return self._parse_errors_from_headers(headers)
+
+    async def remove_query(
+        self,
+        entry_name: str,
+        start: Optional[Union[int, datetime, float, str]] = None,
+        stop: Optional[Union[int, datetime, float, str]] = None,
+        **kwargs,
+    ) -> int:
+        """
+        Query data to remove within a time interval
+        The time interval is defined by the start and stop parameters that can be:
+        int (UNIX timestamp in microseconds), datetime,
+        float (UNIX timestamp in seconds) or str (ISO 8601 string).
+
+        Args:
+            entry_name: name of entry in the bucket
+            start: the beginning of the time interval.
+                If None, then from the first record
+            stop: the end of the time interval. If None, then to the latest record
+        Keyword Args:
+            include (dict): remove records which have all labels from this dict
+            exclude (dict): remove records which doesn't have all labels from this
+            each_s(Union[int, float]): remove a record for each S seconds
+            each_n(int): remove each N-th record
+        Returns:
+            number of removed records
+        """
+        params = await self._parse_query_params(kwargs, start, stop)
+        resp, _ = await self._http.request_all(
+            "DELETE", f"/b/{self.name}/{entry_name}/q", params=params
+        )
+
+        return json.loads(resp)["removed_records"]
+
     @asynccontextmanager
     async def read(
         self,
@@ -399,8 +454,6 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
-        start = unix_timestamp_from_any(start) if start else None
-        stop = unix_timestamp_from_any(stop) if stop else None
 
         query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
         last = False
@@ -501,24 +554,7 @@ class Bucket:
                     yield parse_record(resp, False)
 
     async def _query(self, entry_name, start, stop, ttl, **kwargs):
-        params = {}
-        if start:
-            params["start"] = int(start)
-        if stop:
-            params["stop"] = int(stop)
-
-        if "include" in kwargs:
-            for name, value in kwargs["include"].items():
-                params[f"include-{name}"] = str(value)
-        if "exclude" in kwargs:
-            for name, value in kwargs["exclude"].items():
-                params[f"exclude-{name}"] = str(value)
-
-        if "each_s" in kwargs:
-            params["each_s"] = float(kwargs["each_s"])
-
-        if "each_n" in kwargs:
-            params["each_n"] = int(kwargs["each_n"])
+        params = await self._parse_query_params(kwargs, start, stop)
 
         if "limit" in kwargs:
             params["limit"] = kwargs["limit"]
@@ -537,6 +573,26 @@ class Bucket:
         )
         query_id = json.loads(data)["id"]
         return query_id
+
+    async def _parse_query_params(self, kwargs, start, stop):
+        start = unix_timestamp_from_any(start) if start else None
+        stop = unix_timestamp_from_any(stop) if stop else None
+        params = {}
+        if start:
+            params["start"] = start
+        if stop:
+            params["stop"] = stop
+        if "include" in kwargs:
+            for name, value in kwargs["include"].items():
+                params[f"include-{name}"] = str(value)
+        if "exclude" in kwargs:
+            for name, value in kwargs["exclude"].items():
+                params[f"exclude-{name}"] = str(value)
+        if "each_s" in kwargs:
+            params["each_s"] = float(kwargs["each_s"])
+        if "each_n" in kwargs:
+            params["each_n"] = int(kwargs["each_n"])
+        return params
 
     @staticmethod
     def _make_headers(batch: Batch) -> Tuple[int, Dict[str, str]]:
