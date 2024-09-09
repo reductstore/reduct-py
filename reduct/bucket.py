@@ -175,6 +175,22 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
 
+    async def remove_record(
+        self, entry_name: str, timestamp: Union[int, datetime, float, str]
+    ):
+        """
+        Remove record from entry
+        Args:
+            entry_name: name of entry
+            timestamp: timestamp of record
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        timestamp = unix_timestamp_from_any(timestamp)
+        await self._http.request_all(
+            "DELETE", f"/b/{self.name}/{entry_name}?ts={timestamp}"
+        )
+
     @asynccontextmanager
     async def read(
         self,

@@ -542,3 +542,14 @@ async def test_update_labels_batch(bucket_1):
 
     async with bucket_1.read("entry-2", timestamp=4000000) as record:
         assert record.labels == {"label1": "new-value", "label4": "value4"}
+
+
+@pytest.mark.asyncio
+@requires_api("1.12")
+async def test_remove_single_record(bucket_1):
+    """Should remove a single record"""
+    await bucket_1.remove_record("entry-2", 3000000)
+    records = [record async for record in bucket_1.query("entry-2")]
+    assert len(records) == 2
+    assert records[0].timestamp == 4000000
+    assert records[1].timestamp == 5000000
