@@ -133,6 +133,16 @@ async def test__create_bucket_custom_settings(client):
     }
 
 
+@pytest.mark.parametrize("quota_type", [QuotaType.NONE, QuotaType.FIFO, QuotaType.HARD])
+@pytest.mark.asyncio
+@requires_api("1.12")
+async def test__create_bucket_quota(client, quota_type):
+    """Should create a bucket with custom settings"""
+    bucket = await client.create_bucket("bucket", BucketSettings(quota_type=quota_type))
+    settings = await bucket.get_settings()
+    assert settings.dict()["quota_type"] == quota_type
+
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1")
 async def test__create_bucket_with_error(client):

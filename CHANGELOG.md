@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added:
+
+- RS-418: `Bucket.remove_record`, `Bucket.remove_batch` and `Bucket.remove_query` to remove records, [PR-114](https://github.com/reductstore/reduct-py/pull/114)
+- RS-289: QuotaType.HARD, [PR-115](https://github.com/reductstore/reduct-py/pulls/115)
+
 ## [1.11.0] - 2024-08-19
 
 ### Added:
