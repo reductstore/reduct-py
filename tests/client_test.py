@@ -1,7 +1,6 @@
 """Tests for Client"""
 
 from asyncio import sleep
-from sys import api_version
 from typing import List
 
 import pytest
