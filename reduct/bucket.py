@@ -35,6 +35,7 @@ class QuotaType(Enum):
 
     NONE = "NONE"
     FIFO = "FIFO"
+    HARD = "HARD"
 
 
 class BucketSettings(BaseModel):
