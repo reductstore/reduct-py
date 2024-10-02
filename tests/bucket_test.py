@@ -584,3 +584,12 @@ async def test_remove_query(bucket_1):
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 1
     assert records[0].timestamp == 5000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.12")
+async def test_rename_entry(bucket_1):
+    """Should rename an entry"""
+    await bucket_1.rename_entry("entry-2", "new-entry")
+    entries = await bucket_1.get_entry_list()
+    assert entries[1].name == "new-entry"
