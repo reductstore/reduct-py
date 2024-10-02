@@ -593,3 +593,11 @@ async def test_rename_entry(bucket_1):
     await bucket_1.rename_entry("entry-2", "new-entry")
     entries = await bucket_1.get_entry_list()
     assert entries[1].name == "new-entry"
+
+
+@pytest.mark.asyncio
+@requires_api("1.12")
+async def test_rename_bucket(bucket_1):
+    """Should rename a bucket"""
+    await bucket_1.rename("new-bucket")
+    assert bucket_1.name == "new-bucket"
