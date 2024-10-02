@@ -247,6 +247,19 @@ class Bucket:
 
         return json.loads(resp)["removed_records"]
 
+    async def rename_entry(self, old_name: str, new_name: str):
+        """
+        Rename entry
+        Args:
+            old_name: old name of entry
+            new_name: new name of entry
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all(
+            "PUT", f"/b/{self.name}/{old_name}/rename", json={"new_name": new_name}
+        )
+
     @asynccontextmanager
     async def read(
         self,
