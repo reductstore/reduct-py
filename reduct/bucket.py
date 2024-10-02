@@ -260,6 +260,19 @@ class Bucket:
             "PUT", f"/b/{self.name}/{old_name}/rename", json={"new_name": new_name}
         )
 
+    async def rename(self, new_name: str):
+        """
+        Rename bucket
+        Args:
+            new_name: new name of bucket
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all(
+            "PUT", f"/b/{self.name}/rename", json={"new_name": new_name}
+        )
+        self.name = new_name
+
     @asynccontextmanager
     async def read(
         self,
