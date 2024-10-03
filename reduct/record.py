@@ -131,7 +131,7 @@ class Batch:
 LABEL_PREFIX = "x-reduct-label-"
 TIME_PREFIX = "x-reduct-time-"
 ERROR_PREFIX = "x-reduct-error-"
-CHUNK_SIZE = 512_000
+CHUNK_SIZE = 16_000
 
 
 def parse_record(resp: ClientResponse, last=True) -> Record:

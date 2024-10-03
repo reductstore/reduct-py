@@ -26,6 +26,7 @@ from reduct.record import (
     Batch,
     TIME_PREFIX,
     ERROR_PREFIX,
+    CHUNK_SIZE,
 )
 from reduct.time import unix_timestamp_from_any
 
@@ -372,7 +373,7 @@ class Bucket:
 
         async def iter_body():
             for _, rec in batch.items():
-                async for chunk in rec.read(16 * 1024):
+                async for chunk in rec.read(CHUNK_SIZE):
                     yield chunk
 
         content_length, record_headers = self._make_headers(batch)
