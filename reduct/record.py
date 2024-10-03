@@ -16,6 +16,7 @@ from typing import (
     Union,
 )
 
+from PIL.ImageChops import offset
 from aiohttp import ClientResponse
 
 from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any
@@ -78,8 +79,14 @@ class Batch:
         if labels is None:
             labels = {}
 
+        rec_offset = 0
+
         def read(n: int) -> AsyncIterator[bytes]:
-            raise NotImplementedError()
+            nonlocal rec_offset
+            while rec_offset < len(data):
+                chunk = data[rec_offset : rec_offset + n]
+                rec_offset += len(chunk)
+                yield chunk
 
         async def read_all():
             return data

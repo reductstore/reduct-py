@@ -372,7 +372,8 @@ class Bucket:
 
         async def iter_body():
             for _, rec in batch.items():
-                yield await rec.read_all()
+                async for chunk in rec.read(16 * 1024):
+                    yield chunk
 
         content_length, record_headers = self._make_headers(batch)
         _, headers = await self._http.request_all(
