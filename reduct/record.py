@@ -103,14 +103,20 @@ class Batch:
         return sorted(self._records.items())
 
     @property
-    def size(self):
+    def size(self) -> int:
         """Get size of data in batch"""
         return self._total_size
 
     @property
-    def last_access(self):
+    def last_access(self) -> float:
         """Get last access time of batch. Can be used for sending by timeout"""
         return self.last_access
+
+    def clear(self):
+        """Clear batch"""
+        self._records.clear()
+        self._total_size = 0
+        self._last_access = 0
 
     def __len__(self):
         return len(self._records)
