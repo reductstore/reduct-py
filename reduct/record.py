@@ -112,7 +112,6 @@ class Batch:
         """Get last access time of batch. Can be used for sending by timeout"""
         return self.last_access
 
-    @property
     def __len__(self):
         return len(self._records)
 
