@@ -16,7 +16,6 @@ from typing import (
     Union,
 )
 
-from PIL.ImageChops import offset
 from aiohttp import ClientResponse
 
 from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any
