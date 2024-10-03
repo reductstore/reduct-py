@@ -80,14 +80,14 @@ class Batch:
 
         rec_offset = 0
 
-        def read(n: int) -> AsyncIterator[bytes]:
+        async def read(n: int) -> AsyncIterator[bytes]:
             nonlocal rec_offset
             while rec_offset < len(data):
                 chunk = data[rec_offset : rec_offset + n]
                 rec_offset += len(chunk)
                 yield chunk
 
-        async def read_all():
+        async def read_all() -> bytes:
             return data
 
         record = Record(
