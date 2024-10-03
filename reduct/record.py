@@ -1,6 +1,7 @@
 """Record representation and its parsing"""
 
 import asyncio
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -53,6 +54,8 @@ class Batch:
 
     def __init__(self):
         self._records: Dict[int, Record] = {}
+        self._total_size = 0
+        self._last_access = 0
 
     def add(
         self,
@@ -91,11 +94,27 @@ class Batch:
             last=False,
         )
 
+        self._total_size += record.size
+        self._last_access = time.time()
         self._records[record.timestamp] = record
 
     def items(self) -> List[Tuple[int, Record]]:
         """Get records as dict items"""
         return sorted(self._records.items())
+
+    @property
+    def size(self):
+        """Get size of data in batch"""
+        return self._total_size
+
+    @property
+    def last_access(self):
+        """Get last access time of batch. Can be used for sending by timeout"""
+        return self.last_access
+
+    @property
+    def __len__(self):
+        return len(self._records)
 
 
 LABEL_PREFIX = "x-reduct-label-"
