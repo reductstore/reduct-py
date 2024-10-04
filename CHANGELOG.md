@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RS-389: QuotaType.HARD, [PR-115](https://github.com/reductstore/reduct-py/pulls/115)
 - RS-388: Add `Bucket.rename_entry` method, [PR-117](https://github.com/reductstore/reduct-py/pull/117)
 - RS-419: Add `Bucket.rename` method, [PR-118](https://github.com/reductstore/reduct-py/pull/118)
+- RS-462: Improve batching, [PR-119](https://github.com/reductstore/reduct-py/pull/119)
 
 ## [1.11.0] - 2024-08-19
 

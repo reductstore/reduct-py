@@ -1,6 +1,7 @@
 """Record representation and its parsing"""
 
 import asyncio
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
@@ -53,6 +54,8 @@ class Batch:
 
     def __init__(self):
         self._records: Dict[int, Record] = {}
+        self._total_size = 0
+        self._last_access = 0
 
     def add(
         self,
@@ -75,10 +78,16 @@ class Batch:
         if labels is None:
             labels = {}
 
-        def read(n: int) -> AsyncIterator[bytes]:
-            raise NotImplementedError()
+        rec_offset = 0
 
-        async def read_all():
+        async def read(n: int) -> AsyncIterator[bytes]:
+            nonlocal rec_offset
+            while rec_offset < len(data):
+                chunk = data[rec_offset : rec_offset + n]
+                rec_offset += len(chunk)
+                yield chunk
+
+        async def read_all() -> bytes:
             return data
 
         record = Record(
@@ -91,17 +100,38 @@ class Batch:
             last=False,
         )
 
+        self._total_size += record.size
+        self._last_access = time.time()
         self._records[record.timestamp] = record
 
     def items(self) -> List[Tuple[int, Record]]:
         """Get records as dict items"""
         return sorted(self._records.items())
 
+    @property
+    def size(self) -> int:
+        """Get size of data in batch"""
+        return self._total_size
+
+    @property
+    def last_access(self) -> float:
+        """Get last access time of batch. Can be used for sending by timeout"""
+        return self._last_access
+
+    def clear(self):
+        """Clear batch"""
+        self._records.clear()
+        self._total_size = 0
+        self._last_access = 0
+
+    def __len__(self):
+        return len(self._records)
+
 
 LABEL_PREFIX = "x-reduct-label-"
 TIME_PREFIX = "x-reduct-time-"
 ERROR_PREFIX = "x-reduct-error-"
-CHUNK_SIZE = 512_000
+CHUNK_SIZE = 16_000
 
 
 def parse_record(resp: ClientResponse, last=True) -> Record:
@@ -154,28 +184,26 @@ def _parse_header_as_csv_row(row: str) -> (int, str, Dict[str, str]):
     return content_length, content_type, labels
 
 
-async def _read(buffer: bytes, n: int):
-    count = 0
-    size = len(buffer)
-    n = min(n, size)
+async def _read(buffer: List[bytes], n: int) -> AsyncIterator[bytes]:
+    while len(buffer) > 0:
+        part = buffer.pop(0)
+        if len(part) == 0:
+            continue
 
-    while True:
-        chunk = buffer[count : count + n]
-        count += len(chunk)
-        n = min(n, size - count)
-        yield chunk
+        count = 0
+        size = len(part)
+        m = min(n, size)
 
-        await asyncio.sleep(0)
+        while count < size:
+            chunk = part[count : count + m]
+            count += len(chunk)
+            m = min(m, size - count)
+            yield chunk
+            await asyncio.sleep(0)
 
-        if count == size:
-            break
 
-
-async def _read_all(buffer):
-    data = b""
-    async for chunk in _read(buffer, CHUNK_SIZE):
-        data += chunk
-    return data
+async def _read_all(buffer: List[bytes]) -> bytes:
+    return b"".join(buffer)
 
 
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
@@ -206,7 +234,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
                 # The batched records are small if they are not the last.
                 # The last batched record is read in the async generator in chunks.
                 if head:
-                    buffer = b""
+                    buffer = []
                 else:
                     buffer = await _read_response(resp, content_length)
                 read_func = partial(_read, buffer)
@@ -225,15 +253,13 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
             yield record
 
 
-async def _read_response(resp, content_length):
+async def _read_response(resp, content_length) -> List[bytes]:
     chunks = []
     count = 0
-    while True:
+    while count < content_length:
         n = min(CHUNK_SIZE, content_length - count)
         chunk = await resp.content.read(n)
         chunks.append(chunk)
         count += len(chunk)
 
-        if count == content_length:
-            break
-    return b"".join(chunks)
+    return chunks

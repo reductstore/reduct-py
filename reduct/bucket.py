@@ -343,7 +343,7 @@ class Bucket:
 
         """
         timestamp = unix_timestamp_from_any(
-            timestamp if timestamp else int(time.time_ns() / 1000)
+            timestamp if timestamp is not None else int(time.time_ns() / 1000)
         )
         params = {"ts": timestamp}
         await self._http.request_all(

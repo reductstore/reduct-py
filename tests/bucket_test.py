@@ -446,6 +446,10 @@ async def test_batched_write(bucket_1):
     )
     batch.add(4000, b"you?")
 
+    assert len(batch) == 4
+    assert batch.size == 14
+    assert batch.last_access > 0
+
     await bucket_1.write_batch("entry-3", batch)
 
     records = [record async for record in bucket_1.query("entry-3")]
@@ -471,6 +475,11 @@ async def test_batched_write(bucket_1):
     assert records[3].labels == {}
 
     assert frase == b"Hey, how are you?"
+
+    batch.clear()
+    assert len(batch) == 0
+    assert batch.size == 0
+    assert batch.last_access == 0
 
 
 @requires_api("1.7")
