@@ -116,7 +116,7 @@ class Batch:
     @property
     def last_access(self) -> float:
         """Get last access time of batch. Can be used for sending by timeout"""
-        return self.last_access
+        return self._last_access
 
     def clear(self):
         """Clear batch"""
