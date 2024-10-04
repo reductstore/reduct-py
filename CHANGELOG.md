@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2024-10-04
+
 ### Added:
 
 - RS-418: `Bucket.remove_record`, `Bucket.remove_batch` and `Bucket.remove_query` to remove records, [PR-114](https://github.com/reductstore/reduct-py/pull/114)
@@ -235,7 +237,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.12.0...HEAD
+
+[1.12.0]: https://github.com/reduct-storage/reduct-py/compare/v1.11.0...v1.12.0
 
 [1.11.0]: https://github.com/reduct-storage/reduct-py/compare/v1.10.0...v1.11.0
 
