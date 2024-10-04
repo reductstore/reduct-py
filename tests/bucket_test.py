@@ -446,7 +446,7 @@ async def test_batched_write(bucket_1):
     )
     batch.add(4000, b"you?")
 
-    assert len(batch._records) == 4
+    assert len(batch) == 4
     assert batch.size == 14
     assert batch.last_access > 0
 

@@ -26,7 +26,6 @@ from reduct.record import (
     Batch,
     TIME_PREFIX,
     ERROR_PREFIX,
-    CHUNK_SIZE,
 )
 from reduct.time import unix_timestamp_from_any
 
