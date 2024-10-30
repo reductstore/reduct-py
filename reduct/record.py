@@ -1,4 +1,4 @@
-"""Record representation and its parsing"""
+"""Record module"""
 
 import asyncio
 import time
@@ -36,7 +36,7 @@ class Record:
     read_all: Callable[[None], Awaitable[bytes]]
     """read all data"""
     read: Callable[[int], AsyncIterator[bytes]]
-    """read data in chunks where each chunk has size <= n bytes"""
+    """read data in chunks where each chunk has size less than or equal to n"""
 
     labels: Dict[str, str]
     """labels of record"""
@@ -66,8 +66,8 @@ class Batch:
     ):
         """Add record to batch
         Args:
-            timestamp: timestamp of record. int (UNIX timestamp in microseconds), d
-                atetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
             data: data to store
             content_type: content type of data (default: application/octet-stream)
             labels: labels of record (default: {})

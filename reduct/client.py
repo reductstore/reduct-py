@@ -1,4 +1,4 @@
-"""Main client code"""
+"""Client module for ReductStore HTTP API"""
 
 from datetime import datetime
 from typing import Optional, List, Dict

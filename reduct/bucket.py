@@ -1,4 +1,4 @@
-"""Bucket API"""
+"""Bucket module for ReductStore HTTP API"""
 
 import asyncio
 import json
