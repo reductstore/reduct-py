@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changes
+
+- RS-466: Reorganize API messages for better documenting, [PR-120](https://github.com/reductstore/reduct-py/pull/120)
+
 ## [1.12.0] - 2024-10-04
 
 ### Added:
