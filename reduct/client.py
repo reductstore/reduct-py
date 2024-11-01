@@ -1,14 +1,12 @@
 """Client module for ReductStore HTTP API"""
 
-from datetime import datetime
 from typing import Optional, List, Dict
 
 from aiohttp import ClientSession
-from pydantic import BaseModel
 
 from reduct.bucket import BucketInfo, BucketSettings, Bucket
-from reduct.http import HttpClient
 from reduct.error import ReductError
+from reduct.http import HttpClient
 from reduct.msg.replication import (
     ReplicationList,
     ReplicationDetailInfo,

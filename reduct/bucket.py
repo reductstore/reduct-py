@@ -5,7 +5,6 @@ import json
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime
-from enum import Enum
 from typing import (
     Optional,
     List,
@@ -14,8 +13,6 @@ from typing import (
     Dict,
     Tuple,
 )
-
-from pydantic import BaseModel
 
 from reduct.error import ReductError
 from reduct.http import HttpClient
