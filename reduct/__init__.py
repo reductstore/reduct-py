@@ -3,24 +3,39 @@
 from reduct.record import Record, Batch
 
 from reduct.bucket import (
-    QuotaType,
     Bucket,
-    BucketInfo,
-    BucketSettings,
-    EntryInfo,
-    BucketFullInfo,
 )
 
 from reduct.client import (
     Client,
-    ServerInfo,
-    BucketList,
-    Token,
-    Permissions,
-    FullTokenInfo,
+)
+
+from reduct.msg.replication import (
     ReplicationInfo,
     ReplicationDetailInfo,
     ReplicationSettings,
+)
+
+from reduct.msg.token import (
+    Token,
+    Permissions,
+    FullTokenInfo,
+    TokenList,
+)
+
+from reduct.msg.server import (
+    ServerInfo,
+    BucketList,
+    Defaults,
+    LicenseInfo,
+)
+
+from reduct.msg.bucket import (
+    QuotaType,
+    BucketInfo,
+    BucketSettings,
+    EntryInfo,
+    BucketFullInfo,
 )
 
 from reduct.error import ReductError
