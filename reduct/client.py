@@ -1,205 +1,26 @@
 """Client module for ReductStore HTTP API"""
 
-from datetime import datetime
 from typing import Optional, List, Dict
 
 from aiohttp import ClientSession
-from pydantic import BaseModel
 
 from reduct.bucket import BucketInfo, BucketSettings, Bucket
-from reduct.http import HttpClient
 from reduct.error import ReductError
-
-
-class Defaults(BaseModel):
-    """Default server settings"""
-
-    bucket: BucketSettings
-    """settings for a new bucket"""
-
-
-class LicenseInfo(BaseModel):
-    """License information"""
-
-    licensee: str
-    """Licensee usually is the company name"""
-
-    invoice: str
-    """Invoice number"""
-
-    expiry_date: datetime
-    """Expiry date of the license in ISO 8601 format (UTC)"""
-
-    plan: str
-    """Plan name"""
-
-    device_number: int
-    """Number of devices (0 for unlimited)"""
-
-    disk_quota: int
-    """Disk quota in TB (0 for unlimited)"""
-
-    fingerprint: str
-    """License fingerprint"""
-
-
-class ServerInfo(BaseModel):
-    """Server stats"""
-
-    version: str
-    """version of the storage in x.y.z format"""
-
-    bucket_count: int
-    """number of buckets in the storage"""
-
-    usage: int
-    """stored data in bytes"""
-
-    uptime: int
-    """storage uptime in seconds"""
-
-    oldest_record: int
-    """UNIX timestamp of the oldest record in microseconds"""
-
-    latest_record: int
-    """UNIX timestamp of the latest record in microseconds"""
-
-    license: Optional[LicenseInfo] = None
-    """license information"""
-
-    defaults: Defaults
-    """Default server settings"""
-
-
-class BucketList(BaseModel):
-    """List of buckets"""
-
-    buckets: List[BucketInfo]
-
-
-class Permissions(BaseModel):
-    """Token permission"""
-
-    full_access: bool
-    """full access to manage buckets and tokens"""
-
-    read: Optional[List[str]]
-    """list of buckets with read access"""
-
-    write: Optional[List[str]]
-    """list of buckets with write access"""
-
-
-class Token(BaseModel):
-    """Token for authentication"""
-
-    name: str
-    """name of token"""
-
-    created_at: datetime
-    """creation time of token"""
-
-    is_provisioned: bool = False
-    """token is provisioned and can't be deleted or changed"""
-
-
-class FullTokenInfo(Token):
-    """Full information about token with permissions"""
-
-    permissions: Permissions
-    """permissions of token"""
-
-
-class TokenList(BaseModel):
-    """List of tokens"""
-
-    tokens: List[Token]
-
-
-class TokenCreateResponse(BaseModel):
-    """Response from creating a token"""
-
-    value: str
-    """token for authentication"""
-
-
-class ReplicationInfo(BaseModel):
-    """Replication information"""
-
-    name: str
-    """name of the replication"""
-    is_provisioned: bool
-    """replication is provisioned and can't be deleted or changed"""
-    is_active: bool
-    """replication is active and the remote server is reachable"""
-    pending_records: int
-    """number of records to replicate"""
-
-
-class ReplicationList(BaseModel):
-    """List of replications"""
-
-    replications: List[ReplicationInfo]
-
-
-class ReplicationDiagnosticsError(BaseModel):
-    """Error information for replication"""
-
-    count: int
-    last_message: str
-
-
-class ReplicationDiagnosticsDetail(BaseModel):
-    """Diagnostics information for replication"""
-
-    ok: int
-    """number of successful replications"""
-    errored: int
-    """number of failed replications"""
-    errors: Dict[int, ReplicationDiagnosticsError]
-    """list of errors grouped by status code"""
-
-
-class ReplicationDiagnostics(BaseModel):
-    """Detailed diagnostics for replication"""
-
-    hourly: ReplicationDiagnosticsDetail
-    """hourly diagnostics"""
-
-
-class ReplicationSettings(BaseModel):
-    """Settings for creating a replication"""
-
-    src_bucket: str
-    """source bucket name"""
-    dst_bucket: str
-    """destination bucket name"""
-    dst_host: str
-    """url of the destination instance"""
-    dst_token: str = ""
-    """access token for the destination instance"""
-    entries: List[str] = []
-    """list of entries to replicate. If empty, all entries are replicated.
-    Wildcards are supported"""
-    include: Dict[str, str] = {}
-    """replicate only records with these labels"""
-    exclude: Dict[str, str] = {}
-    """exclude records with these labels"""
-    each_s: Optional[float] = None
-    """replicate a record every S seconds"""
-    each_n: Optional[int] = None
-    """replicate every Nth record"""
-
-
-class ReplicationDetailInfo(BaseModel):
-    """Complete information about a replication"""
-
-    diagnostics: ReplicationDiagnostics
-    """diagnostics information"""
-    info: ReplicationInfo
-    """replication information"""
-    settings: ReplicationSettings
-    """replication settings"""
+from reduct.http import HttpClient
+from reduct.msg.replication import (
+    ReplicationList,
+    ReplicationDetailInfo,
+    ReplicationSettings,
+    ReplicationInfo,
+)
+from reduct.msg.server import ServerInfo, BucketList
+from reduct.msg.token import (
+    TokenCreateResponse,
+    Token,
+    TokenList,
+    FullTokenInfo,
+    Permissions,
+)
 
 
 class Client:
@@ -244,7 +65,7 @@ class Client:
         Get high level server info
 
         Returns:
-            ServerInfo:
+            ServerInfo: server information
 
         Raises:
             ReductError: if there is an HTTP error
@@ -254,10 +75,10 @@ class Client:
 
     async def list(self) -> List[BucketInfo]:
         """
-        Return a list of all buckets on server
+        Get a list of all buckets on server
 
         Returns:
-            List[BucketInfo]
+            List[BucketInfo]: the list of buckets
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -270,7 +91,7 @@ class Client:
         Args:
             name: name of the bucket
         Returns:
-            Bucket
+            Bucket: the bucket object
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -309,7 +130,7 @@ class Client:
         """
         Get a list of all tokens
         Returns:
-            List[Token]
+            List[Token]: the list of tokens
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -322,7 +143,7 @@ class Client:
         Args:
             name: name of the token
         Returns:
-            Token
+            FullTokenInfo: the token information with permissions
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -359,7 +180,7 @@ class Client:
         """
         Get information about the current token
         Returns:
-            FullTokenInfo
+            FullTokenInfo: the current token information with permission
         Raises:
             ReductError: if there is an HTTP error
         """

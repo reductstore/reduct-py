@@ -5,7 +5,6 @@ import json
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime
-from enum import Enum
 from typing import (
     Optional,
     List,
@@ -15,10 +14,9 @@ from typing import (
     Tuple,
 )
 
-from pydantic import BaseModel
-
 from reduct.error import ReductError
 from reduct.http import HttpClient
+from reduct.msg.bucket import BucketSettings, BucketInfo, EntryInfo, BucketFullInfo
 from reduct.record import (
     Record,
     parse_batched_records,
@@ -28,87 +26,6 @@ from reduct.record import (
     ERROR_PREFIX,
 )
 from reduct.time import unix_timestamp_from_any
-
-
-class QuotaType(Enum):
-    """determines if database has a fixed size"""
-
-    NONE = "NONE"
-    FIFO = "FIFO"
-    HARD = "HARD"
-
-
-class BucketSettings(BaseModel):
-    """Configuration for a bucket"""
-
-    max_block_size: Optional[int] = None
-    """max block size in bytes"""
-
-    max_block_records: Optional[int] = None
-    """max number of records in a block"""
-
-    quota_type: Optional[QuotaType] = None
-    """quota type"""
-
-    quota_size: Optional[int] = None
-    """quota size in bytes"""
-
-
-class BucketInfo(BaseModel):
-    """Information about each bucket"""
-
-    name: str
-    """name of bucket"""
-
-    entry_count: int
-    """number of entries in the bucket"""
-
-    size: int
-    """size of bucket data in bytes"""
-
-    oldest_record: int
-    """UNIX timestamp of the oldest record in microseconds"""
-
-    latest_record: int
-    """UNIX timestamp of the latest record in microseconds"""
-
-    is_provisioned: bool = False
-    """bucket is provisioned amd you can't remove it or change its settings"""
-
-
-class EntryInfo(BaseModel):
-    """Entry of bucket"""
-
-    name: str
-    """name of entry"""
-
-    size: int
-    """size of stored data in bytes"""
-
-    block_count: int
-    """number of blocks"""
-
-    record_count: int
-    """number of records"""
-    oldest_record: int
-
-    """UNIX timestamp of the oldest record in microseconds"""
-
-    latest_record: int
-    """UNIX timestamp of the latest record in microseconds"""
-
-
-class BucketFullInfo(BaseModel):
-    """Information about bucket and contained entries"""
-
-    info: BucketInfo
-    """statistics about bucket"""
-
-    settings: BucketSettings
-    """settings of bucket"""
-
-    entries: List[EntryInfo]
-    """information about entries of bucket"""
 
 
 class Bucket:
@@ -122,7 +39,7 @@ class Bucket:
         """
         Get current bucket settings
         Returns:
-             BucketSettings:
+             BucketSettings: the bucket settings
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -142,7 +59,7 @@ class Bucket:
         """
         Get statistics about bucket
         Returns:
-           BucketInfo:
+           BucketInfo: the bucket information
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -152,7 +69,7 @@ class Bucket:
         """
         Get list of entries with their stats
         Returns:
-            List[EntryInfo]
+            List[EntryInfo]: the list of entries with stats
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -201,7 +118,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of timestamps
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with  record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -279,7 +197,7 @@ class Bucket:
         entry_name: str,
         timestamp: Optional[Union[int, datetime, float, str]] = None,
         head: bool = False,
-    ) -> Record:
+    ) -> AsyncIterator[Record]:
         """
         Read a record from entry
         Args:
@@ -289,7 +207,7 @@ class Bucket:
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
             head: if True: get only the header of a recod with metadata
         Returns:
-            async context with a record
+            AsyncIterator[Record]: the record object
         Raises:
             ReductError: if there is an HTTP error
         Examples:
@@ -365,7 +283,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of records
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with record timestamps as keys
         Raises:
             ReductError: if there is an HTTP  or communication error
         """
@@ -423,7 +342,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: dict of timestamps as keys and labels as values
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
 
@@ -513,6 +433,9 @@ class Bucket:
     async def get_full_info(self) -> BucketFullInfo:
         """
         Get full information about bucket (settings, statistics, entries)
+
+        Returns:
+            BucketFullInfo: the full information about the bucket
         """
         body, _ = await self._http.request_all("GET", f"/b/{self.name}")
         return BucketFullInfo.model_validate_json(body)
