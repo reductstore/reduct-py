@@ -75,10 +75,10 @@ class Client:
 
     async def list(self) -> List[BucketInfo]:
         """
-        Return a list of all buckets on server
+        Get a list of all buckets on server
 
         Returns:
-            List[BucketInfo]
+            List[BucketInfo] the list of buckets
         Raises:
             ReductError: if there is an HTTP error
         """
