@@ -118,7 +118,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of timestamps
         Returns:
-            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with  record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -282,7 +283,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of records
         Returns:
-            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with record timestamps as keys
         Raises:
             ReductError: if there is an HTTP  or communication error
         """
@@ -340,7 +342,8 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: dict of timestamps as keys and labels as values
         Returns:
-            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors
+                with record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
 

@@ -24,6 +24,7 @@ class ReplicationList(BaseModel):
     replications: List[ReplicationInfo]
     """list of replications"""
 
+
 class ReplicationDiagnosticsError(BaseModel):
     """Error information for replication"""
 
