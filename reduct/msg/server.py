@@ -72,3 +72,4 @@ class BucketList(BaseModel):
     """List of buckets"""
 
     buckets: List[BucketInfo]
+    """list of buckets"""

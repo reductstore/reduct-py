@@ -22,13 +22,15 @@ class ReplicationList(BaseModel):
     """List of replications"""
 
     replications: List[ReplicationInfo]
-
+    """list of replications"""
 
 class ReplicationDiagnosticsError(BaseModel):
     """Error information for replication"""
 
     count: int
+    """number of times this error occurred"""
     last_message: str
+    """last error message for this error"""
 
 
 class ReplicationDiagnosticsDetail(BaseModel):

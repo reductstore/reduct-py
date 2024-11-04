@@ -43,6 +43,7 @@ class TokenList(BaseModel):
     """List of tokens"""
 
     tokens: List[Token]
+    """list of tokens"""
 
 
 class TokenCreateResponse(BaseModel):

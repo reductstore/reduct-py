@@ -206,7 +206,7 @@ class Bucket:
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
             head: if True: get only the header of a recod with metadata
         Returns:
-            Record: async context with a record
+            AsyncContextManager[Record]: the record object
         Raises:
             ReductError: if there is an HTTP error
         Examples:
