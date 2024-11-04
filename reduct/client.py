@@ -130,7 +130,7 @@ class Client:
         """
         Get a list of all tokens
         Returns:
-            List[Token]
+            List[Token]: the list of tokens
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -143,7 +143,7 @@ class Client:
         Args:
             name: name of the token
         Returns:
-            Token
+            FullTokenInfo: the token information with permissions
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -180,7 +180,7 @@ class Client:
         """
         Get information about the current token
         Returns:
-            FullTokenInfo
+            FullTokenInfo: the current token information with permission
         Raises:
             ReductError: if there is an HTTP error
         """
