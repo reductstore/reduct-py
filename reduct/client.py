@@ -65,7 +65,7 @@ class Client:
         Get high level server info
 
         Returns:
-            ServerInfo:
+            ServerInfo: server information
 
         Raises:
             ReductError: if there is an HTTP error
@@ -78,7 +78,7 @@ class Client:
         Get a list of all buckets on server
 
         Returns:
-            List[BucketInfo] the list of buckets
+            List[BucketInfo]: the list of buckets
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -91,7 +91,7 @@ class Client:
         Args:
             name: name of the bucket
         Returns:
-            Bucket
+            Bucket: the bucket object
         Raises:
             ReductError: if there is an HTTP error
         """

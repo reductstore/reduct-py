@@ -39,7 +39,7 @@ class Bucket:
         """
         Get current bucket settings
         Returns:
-             BucketSettings:
+             BucketSettings: the bucket settings
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -59,7 +59,7 @@ class Bucket:
         """
         Get statistics about bucket
         Returns:
-           BucketInfo:
+           BucketInfo: the bucket information
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -69,7 +69,7 @@ class Bucket:
         """
         Get list of entries with their stats
         Returns:
-            List[EntryInfo]
+            List[EntryInfo]: the list of entries with stats
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -118,7 +118,7 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of timestamps
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
         """
@@ -206,7 +206,7 @@ class Bucket:
             timestamp: UNIX timestamp in microseconds - if None: get the latest record
             head: if True: get only the header of a recod with metadata
         Returns:
-            async context with a record
+            Record: async context with a record
         Raises:
             ReductError: if there is an HTTP error
         Examples:
@@ -282,7 +282,7 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: list of records
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
         Raises:
             ReductError: if there is an HTTP  or communication error
         """
@@ -340,7 +340,7 @@ class Bucket:
             entry_name: name of entry in the bucket
             batch: dict of timestamps as keys and labels as values
         Returns:
-            dict of errors with timestamps as keys
+            Dict[int, ReductError]: the dictionary of errors with  record timestamps as keys
         Raises:
             ReductError: if there is an HTTP error
 
@@ -430,6 +430,9 @@ class Bucket:
     async def get_full_info(self) -> BucketFullInfo:
         """
         Get full information about bucket (settings, statistics, entries)
+
+        Returns:
+            BucketFullInfo: the full information about the bucket
         """
         body, _ = await self._http.request_all("GET", f"/b/{self.name}")
         return BucketFullInfo.model_validate_json(body)
