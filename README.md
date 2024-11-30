@@ -51,7 +51,7 @@ async def main():
         async for record in bucket.query("sensor-1",
                                          start="2024-01-01T10:00:00Z",
                                          end="2024-01-01T10:00:02Z",
-                                         where={"&score": {"$gt": 10}}):
+                                         when={"&score": {"$gt": 10}}):
             print(f"Record timestamp: {record.timestamp}")
             print(f"Record size: {record.size}")
             print(await record.read_all())
