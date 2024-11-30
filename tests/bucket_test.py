@@ -86,7 +86,7 @@ async def test__get_entries(bucket_1):
         "name": "entry-1",
         "oldest_record": 1000000,
         "record_count": 2,
-        "size": 88,
+        "size": 114,
     }
 
     assert entries[1].model_dump() == {
@@ -95,7 +95,7 @@ async def test__get_entries(bucket_1):
         "name": "entry-2",
         "oldest_record": 3000000,
         "record_count": 3,
-        "size": 133,
+        "size": 172,
     }
 
 
@@ -239,47 +239,6 @@ async def test_query_records_first(bucket_1):
     ]
     assert len(records) == 1
     assert records[0].timestamp == 3_000_000
-
-
-@pytest.mark.asyncio
-async def test_query_records_included_labels(bucket_1):
-    """Should query records including certain labels"""
-    await bucket_1.write(
-        "entry-1", b"data1", labels={"label1": "value1", "label2": "value2"}
-    )
-    await bucket_1.write(
-        "entry-1", b"data2", labels={"label1": "value1", "label2": "value3"}
-    )
-
-    records: List[Record] = [
-        record
-        async for record in bucket_1.query(
-            "entry-1", include={"label1": "value1", "label2": "value2"}
-        )
-    ]
-
-    assert len(records) == 1
-    assert records[0].labels == {"label1": "value1", "label2": "value2"}
-
-
-@pytest.mark.asyncio
-async def test_query_records_excluded_labels(bucket_2):
-    """Should query records excluding certain labels"""
-    await bucket_2.write(
-        "entry-3", b"data1", labels={"label1": "value1", "label2": "value2"}
-    )
-    await bucket_2.write(
-        "entry-3", b"data2", labels={"label1": "value1", "label2": "value3"}
-    )
-    records: List[Record] = [
-        record
-        async for record in bucket_2.query(
-            "entry-3", exclude={"label1": "value1", "label2": "value2"}
-        )
-    ]
-
-    assert len(records) == 1
-    assert records[0].labels == {"label1": "value1", "label2": "value3"}
 
 
 @pytest.mark.asyncio
@@ -522,6 +481,41 @@ async def test_query_records_each_n(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.13")
+async def test_query_records_when(bucket_1):
+    """Should rename a bucket"""
+    records: List[Record] = [
+        record
+        async for record in bucket_1.query(
+            "entry-2", when={"&number": {"$eq": 2}}, strict=True
+        )
+    ]
+
+    assert len(records) == 1
+    assert records[0].timestamp == 4000000
+    assert records[0].labels == {"number": "2"}
+
+
+@pytest.mark.asyncio
+@requires_api("1.13")
+async def test_query_records_when_strict(bucket_1):
+    """Should rename a bucket"""
+    with pytest.raises(ReductError):
+        async for _ in bucket_1.query(
+            "entry-2", when={"&NOT_EXIST": {"$eq": 2}}, strict=True
+        ):
+            pass
+
+    records = [
+        record
+        async for record in bucket_1.query(
+            "entry-2", when={"&NOT_EXIST": {"$eq": 2}}, strict=False
+        )
+    ]
+    assert len(records) == 0
+
+
+@pytest.mark.asyncio
 @requires_api("1.11")
 async def test_update_labels(bucket_1):
     """Should update labels of a record"""
@@ -530,7 +524,11 @@ async def test_update_labels(bucket_1):
     )
 
     async with bucket_1.read("entry-2", timestamp=3000000) as record:
-        assert record.labels == {"label1": "new-value", "label3": "value3"}
+        assert record.labels == {
+            "label1": "new-value",
+            "label3": "value3",
+            "number": "1",
+        }
 
 
 @pytest.mark.asyncio
@@ -547,10 +545,18 @@ async def test_update_labels_batch(bucket_1):
     assert errors[8000000] == ReductError(404, "No record with timestamp 8000000")
 
     async with bucket_1.read("entry-2", timestamp=3000000) as record:
-        assert record.labels == {"label1": "new-value", "label3": "value3"}
+        assert record.labels == {
+            "label1": "new-value",
+            "label3": "value3",
+            "number": "1",
+        }
 
     async with bucket_1.read("entry-2", timestamp=4000000) as record:
-        assert record.labels == {"label1": "new-value", "label4": "value4"}
+        assert record.labels == {
+            "label1": "new-value",
+            "label4": "value4",
+            "number": "2",
+        }
 
 
 @pytest.mark.asyncio
@@ -593,6 +599,14 @@ async def test_remove_query(bucket_1):
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 1
     assert records[0].timestamp == 5000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.13")
+async def test_remove_query_when(bucket_1):
+    """Should remove records by condition"""
+    removed = await bucket_1.remove_query("entry-2", when={"&number": {"$eq": 2}})
+    assert removed == 1
 
 
 @pytest.mark.asyncio

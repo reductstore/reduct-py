@@ -8,7 +8,7 @@ This package provides an asynchronous HTTP client for interacting with  [ReductS
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.12](https://www.reduct.store/docs/http-api)
+* Supports the [ReductStore HTTP API v1.13](https://www.reduct.store/docs/http-api)
 * Bucket management
 * API Token management
 * Write, read and query data
@@ -44,13 +44,14 @@ async def main():
         )
 
         # 3. Write some data with timestamps in the 'entry-1' entry
-        await bucket.write("sensor-1", b"Record #1", timestamp="2024-01-01T10:00:00Z")
-        await bucket.write("sensor-1", b"Record #2", timestamp="2024-01-01T10:00:01Z")
+        await bucket.write("sensor-1", b"<Blob data>", timestamp="2024-01-01T10:00:00Z", labels={"score": 10})
+        await bucket.write("sensor-1", b"<Blob data>", timestamp="2024-01-01T10:00:01Z", labels={"score": 20})
 
-        # 4. Query the data by time range
+        # 4. Query the data by time range and condition
         async for record in bucket.query("sensor-1",
                                          start="2024-01-01T10:00:00Z",
-                                         end="2024-01-01T10:00:02Z"):
+                                         end="2024-01-01T10:00:02Z",
+                                         where={"&score": {"$gt": 10}}):
             print(f"Record timestamp: {record.timestamp}")
             print(f"Record size: {record.size}")
             print(await record.read_all())

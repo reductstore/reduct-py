@@ -1,7 +1,7 @@
 """Message types for the Bucket API"""
 
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel
 
@@ -85,3 +85,56 @@ class BucketFullInfo(BaseModel):
 
     entries: List[EntryInfo]
     """information about entries of bucket"""
+
+
+class QueryType(Enum):
+    """Query types"""
+
+    QUERY = "QUERY"
+    """query entries"""
+
+    REMOVE = "REMOVE"
+    """remove entries"""
+
+
+class QueryEntry(BaseModel):
+    """Query entry"""
+
+    query_type: QueryType
+    """query type"""
+
+    start: Optional[int] = None
+    """start time in microseconds"""
+
+    stop: Optional[int] = None
+    """end time in microseconds"""
+
+    include: Optional[Dict[str, str]] = None
+    """include labels. Added for backward compatibility"""
+
+    exclude: Optional[Dict[str, str]] = None
+    """exclude labels. Added for backward compatibility"""
+
+    each_s: Optional[float] = None
+    """return a record every S seconds"""
+
+    each_n: Optional[int] = None
+    """return every Nth record"""
+
+    limit: Optional[int] = None
+    """limit the number of records returned"""
+
+    ttl: Optional[int] = None
+    """time to live of the query in seconds"""
+
+    only_meatadata: Optional[bool] = None
+    """return only metadata"""
+
+    continuous: Optional[bool] = None
+    """continuous query, it doesn't stop until the TTL is reached"""
+
+    when: Optional[Dict] = None
+    """conditional query to filter records"""
+
+    strict: Optional[bool] = None
+    """strict mode for when clause"""
