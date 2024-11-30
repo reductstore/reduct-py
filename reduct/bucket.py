@@ -392,7 +392,7 @@ class Bucket:
 
         return self._parse_errors_from_headers(headers)
 
-    async def query(  # pylint: disable=too-many-arguments
+    async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         entry_name: str,
         start: Optional[Union[int, datetime, float, str]] = None,
@@ -561,7 +561,7 @@ class Bucket:
         query_id = json.loads(data)["id"]
         return query_id
 
-    async def _query_post(  # pylint: disable=too-many-arguments
+    async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
     ):
         start = unix_timestamp_from_any(start) if start else None
