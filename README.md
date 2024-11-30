@@ -44,8 +44,12 @@ async def main():
         )
 
         # 3. Write some data with timestamps in the 'entry-1' entry
-        await bucket.write("sensor-1", b"<Blob data>", timestamp="2024-01-01T10:00:00Z", labels={"score": 10})
-        await bucket.write("sensor-1", b"<Blob data>", timestamp="2024-01-01T10:00:01Z", labels={"score": 20})
+        await bucket.write("sensor-1", b"<Blob data>",
+                           timestamp="2024-01-01T10:00:00Z",
+                           labels={"score": 10})
+        await bucket.write("sensor-1", b"<Blob data>",
+                           timestamp="2024-01-01T10:00:01Z",
+                           labels={"score": 20})
 
         # 4. Query the data by time range and condition
         async for record in bucket.query("sensor-1",
