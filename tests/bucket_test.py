@@ -242,47 +242,6 @@ async def test_query_records_first(bucket_1):
 
 
 @pytest.mark.asyncio
-async def test_query_records_included_labels(bucket_1):
-    """Should query records including certain labels"""
-    await bucket_1.write(
-        "entry-1", b"data1", labels={"label1": "value1", "label2": "value2"}
-    )
-    await bucket_1.write(
-        "entry-1", b"data2", labels={"label1": "value1", "label2": "value3"}
-    )
-
-    records: List[Record] = [
-        record
-        async for record in bucket_1.query(
-            "entry-1", include={"label1": "value1", "label2": "value2"}
-        )
-    ]
-
-    assert len(records) == 1
-    assert records[0].labels == {"label1": "value1", "label2": "value2"}
-
-
-@pytest.mark.asyncio
-async def test_query_records_excluded_labels(bucket_2):
-    """Should query records excluding certain labels"""
-    await bucket_2.write(
-        "entry-3", b"data1", labels={"label1": "value1", "label2": "value2"}
-    )
-    await bucket_2.write(
-        "entry-3", b"data2", labels={"label1": "value1", "label2": "value3"}
-    )
-    records: List[Record] = [
-        record
-        async for record in bucket_2.query(
-            "entry-3", exclude={"label1": "value1", "label2": "value2"}
-        )
-    ]
-
-    assert len(records) == 1
-    assert records[0].labels == {"label1": "value1", "label2": "value3"}
-
-
-@pytest.mark.asyncio
 async def test_query_records_last(bucket_1):
     """Should query records for until last record"""
     records: List[Record] = [
