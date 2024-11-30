@@ -16,7 +16,14 @@ from typing import (
 
 from reduct.error import ReductError
 from reduct.http import HttpClient
-from reduct.msg.bucket import BucketSettings, BucketInfo, EntryInfo, BucketFullInfo
+from reduct.msg.bucket import (
+    BucketSettings,
+    BucketInfo,
+    EntryInfo,
+    BucketFullInfo,
+    QueryEntry,
+    QueryType,
+)
 from reduct.record import (
     Record,
     parse_batched_records,
@@ -137,6 +144,7 @@ class Bucket:
         entry_name: str,
         start: Optional[Union[int, datetime, float, str]] = None,
         stop: Optional[Union[int, datetime, float, str]] = None,
+        when: Optional[Dict] = None,
         **kwargs,
     ) -> int:
         """
@@ -150,18 +158,36 @@ class Bucket:
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
+            when: condtion to filter
         Keyword Args:
-            include (dict): remove records which have all labels from this dict
-            exclude (dict): remove records which doesn't have all labels from this
+            include (dict): remove records which have all labels from this dict (DEPRECATED use when)
+            exclude (dict): remove records which doesn't have all labels from this (DEPRECATED use when)
             each_s(Union[int, float]): remove a record for each S seconds
             each_n(int): remove each N-th record
+            strict(bool): if True: strict query
         Returns:
             number of removed records
         """
-        params = await self._parse_query_params(kwargs, start, stop)
-        resp, _ = await self._http.request_all(
-            "DELETE", f"/b/{self.name}/{entry_name}/q", params=params
-        )
+        if (
+            self._http.api_version
+            and self._http.api_version[0] == 1
+            and self._http.api_version[1] >= 13
+        ):
+            query_message = QueryEntry(
+                query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
+            )
+            data = query_message.model_dump_json()
+            url = f"/b/{self.name}/{entry_name}/q"
+            resp, _ = await self._http.request_all(
+                "POST",
+                url,
+                data=data,
+            )
+        else:
+            params = await self._parse_query_params(kwargs, start, stop)
+            resp, _ = await self._http.request_all(
+                "DELETE", f"/b/{self.name}/{entry_name}/q", params=params
+            )
 
         return json.loads(resp)["removed_records"]
 
@@ -370,6 +396,7 @@ class Bucket:
         start: Optional[Union[int, datetime, float, str]] = None,
         stop: Optional[Union[int, datetime, float, str]] = None,
         ttl: Optional[int] = None,
+        when: Optional[Dict] = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
@@ -384,13 +411,15 @@ class Bucket:
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
             ttl: Time To Live of the request in seconds
+            when: condtion to filter records
         Keyword Args:
-            include (dict): query records which have all labels from this dict
-            exclude (dict): query records which doesn't have all labels from this
+            include (dict): query records which have all labels from this dict (DEPRECATED use when)
+            exclude (dict): query records which doesn't have all labels from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
             each_s(Union[int, float]): return a record for each S seconds
             each_n(int): return each N-th record
             limit (int): limit the number of records
+            strict(bool): if True: strict query
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -402,33 +431,29 @@ class Bucket:
             >>>         print(chunk)
         """
 
-        query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
-        last = False
-        method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
-
         if (
             self._http.api_version
             and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 5
+            and self._http.api_version[1] >= 13
         ):
-            while not last:
-                async with self._http.request(
-                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-                ) as resp:
-                    if resp.status == 204:
-                        return
-                    async for record in parse_batched_records(resp):
-                        last = record.last
-                        yield record
+            query_id = await self._query_post(
+                entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
+            )
         else:
-            while not last:
-                async with self._http.request(
-                    method, f"/b/{self.name}/{entry_name}?q={query_id}"
-                ) as resp:
-                    if resp.status == 204:
-                        return
-                    last = int(resp.headers["x-reduct-last"]) != 0
-                    yield parse_record(resp, last)
+            query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
+
+        last = False
+        method = "HEAD" if kwargs.pop("head", False) else "GET"
+
+        while not last:
+            async with self._http.request(
+                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+            ) as resp:
+                if resp.status == 204:
+                    return
+                async for record in parse_batched_records(resp):
+                    last = record.last
+                    yield record
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -445,6 +470,7 @@ class Bucket:
         entry_name: str,
         start: Optional[Union[int, datetime, float, str]] = None,
         poll_interval=1.0,
+        when: Optional[Dict] = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
@@ -458,10 +484,12 @@ class Bucket:
             start: the beginning timestamp to read records.
                 If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
+            when: condtion to filter records
         Keyword Args:
-            include (dict): query records which have all labels from this dict
-            exclude (dict): query records which doesn't have all labels from this dict
+            include (dict): query records which have all labels from this dict (DEPRECATED use when)
+            exclude (dict): query records which doesn't have all labels from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
+            strict(bool): if True: strict query
         Returns:
              AsyncIterator[Record]: iterator to the records
 
@@ -472,36 +500,39 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
-        query_id = await self._query(
-            entry_name, start, None, poll_interval * 2 + 1, continuous=True, **kwargs
-        )
-
-        method = "HEAD" if "head" in kwargs and kwargs["head"] else "GET"
+        ttl = poll_interval * 2 + 1
         if (
             self._http.api_version
             and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 5
+            and self._http.api_version[1] >= 13
         ):
-            while True:
-                async with self._http.request(
-                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-                ) as resp:
-                    if resp.status == 204:
-                        await asyncio.sleep(poll_interval)
-                        continue
-
-                    async for record in parse_batched_records(resp):
-                        yield record
+            query_id = await self._query_post(
+                entry_name,
+                QueryType.QUERY,
+                start,
+                None,
+                None,
+                ttl,
+                continuous=True,
+                **kwargs,
+            )
         else:
-            while True:
-                async with self._http.request(
-                    method, f"/b/{self.name}/{entry_name}?q={query_id}"
-                ) as resp:
-                    if resp.status == 204:
-                        await asyncio.sleep(poll_interval)
-                        continue
+            query_id = await self._query(
+                entry_name, start, None, ttl, continuous=True, **kwargs
+            )
 
-                    yield parse_record(resp, False)
+        method = "HEAD" if kwargs.pop("head", False) else "GET"
+
+        while True:
+            async with self._http.request(
+                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+            ) as resp:
+                if resp.status == 204:
+                    await asyncio.sleep(poll_interval)
+                    continue
+
+                async for record in parse_batched_records(resp):
+                    yield record
 
     async def _query(self, entry_name, start, stop, ttl, **kwargs):
         params = await self._parse_query_params(kwargs, start, stop)
@@ -520,6 +551,24 @@ class Bucket:
             "GET",
             f"{url}/q",
             params=params,
+        )
+        query_id = json.loads(data)["id"]
+        return query_id
+
+    async def _query_post(
+        self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
+    ):
+        start = unix_timestamp_from_any(start) if start else None
+        stop = unix_timestamp_from_any(stop) if stop else None
+        query_message = QueryEntry(
+            query_type=query_type, start=start, stop=stop, when=when, ttl=ttl, **kwargs
+        )
+        data = query_message.model_dump_json()
+        url = f"/b/{self.name}/{entry_name}/q"
+        data, _ = await self._http.request_all(
+            "POST",
+            url,
+            data=data,
         )
         query_id = json.loads(data)["id"]
         return query_id
