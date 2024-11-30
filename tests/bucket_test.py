@@ -3,7 +3,6 @@
 import asyncio
 import time
 from datetime import datetime
-from lib2to3.btm_utils import rec_test
 
 from typing import List, Tuple
 

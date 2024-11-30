@@ -1,7 +1,6 @@
 """Common fixtures"""
 
 import os
-from cProfile import label
 from typing import Optional
 
 import pytest

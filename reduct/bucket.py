@@ -160,8 +160,10 @@ class Bucket:
             stop: the end of the time interval. If None, then to the latest record
             when: condtion to filter
         Keyword Args:
-            include (dict): remove records which have all labels from this dict (DEPRECATED use when)
-            exclude (dict): remove records which doesn't have all labels from this (DEPRECATED use when)
+            include (dict): remove records which have all labels
+                from this dict (DEPRECATED use when)
+            exclude (dict): remove records which doesn't have all labels
+                from this (DEPRECATED use when)
             each_s(Union[int, float]): remove a record for each S seconds
             each_n(int): remove each N-th record
             strict(bool): if True: strict query
@@ -390,7 +392,7 @@ class Bucket:
 
         return self._parse_errors_from_headers(headers)
 
-    async def query(
+    async def query(  # pylint: disable=too-many-arguments
         self,
         entry_name: str,
         start: Optional[Union[int, datetime, float, str]] = None,
@@ -413,8 +415,10 @@ class Bucket:
             ttl: Time To Live of the request in seconds
             when: condtion to filter records
         Keyword Args:
-            include (dict): query records which have all labels from this dict (DEPRECATED use when)
-            exclude (dict): query records which doesn't have all labels from this (DEPRECATED use when)
+            include (dict): query records which have all labels
+                from this dict (DEPRECATED use when)
+            exclude (dict): query records which doesn't have all labels
+                from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
             each_s(Union[int, float]): return a record for each S seconds
             each_n(int): return each N-th record
@@ -486,8 +490,10 @@ class Bucket:
             poll_interval: inteval to ask new records in seconds
             when: condtion to filter records
         Keyword Args:
-            include (dict): query records which have all labels from this dict (DEPRECATED use when)
-            exclude (dict): query records which doesn't have all labels from this (DEPRECATED use when)
+            include (dict): query records which have all labels
+                from this dict (DEPRECATED use when)
+            exclude (dict): query records which doesn't have all labels
+                from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
             strict(bool): if True: strict query
         Returns:
@@ -511,7 +517,7 @@ class Bucket:
                 QueryType.QUERY,
                 start,
                 None,
-                None,
+                when,
                 ttl,
                 continuous=True,
                 **kwargs,
@@ -555,7 +561,7 @@ class Bucket:
         query_id = json.loads(data)["id"]
         return query_id
 
-    async def _query_post(
+    async def _query_post(  # pylint: disable=too-many-arguments
         self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
     ):
         start = unix_timestamp_from_any(start) if start else None

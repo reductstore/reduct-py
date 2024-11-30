@@ -1,7 +1,7 @@
 """Message types for the Bucket API"""
 
 from enum import Enum
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel
 
