@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RS-543: Support conditional query, [PR-121](https://github.com/reductstore/reduct-py/pull/121)
+
 ## Changes
 
 - RS-466: Reorganize API messages for better documentation, [PR-120](https://github.com/reductstore/reduct-py/pull/120)
