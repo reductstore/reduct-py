@@ -1,6 +1,7 @@
 """Common fixtures"""
 
 import os
+from cProfile import label
 from typing import Optional
 
 import pytest
@@ -61,11 +62,21 @@ async def _make_client(url, api_token):
 @pytest_asyncio.fixture(name="bucket_1")
 async def _bucket_1(client) -> Bucket:
     bucket = await client.create_bucket("bucket-1")
-    await bucket.write("entry-1", b"some-data-1", timestamp=1_000_000)
-    await bucket.write("entry-1", b"some-data-2", timestamp=2_000_000)
-    await bucket.write("entry-2", b"some-data-3", timestamp=3_000_000)
-    await bucket.write("entry-2", b"some-data-4", timestamp=4_000_000)
-    await bucket.write("entry-2", b"some-data-5", timestamp=5_000_000)
+    await bucket.write(
+        "entry-1", b"some-data-1", timestamp=1_000_000, labels={"number": 1}
+    )
+    await bucket.write(
+        "entry-1", b"some-data-2", timestamp=2_000_000, labels={"number": 2}
+    )
+    await bucket.write(
+        "entry-2", b"some-data-3", timestamp=3_000_000, labels={"number": 1}
+    )
+    await bucket.write(
+        "entry-2", b"some-data-4", timestamp=4_000_000, labels={"number": 2}
+    )
+    await bucket.write(
+        "entry-2", b"some-data-5", timestamp=5_000_000, labels={"number": 3}
+    )
 
     yield bucket
     await bucket.remove()
