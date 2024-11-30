@@ -602,7 +602,7 @@ async def test_remove_query(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.12")
+@requires_api("1.13")
 async def test_remove_query_when(bucket_1):
     """Should remove records by condition"""
     removed = await bucket_1.remove_query("entry-2", when={"&number": {"$eq": 2}})
