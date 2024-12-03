@@ -610,6 +610,16 @@ async def test_remove_query_when(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.13")
+async def test_remove_query_when_float_time(bucket_1):
+    """Should remove records by condition"""
+    removed = await bucket_1.remove_query(
+        "entry-2", start=0.0, when={"&number": {"$eq": 2}}
+    )
+    assert removed == 1
+
+
+@pytest.mark.asyncio
 @requires_api("1.12")
 async def test_rename_entry(bucket_1):
     """Should rename an entry"""

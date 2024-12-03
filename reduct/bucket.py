@@ -175,6 +175,9 @@ class Bucket:
             and self._http.api_version[0] == 1
             and self._http.api_version[1] >= 13
         ):
+            start = unix_timestamp_from_any(start) if start else None
+            stop = unix_timestamp_from_any(stop) if stop else None
+
             query_message = QueryEntry(
                 query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
             )
