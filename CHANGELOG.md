@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-466: Reorganize API messages for better documentation, [PR-120](https://github.com/reductstore/reduct-py/pull/120)
 
+## Fixed
+
+- Time converting in `Bucket.remove_query`, [PR-122](https://github.com/reductstore/reduct-py/pull/122)
+
 ## [1.12.0] - 2024-10-04
 
 ### Added:
