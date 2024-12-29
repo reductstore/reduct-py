@@ -8,7 +8,7 @@ This package provides an asynchronous HTTP client for interacting with  [ReductS
 
 ## Features
 
-* Supports the [ReductStore HTTP API v1.13](https://www.reduct.store/docs/http-api)
+* Supports the [ReductStore HTTP API v1.14](https://www.reduct.store/docs/http-api)
 * Bucket management
 * API Token management
 * Write, read and query data
