@@ -55,6 +55,9 @@ async def _make_client(url, api_token):
         if token.name != "init-token":
             await client.remove_token(token.name)
 
+    for replication in await client.get_replications():
+        await client.delete_replication(replication.name)
+
     yield client
 
 

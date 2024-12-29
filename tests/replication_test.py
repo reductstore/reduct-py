@@ -78,3 +78,22 @@ async def test__each_n_and_each_s_setting(client):
 
     assert replication.settings.each_n == 10
     assert replication.settings.each_s == 0.5
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.14")
+async def test__replication_with_when(client):
+    """Test creating a replication with when condition"""
+    replication_name = "replication-1"
+    settings = ReplicationSettings(
+        src_bucket="bucket-1",
+        dst_bucket="bucket-2",
+        dst_host="https://play.reduct.store",
+        when={"&number": {"$gt": 1}},
+    )
+
+    await client.create_replication(replication_name, settings)
+    replication = await client.get_replication_detail(replication_name)
+
+    assert replication.settings.when == {"&number": {"$gt": 1}}
