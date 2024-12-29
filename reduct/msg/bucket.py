@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Optional, List, Dict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class QuotaType(Enum):
@@ -109,10 +109,10 @@ class QueryEntry(BaseModel):
     stop: Optional[int] = None
     """end time in microseconds"""
 
-    include: Optional[Dict[str, str]] = None
+    include: Dict[str, str] = Field({}, deprecated="Use when instead")
     """include labels. Added for backward compatibility"""
 
-    exclude: Optional[Dict[str, str]] = None
+    exclude: Dict[str, str] = Field({}, deprecated="Use when instead")
     """exclude labels. Added for backward compatibility"""
 
     each_s: Optional[float] = None

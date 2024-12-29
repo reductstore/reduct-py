@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ReplicationInfo(BaseModel):
@@ -63,17 +63,18 @@ class ReplicationSettings(BaseModel):
     """url of the destination instance"""
     dst_token: str = ""
     """access token for the destination instance"""
-    entries: List[str] = []
+    entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
     Wildcards are supported"""
-    include: Dict[str, str] = {}
+    include: Dict[str, str] = Field({}, deprecated="Use when instead")
     """replicate only records with these labels"""
-    exclude: Dict[str, str] = {}
+    exclude: Dict[str, str] = Field({}, deprecated="Use when instead")
     """exclude records with these labels"""
     each_s: Optional[float] = None
     """replicate a record every S seconds"""
     each_n: Optional[int] = None
     """replicate every Nth record"""
+    when: Optional[Dict] = None
 
 
 class ReplicationDetailInfo(BaseModel):
