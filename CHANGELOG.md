@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RS-550: Add when condition to replication settings, [PR-123](https://github.com/reductstore/reduct-py/pull/123)
+
 ## [1.13.0] - 2024-12-04
 
 ### Added
