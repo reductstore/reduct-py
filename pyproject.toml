@@ -42,7 +42,7 @@ test = [
 ]
 
 lint = ["pylint>=2.17,<4.0"]
-format = ["black>=23.9,<25.0"]
+format = ["black>=23.9,<26.0"]
 
 [project.urls]
 ReductStore = "https://www.reduct.store"
