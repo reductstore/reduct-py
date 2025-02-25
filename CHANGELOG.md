@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2025-02-25
+
 ### Added
 
 - RS-550: Add when condition to replication settings, [PR-123](https://github.com/reductstore/reduct-py/pull/123)
@@ -255,7 +257,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.14.0...HEAD
+
+[1.14.0]: https://github.com/reduct-storage/reduct-py/compare/v1.13.0...v1.14.0
 
 [1.13.0]: https://github.com/reduct-storage/reduct-py/compare/v1.12.0...v1.13.0
 
