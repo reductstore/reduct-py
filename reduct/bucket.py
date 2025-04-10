@@ -60,7 +60,9 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request_all("PUT", f"/b/{self.name}", data=settings.json())
+        await self._http.request_all(
+            "PUT", f"/b/{self.name}", data=settings.model_dump_json()
+        )
 
     async def info(self) -> BucketInfo:
         """
@@ -167,6 +169,7 @@ class Bucket:
             each_s(Union[int, float]): remove a record for each S seconds
             each_n(int): remove each N-th record
             strict(bool): if True: strict query
+            ext (dict): extended query parameters
         Returns:
             number of removed records
         """
@@ -570,7 +573,13 @@ class Bucket:
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
         query_message = QueryEntry(
-            query_type=query_type, start=start, stop=stop, when=when, ttl=ttl, **kwargs
+            query_type=query_type,
+            start=start,
+            stop=stop,
+            when=when,
+            ttl=ttl,
+            only_meatadata=kwargs.get("head", False),
+            **kwargs,
         )
         data = query_message.model_dump_json()
         url = f"/b/{self.name}/{entry_name}/q"

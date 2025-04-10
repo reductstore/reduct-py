@@ -138,3 +138,6 @@ class QueryEntry(BaseModel):
 
     strict: Optional[bool] = None
     """strict mode for when clause"""
+
+    ext: Optional[Dict[str, Dict]] = None
+    """extended query options"""
