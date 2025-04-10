@@ -634,3 +634,12 @@ async def test_rename_bucket(bucket_1):
     """Should rename a bucket"""
     await bucket_1.rename("new-bucket")
     assert bucket_1.name == "new-bucket"
+
+
+@pytest.mark.asyncio
+@requires_api("1.15")
+async def test_query_extension(bucket_1):
+    """Should query with additional parameters for extensions"""
+    with pytest.raises(ReductError, match="Unknown extension"):
+        async for _record in bucket_1.query("entry-2", ext={"test": {}}):
+            pass
