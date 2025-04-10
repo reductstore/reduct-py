@@ -140,4 +140,4 @@ class QueryEntry(BaseModel):
     """strict mode for when clause"""
 
     ext: Optional[Dict[str, Dict]] = None
-    """extended query options"""
+    """additional parameters for extensions"""
