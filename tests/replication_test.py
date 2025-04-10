@@ -96,4 +96,4 @@ async def test__replication_with_when(client):
     await client.create_replication(replication_name, settings)
     replication = await client.get_replication_detail(replication_name)
 
-    assert replication.settings.when == {"&number": {"$gt": 1}}
+    assert replication.Th.when == {"&number": {"$gt": 1}}
