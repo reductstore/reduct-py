@@ -108,7 +108,7 @@ async def test__list(client, bucket_1, bucket_2):
 async def test__create_bucket_default_settings(client, bucket_1):
     """Should create a bucket with default settings"""
     settings = await bucket_1.get_settings()
-    assert settings.model_dump() == (await client.info()).defaults.bucket.dict()
+    assert settings.model_dump() == (await client.info()).defaults.bucket.model_dump()
 
 
 @pytest.mark.asyncio
@@ -125,7 +125,7 @@ async def test__create_bucket_custom_settings(client):
         "bucket", BucketSettings(max_block_records=10000)
     )
     settings = await bucket.get_settings()
-    assert settings.dict() == {
+    assert settings.model_dump() == {
         "max_block_size": 64000000,
         "max_block_records": 10000,
         "quota_size": 0,
@@ -140,7 +140,7 @@ async def test__create_bucket_quota(client, quota_type):
     """Should create a bucket with custom settings"""
     bucket = await client.create_bucket("bucket", BucketSettings(quota_type=quota_type))
     settings = await bucket.get_settings()
-    assert settings.dict()["quota_type"] == quota_type
+    assert settings.model_dump()["quota_type"] == quota_type
 
 
 @pytest.mark.asyncio
@@ -206,7 +206,7 @@ async def test__get_token(client, with_token):
     token = await client.get_token(with_token)
     assert token.name == with_token
     assert not token.is_provisioned
-    assert token.permissions.dict() == {
+    assert token.permissions.model_dump() == {
         "full_access": True,
         "read": ["bucket-1"],
         "write": ["bucket-2"],

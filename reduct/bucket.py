@@ -60,7 +60,9 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        await self._http.request_all("PUT", f"/b/{self.name}", data=settings.json())
+        await self._http.request_all(
+            "PUT", f"/b/{self.name}", data=settings.model_dump_json()
+        )
 
     async def info(self) -> BucketInfo:
         """
