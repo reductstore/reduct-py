@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-628: Support `ext` parameter in `Bucket.query`, [PR-125](https://github.com/reductstore/reduct-py/pull/125)
 
+### Changed
+
+- RS-670: Drop Python 3.8 and update dependencies, [PR-126](https://github.com/reductstore/reduct-py/pull/126)
+
 ## [1.14.0] - 2025-02-25
 
 ### Added
