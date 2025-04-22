@@ -72,7 +72,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-        python: ["3.8"]
+        python: ["3.9"]
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
         license: ["", "/workdir/lic.key"]
