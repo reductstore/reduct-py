@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2025-05-05
+
 ### Added
 
 - RS-628: Support `ext` parameter in `Bucket.query`, [PR-125](https://github.com/reductstore/reduct-py/pull/125)
@@ -265,7 +267,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.15.0...HEAD
+
+[1.15.0]: https://github.com/reduct-storage/reduct-py/compare/v1.14.0...v1.15.0
 
 [1.14.0]: https://github.com/reduct-storage/reduct-py/compare/v1.13.0...v1.14.0
 
