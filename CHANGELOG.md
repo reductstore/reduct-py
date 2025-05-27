@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Drop support for legacy code and ReductStore API versions below 1.13
+
+### Added
+
+- Check server API version and warn if it's too old, [PR-129](https://github.com/reductstore/reduct-py/pull/129)
+
 ## [1.15.0] - 2025-05-05
 
 ### Added

@@ -1,5 +1,6 @@
 """Tests for Client"""
 
+import datetime
 from asyncio import sleep
 from typing import List
 
@@ -83,15 +84,15 @@ async def test__info_with_license(client):
     info: ServerInfo = await client.info()
     assert info.license is not None
     assert info.license.device_number == 1
-    assert info.license.disk_quota == 0
-    assert info.license.expiry_date.isoformat() == "2035-01-01T00:00:00+00:00"
+    assert info.license.disk_quota == 1
+    assert info.license.expiry_date.date() == datetime.date(2026, 5, 15)
     assert (
         info.license.fingerprint
-        == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9"
+        == "21e2608b7d47f7fba623d714c3e14b73cd1fe3578f4010ef26bcbedfc42a4c92"
     )
-    assert info.license.invoice == "xxxxxx"
-    assert info.license.licensee == "ReductStore,LLC"
-    assert info.license.plan == "UNLIMITED"
+    assert info.license.invoice == "---"
+    assert info.license.licensee == "ReductSoftware"
+    assert info.license.plan == "STANDARD"
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,7 @@
 import asyncio
 import json
 import time
+import warnings
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import (
@@ -33,6 +34,39 @@ from reduct.record import (
     ERROR_PREFIX,
 )
 from reduct.time import unix_timestamp_from_any
+
+
+def _check_deprecated_params(kwargs):
+    if "include" in kwargs:
+        warnings.warn(
+            "The 'include' argument is deprecated and will be removed in v1.16.0,"
+            " use 'when' instead.",
+            DeprecationWarning,
+        )
+    if "exclude" in kwargs:
+        warnings.warn(
+            "The 'exclude' argument is deprecated and will be removed in v1.16.0,"
+            " use 'when' instead.",
+            DeprecationWarning,
+        )
+    if "each_s" in kwargs:
+        warnings.warn(
+            "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
+            " use '$each_t' in 'when' instead.",
+            DeprecationWarning,
+        )
+    if "each_n" in kwargs:
+        warnings.warn(
+            "The 'each_n' argument is deprecated and will be removed in v1.18.0,"
+            " use '$each_n' in 'when' instead.",
+            DeprecationWarning,
+        )
+    if "limit" in kwargs:
+        warnings.warn(
+            "The 'limit' argument is deprecated and will be removed in v1.18.0,"
+            " use '$limit' in 'when' instead.",
+            DeprecationWarning,
+        )
 
 
 class Bucket:
@@ -167,35 +201,29 @@ class Bucket:
             exclude (dict): remove records which doesn't have all labels
                 from this (DEPRECATED use when)
             each_s(Union[int, float]): remove a record for each S seconds
+                (DEPRECATED use $each_t in when)
             each_n(int): remove each N-th record
+                (DEPRECATED use $each_n in when)
             strict(bool): if True: strict query
             ext (dict): extended query parameters
         Returns:
             number of removed records
         """
-        if (
-            self._http.api_version
-            and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 13
-        ):
-            start = unix_timestamp_from_any(start) if start else None
-            stop = unix_timestamp_from_any(stop) if stop else None
+        _check_deprecated_params(kwargs)
 
-            query_message = QueryEntry(
-                query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
-            )
-            data = query_message.model_dump_json()
-            url = f"/b/{self.name}/{entry_name}/q"
-            resp, _ = await self._http.request_all(
-                "POST",
-                url,
-                data=data,
-            )
-        else:
-            params = await self._parse_query_params(kwargs, start, stop)
-            resp, _ = await self._http.request_all(
-                "DELETE", f"/b/{self.name}/{entry_name}/q", params=params
-            )
+        start = unix_timestamp_from_any(start) if start else None
+        stop = unix_timestamp_from_any(stop) if stop else None
+
+        query_message = QueryEntry(
+            query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
+        )
+        data = query_message.model_dump_json()
+        url = f"/b/{self.name}/{entry_name}/q"
+        resp, _ = await self._http.request_all(
+            "POST",
+            url,
+            data=data,
+        )
 
         return json.loads(resp)["removed_records"]
 
@@ -427,8 +455,9 @@ class Bucket:
                 from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
             each_s(Union[int, float]): return a record for each S seconds
-            each_n(int): return each N-th record
-            limit (int): limit the number of records
+                (DEPRECATED use $each_t in when)
+            each_n(int): return each N-th record (DEPRECATED use $each_n in when)
+            limit (int): limit the number of records (DEPRECATED use $limit in when)
             strict(bool): if True: strict query
         Returns:
              AsyncIterator[Record]: iterator to the records
@@ -440,17 +469,11 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
+        _check_deprecated_params(kwargs)
 
-        if (
-            self._http.api_version
-            and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 13
-        ):
-            query_id = await self._query_post(
-                entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
-            )
-        else:
-            query_id = await self._query(entry_name, start, stop, ttl, **kwargs)
+        query_id = await self._query_post(
+            entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
+        )
 
         last = False
         method = "HEAD" if kwargs.pop("head", False) else "GET"
@@ -513,28 +536,18 @@ class Bucket:
             >>>         print(chunk)
         """
         ttl = poll_interval * 2 + 1
-        if (
-            self._http.api_version
-            and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 13
-        ):
-            query_id = await self._query_post(
-                entry_name,
-                QueryType.QUERY,
-                start,
-                None,
-                when,
-                ttl,
-                continuous=True,
-                **kwargs,
-            )
-        else:
-            query_id = await self._query(
-                entry_name, start, None, ttl, continuous=True, **kwargs
-            )
+        query_id = await self._query_post(
+            entry_name,
+            QueryType.QUERY,
+            start,
+            None,
+            when,
+            ttl,
+            continuous=True,
+            **kwargs,
+        )
 
         method = "HEAD" if kwargs.pop("head", False) else "GET"
-
         while True:
             async with self._http.request(
                 method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
@@ -545,27 +558,6 @@ class Bucket:
 
                 async for record in parse_batched_records(resp):
                     yield record
-
-    async def _query(self, entry_name, start, stop, ttl, **kwargs):
-        params = await self._parse_query_params(kwargs, start, stop)
-
-        if "limit" in kwargs:
-            params["limit"] = kwargs["limit"]
-
-        if ttl:
-            params["ttl"] = int(ttl)
-
-        if "continuous" in kwargs:
-            params["continuous"] = "true" if kwargs["continuous"] else "false"
-
-        url = f"/b/{self.name}/{entry_name}"
-        data, _ = await self._http.request_all(
-            "GET",
-            f"{url}/q",
-            params=params,
-        )
-        query_id = json.loads(data)["id"]
-        return query_id
 
     async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
@@ -590,26 +582,6 @@ class Bucket:
         )
         query_id = json.loads(data)["id"]
         return query_id
-
-    async def _parse_query_params(self, kwargs, start, stop):
-        start = unix_timestamp_from_any(start) if start else None
-        stop = unix_timestamp_from_any(stop) if stop else None
-        params = {}
-        if start:
-            params["start"] = start
-        if stop:
-            params["stop"] = stop
-        if "include" in kwargs:
-            for name, value in kwargs["include"].items():
-                params[f"include-{name}"] = str(value)
-        if "exclude" in kwargs:
-            for name, value in kwargs["exclude"].items():
-                params[f"exclude-{name}"] = str(value)
-        if "each_s" in kwargs:
-            params["each_s"] = float(kwargs["each_s"])
-        if "each_n" in kwargs:
-            params["each_n"] = int(kwargs["each_n"])
-        return params
 
     @staticmethod
     def _make_headers(batch: Batch) -> Tuple[int, Dict[str, str]]:

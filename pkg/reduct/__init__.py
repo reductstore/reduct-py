@@ -39,3 +39,5 @@ from reduct.msg.bucket import (
 )
 
 from reduct.error import ReductError
+
+from reduct.version import __version__
