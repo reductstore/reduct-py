@@ -1,6 +1,7 @@
 """Internal HTTP helper"""
 
 from contextlib import asynccontextmanager
+from sys import stderr
 from typing import Optional, AsyncIterator, Dict, Tuple
 
 import aiohttp
@@ -8,6 +9,10 @@ from aiohttp import ClientTimeout, ClientResponse
 from aiohttp.client_exceptions import ClientConnectorError
 
 from reduct.error import ReductError
+from reduct.version import __version__
+
+
+VERSION_MAJOR, VERSION_MINOR = map(int, __version__.split(".")[:2])
 
 API_PREFIX = "/api/v1"
 
@@ -99,8 +104,11 @@ class HttpClient:
                 headers=dict(self._headers, **extra_headers),
                 **kwargs,
             ) as response:
+                api_version = response.headers.get("x-reduct-api")
+                _check_server_api_version(api_version)
+
                 if self._api_version is None:
-                    self._api_version = response.headers.get("x-reduct-api")
+                    self._api_version = _extract_api_version(api_version)
 
                 if response.ok:
                     yield response
@@ -147,12 +155,24 @@ class HttpClient:
     @property
     def api_version(self) -> Optional[Tuple[int, int]]:
         """API version"""
-        if self._api_version is None:
-            return None
-        return extract_api_version(self._api_version)
+        return self._api_version
 
 
-def extract_api_version(version: str) -> Tuple[int, int]:
+def _extract_api_version(version: str) -> Tuple[int, int]:
     """Extract version"""
     major, minor = version.split(".")
     return int(major), int(minor)
+
+
+def _check_server_api_version(api_version):
+    major, minor = _extract_api_version(api_version)
+    if major != VERSION_MAJOR:
+        raise ReductError(
+            400,
+            f"Unsupported API version {major}.{minor}. "
+            f"Client version is {VERSION_MAJOR}.{VERSION_MINOR}.",
+        )
+    if minor + 2 < VERSION_MINOR:
+        stderr.write(
+            f"Warning: Server API version is too old: {api_version}, please update the server to {VERSION_MAJOR}.{VERSION_MINOR}\n"
+        )

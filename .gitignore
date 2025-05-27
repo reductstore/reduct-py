@@ -1,5 +1,5 @@
 build/
-reduct/VERSION
+pkg/reduct/VERSION
 *.egg-info
 .venv
 .gitignore
