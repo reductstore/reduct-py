@@ -72,7 +72,7 @@ if __name__ == "__main__":
 For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
 
 
-### Supported ReductStore Versions and  Backward Compatibility
+### Supported ReductStore Versions and Backward Compatibility
 
 The library is backward compatible with the previous versions. However, some methods have been deprecated and will be
 removed in the future releases. Please refer to the [Changelog](CHANGELOG.md) for more details.
