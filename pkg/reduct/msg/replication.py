@@ -1,5 +1,6 @@
 """Message types for the Replication API"""
 
+import warnings
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel, Field
@@ -66,13 +67,37 @@ class ReplicationSettings(BaseModel):
     entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
     Wildcards are supported"""
-    include: Dict[str, str] = Field({}, deprecated="Use when instead")
+    include: Dict[str, str] = Field(
+        {},
+        deprecated=warnings.warn(
+            "Use the `when` method to set the labels to exclude from the query. It will be remove in v1.16.0.",
+            FutureWarning,
+        ),
+    )
     """replicate only records with these labels"""
-    exclude: Dict[str, str] = Field({}, deprecated="Use when instead")
+    exclude: Dict[str, str] = Field(
+        {},
+        deprecated=warnings.warn(
+            "Use the `when` method to set the labels to exclude from the query. It will be remove in v1.16.0.",
+            FutureWarning,
+        ),
+    )
     """exclude records with these labels"""
-    each_s: Optional[float] = None
+    each_s: Optional[float] = Field(
+        None,
+        deprecated=warnings.warn(
+            "Use `$each_t` operator in `when` condition. It will be removed in v1.18.0.",
+            FutureWarning,
+        ),
+    )
     """replicate a record every S seconds"""
-    each_n: Optional[int] = None
+    each_n: Optional[int] = Field(
+        None,
+        deprecated=warnings.warn(
+            "Use `$each_n` operator in `when` condition. It will be removed in v1.18.0.",
+            FutureWarning,
+        ),
+    )
     """replicate every Nth record"""
     when: Optional[Dict] = None
 

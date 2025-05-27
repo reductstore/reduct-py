@@ -1,5 +1,6 @@
 """Internal HTTP helper"""
 
+import warnings
 from contextlib import asynccontextmanager
 from sys import stderr
 from typing import Optional, AsyncIterator, Dict, Tuple
@@ -173,6 +174,7 @@ def _check_server_api_version(api_version):
             f"Client version is {VERSION_MAJOR}.{VERSION_MINOR}.",
         )
     if minor + 2 < VERSION_MINOR:
-        stderr.write(
-            f"Warning: Server API version is too old: {api_version}, please update the server to {VERSION_MAJOR}.{VERSION_MINOR}\n"
+        warnings.warn(
+            f"Warning: Server API version is too old: {api_version}, please update the server to {VERSION_MAJOR}.{VERSION_MINOR}\n",
+            UserWarning,
         )
