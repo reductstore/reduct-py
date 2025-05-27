@@ -1,6 +1,5 @@
 """Message types for the Replication API"""
 
-import warnings
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel, Field
