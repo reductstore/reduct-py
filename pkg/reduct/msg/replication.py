@@ -70,7 +70,8 @@ class ReplicationSettings(BaseModel):
     include: Dict[str, str] = Field(
         {},
         deprecated=warnings.warn(
-            "Use the `when` method to set the labels to exclude from the query. It will be remove in v1.16.0.",
+            "Use the `when` method to set the labels to exclude from the query. "
+            "It will be remove in v1.16.0.",
             FutureWarning,
         ),
     )
@@ -78,7 +79,8 @@ class ReplicationSettings(BaseModel):
     exclude: Dict[str, str] = Field(
         {},
         deprecated=warnings.warn(
-            "Use the `when` method to set the labels to exclude from the query. It will be remove in v1.16.0.",
+            "Use the `when` method to set the labels to exclude from the query. "
+            "It will be remove in v1.16.0.",
             FutureWarning,
         ),
     )
@@ -86,7 +88,8 @@ class ReplicationSettings(BaseModel):
     each_s: Optional[float] = Field(
         None,
         deprecated=warnings.warn(
-            "Use `$each_t` operator in `when` condition. It will be removed in v1.18.0.",
+            "Use `$each_t` operator in `when` condition. "
+            "It will be removed in v1.18.0.",
             FutureWarning,
         ),
     )
@@ -94,7 +97,8 @@ class ReplicationSettings(BaseModel):
     each_n: Optional[int] = Field(
         None,
         deprecated=warnings.warn(
-            "Use `$each_n` operator in `when` condition. It will be removed in v1.18.0.",
+            "Use `$each_n` operator in `when` condition. "
+            "It will be removed in v1.18.0.",
             FutureWarning,
         ),
     )

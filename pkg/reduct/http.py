@@ -2,7 +2,6 @@
 
 import warnings
 from contextlib import asynccontextmanager
-from sys import stderr
 from typing import Optional, AsyncIterator, Dict, Tuple
 
 import aiohttp
@@ -11,7 +10,6 @@ from aiohttp.client_exceptions import ClientConnectorError
 
 from reduct.error import ReductError
 from reduct.version import __version__
-
 
 VERSION_MAJOR, VERSION_MINOR = map(int, __version__.split(".")[:2])
 
@@ -175,6 +173,7 @@ def _check_server_api_version(api_version):
         )
     if minor + 2 < VERSION_MINOR:
         warnings.warn(
-            f"Warning: Server API version is too old: {api_version}, please update the server to {VERSION_MAJOR}.{VERSION_MINOR}\n",
+            f"Warning: Server API version is too old: {api_version}, "
+            f"please update the server to {VERSION_MAJOR}.{VERSION_MINOR}\n",
             UserWarning,
         )

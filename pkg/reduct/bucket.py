@@ -15,8 +15,6 @@ from typing import (
     Tuple,
 )
 
-from attr.filters import include
-
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.bucket import (
@@ -38,31 +36,36 @@ from reduct.record import (
 from reduct.time import unix_timestamp_from_any
 
 
-def check_deprecated_params(kwargs):
+def _check_deprecated_params(kwargs):
     if "include" in kwargs:
         warnings.warn(
-            "The 'include' argument is deprecated and will be removed in v1.16.0, use 'when' instead.",
+            "The 'include' argument is deprecated and will be removed in v1.16.0,"
+            " use 'when' instead.",
             FutureWarning,
         )
         print("RRRR")
     if "exclude" in kwargs:
         warnings.warn(
-            "The 'exclude' argument is deprecated and will be removed in v1.16.0, use 'when' instead.",
+            "The 'exclude' argument is deprecated and will be removed in v1.16.0,"
+            " use 'when' instead.",
             FutureWarning,
         )
     if "each_s" in kwargs:
         warnings.warn(
-            "The 'each_s' argument is deprecated and will be removed in v1.18.0, use '$each_t' in 'when' instead.",
+            "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
+            " use '$each_t' in 'when' instead.",
             FutureWarning,
         )
     if "each_n" in kwargs:
         warnings.warn(
-            "The 'each_n' argument is deprecated and will be removed in v1.18.0, use '$each_n' in 'when' instead.",
+            "The 'each_n' argument is deprecated and will be removed in v1.18.0,"
+            " use '$each_n' in 'when' instead.",
             FutureWarning,
         )
     if "limit" in kwargs:
         warnings.warn(
-            "The 'limit' argument is deprecated and will be removed in v1.18.0, use '$limit' in 'when' instead.",
+            "The 'limit' argument is deprecated and will be removed in v1.18.0,"
+            " use '$limit' in 'when' instead.",
             FutureWarning,
         )
 
@@ -198,14 +201,16 @@ class Bucket:
                 from this dict (DEPRECATED use when)
             exclude (dict): remove records which doesn't have all labels
                 from this (DEPRECATED use when)
-            each_s(Union[int, float]): remove a record for each S seconds (DEPRECATED use $each_t in when)
-            each_n(int): remove each N-th record (DEPRECATED use $each_n in when)
+            each_s(Union[int, float]): remove a record for each S seconds
+                (DEPRECATED use $each_t in when)
+            each_n(int): remove each N-th record
+                (DEPRECATED use $each_n in when)
             strict(bool): if True: strict query
             ext (dict): extended query parameters
         Returns:
             number of removed records
         """
-        check_deprecated_params(kwargs)
+        _check_deprecated_params(kwargs)
 
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
@@ -450,7 +455,8 @@ class Bucket:
             exclude (dict): query records which doesn't have all labels
                 from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
-            each_s(Union[int, float]): return a record for each S seconds (DEPRECATED use $each_t in when)
+            each_s(Union[int, float]): return a record for each S seconds
+                (DEPRECATED use $each_t in when)
             each_n(int): return each N-th record (DEPRECATED use $each_n in when)
             limit (int): limit the number of records (DEPRECATED use $limit in when)
             strict(bool): if True: strict query
@@ -464,7 +470,7 @@ class Bucket:
             >>>     async for chunk in record.read(n=1024):
             >>>         print(chunk)
         """
-        check_deprecated_params(kwargs)
+        _check_deprecated_params(kwargs)
 
         query_id = await self._query_post(
             entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
@@ -531,28 +537,18 @@ class Bucket:
             >>>         print(chunk)
         """
         ttl = poll_interval * 2 + 1
-        if (
-            self._http.api_version
-            and self._http.api_version[0] == 1
-            and self._http.api_version[1] >= 13
-        ):
-            query_id = await self._query_post(
-                entry_name,
-                QueryType.QUERY,
-                start,
-                None,
-                when,
-                ttl,
-                continuous=True,
-                **kwargs,
-            )
-        else:
-            query_id = await self._query(
-                entry_name, start, None, ttl, continuous=True, **kwargs
-            )
+        query_id = await self._query_post(
+            entry_name,
+            QueryType.QUERY,
+            start,
+            None,
+            when,
+            ttl,
+            continuous=True,
+            **kwargs,
+        )
 
         method = "HEAD" if kwargs.pop("head", False) else "GET"
-
         while True:
             async with self._http.request(
                 method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
