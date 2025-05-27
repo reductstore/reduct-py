@@ -43,7 +43,6 @@ def _check_deprecated_params(kwargs):
             " use 'when' instead.",
             FutureWarning,
         )
-        print("RRRR")
     if "exclude" in kwargs:
         warnings.warn(
             "The 'exclude' argument is deprecated and will be removed in v1.16.0,"
