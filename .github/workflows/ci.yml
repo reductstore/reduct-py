@@ -139,7 +139,7 @@ jobs:
         run: pip3 install .[test,lint]
 
       - name: Lint main
-        run: pylint ./reduct
+        run: pylint ./pkg/reduct
 
       - name: Lint tests
         run: pylint ./tests
