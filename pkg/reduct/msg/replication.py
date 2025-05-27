@@ -4,6 +4,7 @@ import warnings
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel, Field
+from typing_extensions import deprecated
 
 
 class ReplicationInfo(BaseModel):
@@ -69,37 +70,33 @@ class ReplicationSettings(BaseModel):
     Wildcards are supported"""
     include: Dict[str, str] = Field(
         {},
-        deprecated=warnings.warn(
+        deprecated=deprecated(
             "Use the `when` method to set the labels to exclude from the query. "
-            "It will be remove in v1.16.0.",
-            FutureWarning,
+            "It will be remove in v1.16.0."
         ),
     )
     """replicate only records with these labels"""
     exclude: Dict[str, str] = Field(
         {},
-        deprecated=warnings.warn(
+        deprecated=deprecated(
             "Use the `when` method to set the labels to exclude from the query. "
-            "It will be remove in v1.16.0.",
-            FutureWarning,
+            "It will be remove in v1.16.0."
         ),
     )
     """exclude records with these labels"""
     each_s: Optional[float] = Field(
         None,
-        deprecated=warnings.warn(
+        deprecated=deprecated(
             "Use `$each_t` operator in `when` condition. "
-            "It will be removed in v1.18.0.",
-            FutureWarning,
+            "It will be removed in v1.18.0."
         ),
     )
     """replicate a record every S seconds"""
     each_n: Optional[int] = Field(
         None,
-        deprecated=warnings.warn(
+        deprecated=deprecated(
             "Use `$each_n` operator in `when` condition. "
-            "It will be removed in v1.18.0.",
-            FutureWarning,
+            "It will be removed in v1.18.0."
         ),
     )
     """replicate every Nth record"""

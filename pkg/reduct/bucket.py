@@ -41,31 +41,31 @@ def _check_deprecated_params(kwargs):
         warnings.warn(
             "The 'include' argument is deprecated and will be removed in v1.16.0,"
             " use 'when' instead.",
-            FutureWarning,
+            DeprecationWarning,
         )
     if "exclude" in kwargs:
         warnings.warn(
             "The 'exclude' argument is deprecated and will be removed in v1.16.0,"
             " use 'when' instead.",
-            FutureWarning,
+            DeprecationWarning,
         )
     if "each_s" in kwargs:
         warnings.warn(
             "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
             " use '$each_t' in 'when' instead.",
-            FutureWarning,
+            DeprecationWarning,
         )
     if "each_n" in kwargs:
         warnings.warn(
             "The 'each_n' argument is deprecated and will be removed in v1.18.0,"
             " use '$each_n' in 'when' instead.",
-            FutureWarning,
+            DeprecationWarning,
         )
     if "limit" in kwargs:
         warnings.warn(
             "The 'limit' argument is deprecated and will be removed in v1.18.0,"
             " use '$limit' in 'when' instead.",
-            FutureWarning,
+            DeprecationWarning,
         )
 
 
