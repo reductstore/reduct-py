@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Deprecated `include` abd `exclude` parameters in `Bucket.query` and `ReplicationSettings`, [PR-132](https://github.com/reductstore/reduct-py/pull/132)
+- Deprecated `include` and `exclude` parameters in `Bucket.query` and `ReplicationSettings`, [PR-132](https://github.com/reductstore/reduct-py/pull/132)
 
 ## [1.15.0] - 2025-05-05
 
