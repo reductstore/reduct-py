@@ -37,18 +37,6 @@ from reduct.time import unix_timestamp_from_any
 
 
 def _check_deprecated_params(kwargs):
-    if "include" in kwargs:
-        warnings.warn(
-            "The 'include' argument is deprecated and will be removed in v1.16.0,"
-            " use 'when' instead.",
-            DeprecationWarning,
-        )
-    if "exclude" in kwargs:
-        warnings.warn(
-            "The 'exclude' argument is deprecated and will be removed in v1.16.0,"
-            " use 'when' instead.",
-            DeprecationWarning,
-        )
     if "each_s" in kwargs:
         warnings.warn(
             "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
@@ -196,10 +184,6 @@ class Bucket:
             stop: the end of the time interval. If None, then to the latest record
             when: condtion to filter
         Keyword Args:
-            include (dict): remove records which have all labels
-                from this dict (DEPRECATED use when)
-            exclude (dict): remove records which doesn't have all labels
-                from this (DEPRECATED use when)
             each_s(Union[int, float]): remove a record for each S seconds
                 (DEPRECATED use $each_t in when)
             each_n(int): remove each N-th record
@@ -449,10 +433,6 @@ class Bucket:
             ttl: Time To Live of the request in seconds
             when: condtion to filter records
         Keyword Args:
-            include (dict): query records which have all labels
-                from this dict (DEPRECATED use when)
-            exclude (dict): query records which doesn't have all labels
-                from this (DEPRECATED use when)
             head (bool): if True: get only the header of a recod with metadata
             each_s(Union[int, float]): return a record for each S seconds
                 (DEPRECATED use $each_t in when)
