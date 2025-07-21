@@ -109,12 +109,6 @@ class QueryEntry(BaseModel):
     stop: Optional[int] = None
     """end time in microseconds"""
 
-    include: Dict[str, str] = Field({}, deprecated="Use when instead")
-    """include labels. Added for backward compatibility"""
-
-    exclude: Dict[str, str] = Field({}, deprecated="Use when instead")
-    """exclude labels. Added for backward compatibility"""
-
     each_s: Optional[float] = None
     """return a record every S seconds"""
 

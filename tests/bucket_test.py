@@ -314,7 +314,7 @@ async def test_no_content_query(bucket_1):
     """Should return empty list if no content"""
     records = [
         record
-        async for record in bucket_1.query("entry-2", include={"label1": "value1"})
+        async for record in bucket_1.query("entry-2", when={"&number": {"$eq": 0}})
     ]
     assert len(records) == 0
 

@@ -67,22 +67,7 @@ class ReplicationSettings(BaseModel):
     entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
     Wildcards are supported"""
-    include: Dict[str, str] = Field(
-        {},
-        deprecated=deprecated(
-            "Use the `when` method to set the labels to exclude from the query. "
-            "It will be remove in v1.16.0."
-        ),
-    )
-    """replicate only records with these labels"""
-    exclude: Dict[str, str] = Field(
-        {},
-        deprecated=deprecated(
-            "Use the `when` method to set the labels to exclude from the query. "
-            "It will be remove in v1.16.0."
-        ),
-    )
-    """exclude records with these labels"""
+
     each_s: Optional[float] = Field(
         None,
         deprecated=deprecated(
