@@ -121,7 +121,7 @@ class QueryEntry(BaseModel):
     ttl: Optional[int] = None
     """time to live of the query in seconds"""
 
-    only_meatadata: Optional[bool] = None
+    only_metadata: Optional[bool] = None
     """return only metadata"""
 
     continuous: Optional[bool] = None
