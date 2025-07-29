@@ -205,7 +205,8 @@ class Bucket:
         resp, _ = await self._http.request_all(
             "POST",
             url,
-            json=query_message.model_dump(),
+            data=query_message.model_dump_json(),
+            content_type="application/json",
         )
 
         return json.loads(resp)["removed_records"]
@@ -549,15 +550,15 @@ class Bucket:
             stop=stop,
             when=when,
             ttl=ttl,
-            only_meatadata=kwargs.get("head", False),
+            only_metadata=kwargs.get("head", False),
             **kwargs,
         )
-        data = query_message.model_dump_json()
         url = f"/b/{self.name}/{entry_name}/q"
         data, _ = await self._http.request_all(
             "POST",
             url,
-            data=data,
+            data=query_message.model_dump_json(),
+            content_type="application/json",
         )
         query_id = json.loads(data)["id"]
         return query_id
