@@ -201,12 +201,11 @@ class Bucket:
         query_message = QueryEntry(
             query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
         )
-        data = query_message.model_dump_json()
         url = f"/b/{self.name}/{entry_name}/q"
         resp, _ = await self._http.request_all(
             "POST",
             url,
-            data=data,
+            json=query_message.model_dump(),
         )
 
         return json.loads(resp)["removed_records"]
