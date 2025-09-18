@@ -2,11 +2,12 @@
 
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from typing import List, Tuple
 
 import pytest
+import requests
 
 from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
 from reduct.record import Batch
@@ -643,3 +644,46 @@ async def test_query_extension(bucket_1):
     with pytest.raises(ReductError, match="Unknown extension"):
         async for _record in bucket_1.query("entry-2", ext={"test": {}}):
             pass
+
+
+@pytest.mark.asyncio
+@requires_api("1.17")
+async def test_create_query_link(bucket_1):
+    """Should create a query link"""
+    link = await bucket_1.create_query_link("entry-2", 3000000)
+
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+
+    assert resp.content == b"some-data-3"
+    assert resp.headers["content-type"] == "application/octet-stream"
+    assert resp.headers["x-reduct-time"] == "3000000"
+    assert resp.headers["x-reduct-label-number"] == "1"
+
+
+@pytest.mark.asyncio
+@requires_api("1.17")
+async def test_create_query_link_expired(bucket_1):
+    """Should create a query link"""
+    link = await bucket_1.create_query_link(
+        "entry-2", 3000000, expire_at=datetime.now() - timedelta(days=1)
+    )
+
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 422
+    assert resp.headers["x-reduct-error"] == "Query link has expired"
+
+
+@pytest.mark.asyncio
+@requires_api("1.17")
+async def test_create_query_link_record_index(bucket_1):
+    """Should create a query link with record index"""
+    link = await bucket_1.create_query_link("entry-2", record_index=1)
+
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+
+    assert resp.content == b"some-data-4"
+    assert resp.headers["content-type"] == "application/octet-stream"
+    assert resp.headers["x-reduct-time"] == "4000000"
+    assert resp.headers["x-reduct-label-number"] == "2"

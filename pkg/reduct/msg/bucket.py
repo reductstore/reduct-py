@@ -135,3 +135,25 @@ class QueryEntry(BaseModel):
 
     ext: Optional[Dict[str, Dict]] = None
     """additional parameters for extensions"""
+
+
+class CreateQueryLinkRequest(BaseModel):
+    """Parameters for creating a query link"""
+
+    bucket: str
+    """bucket name"""
+    entry: str
+    """entry name"""
+    index: Optional[int] = None
+    """record index"""
+    query: QueryEntry
+    """query"""
+    expire_at: int = None
+    """expiration time as UNIX timestamp in seconds"""
+
+
+class CreateQueryLinkResponse(BaseModel):
+    """Response from creating a query link"""
+
+    link: str
+    """query link"""

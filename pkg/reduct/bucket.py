@@ -5,7 +5,7 @@ import json
 import time
 import warnings
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     Optional,
     List,
@@ -24,6 +24,8 @@ from reduct.msg.bucket import (
     BucketFullInfo,
     QueryEntry,
     QueryType,
+    CreateQueryLinkRequest,
+    CreateQueryLinkResponse,
 )
 from reduct.record import (
     Record,
@@ -423,8 +425,7 @@ class Bucket:
         Query data for a time interval
         The time interval is defined by the start and stop parameters that can be:
         int (UNIX timestamp in microseconds), datetime,
-        float (UNIX timestamp in seconds) or str (ISO 8601 string).
-
+        float (UNIX timestamp in seconds) or str (ISO 8601 string),
         Args:
             entry_name: name of entry in the bucket
             start: the beginning of the time interval.
@@ -538,6 +539,68 @@ class Bucket:
 
                 async for record in parse_batched_records(resp):
                     yield record
+
+    async def create_query_link(
+        self,
+        entry: str,
+        start: Optional[Union[int, datetime, float, str]] = None,
+        stop: Optional[Union[int, datetime, float, str]] = None,
+        when: Optional[Dict] = None,
+        **kwargs,
+    ) -> str:
+        """
+        Create a link to query data for a time interval
+
+        The time interval is defined by the start and stop parameters that can be:
+        int (UNIX timestamp in microseconds), datetime,
+        float (UNIX timestamp in seconds) or str (ISO 8601 string).
+
+        Args:
+            entry: name of entry in the bucket
+            start: the beginning of the time interval.
+                If None, then from the first record
+            stop: the end of the time interval. If None, then to the latest record
+            when: condtiion to filter records
+
+        Keyword Args:
+            record_index: if not None, the link will point to a specific record
+            expire_at: if None, the link will expire in 24 hours
+
+        """
+        start = unix_timestamp_from_any(start) if start else None
+        stop = unix_timestamp_from_any(stop) if stop else None
+
+        record_index: Optional[int] = kwargs.get("record_index", None)
+        expire_at: Optional[datetime] = kwargs.get("expire_at", None)
+
+        if expire_at is None:
+            expire_at = datetime.now() + timedelta(hours=24)
+
+        query_message = QueryEntry(
+            query_type=QueryType.QUERY,
+            start=start,
+            stop=stop,
+            when=when,
+            only_metadata=False,
+        )
+
+        query_link_params = CreateQueryLinkRequest(
+            bucket=self.name,
+            entry=entry,
+            index=record_index,
+            query=query_message,
+            expire_at=int(expire_at.timestamp()),
+        )
+
+        print(query_link_params.model_dump_json())
+        body, _ = await self._http.request_all(
+            "POST",
+            "/links",
+            data=query_link_params.model_dump_json(),
+            content_type="application/json",
+        )
+
+        return CreateQueryLinkResponse.model_validate_json(body).link
 
     async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
         self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
