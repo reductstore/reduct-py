@@ -546,8 +546,7 @@ class Bucket:
         start: Optional[Union[int, datetime, float, str]] = None,
         stop: Optional[Union[int, datetime, float, str]] = None,
         when: Optional[Dict] = None,
-        record_index: Optional[int] = None,
-        expire_at: Optional[datetime] = None,
+        **kwargs,
     ) -> str:
         """
         Create a link to query data for a time interval
@@ -562,11 +561,18 @@ class Bucket:
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
             when: condtiion to filter records
+
+        Keyword Args:
             record_index: if not None, the link will point to a specific record
             expire_at: if None, the link will expire in 24 hours
+
         """
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
+
+        record_index: Optional[int] = kwargs.get("record_index", None)
+        expire_at: Optional[datetime] = kwargs.get("expire_at", None)
+
         if expire_at is None:
             expire_at = datetime.now() + timedelta(hours=24)
 
@@ -589,7 +595,7 @@ class Bucket:
         print(query_link_params.model_dump_json())
         body, _ = await self._http.request_all(
             "POST",
-            f"/links",
+            "/links",
             data=query_link_params.model_dump_json(),
             content_type="application/json",
         )
