@@ -565,12 +565,13 @@ class Bucket:
         Keyword Args:
             record_index: if not None, the link will point to a specific record
             expire_at: if None, the link will expire in 24 hours
+            file_name: file name for download, if None: entry_name_index.bin
 
         """
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
 
-        record_index: Optional[int] = kwargs.get("record_index", None)
+        record_index = kwargs.get("record_index", 0)
         expire_at: Optional[datetime] = kwargs.get("expire_at", None)
 
         if expire_at is None:
@@ -592,10 +593,18 @@ class Bucket:
             expire_at=int(expire_at.timestamp()),
         )
 
-        print(query_link_params.model_dump_json())
+        file_name = kwargs.get(
+            "file_name",
+            (
+                f"{entry}_{record_index}.bin"
+                if record_index is not None
+                else f"{entry}.bin"
+            ),
+        )
+
         body, _ = await self._http.request_all(
             "POST",
-            "/links",
+            f"/links/{file_name}",
             data=query_link_params.model_dump_json(),
             content_type="application/json",
         )

@@ -687,3 +687,11 @@ async def test_create_query_link_record_index(bucket_1):
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "4000000"
     assert resp.headers["x-reduct-label-number"] == "2"
+
+
+@pytest.mark.asyncio
+@requires_api("1.17")
+async def test_create_query_link_filename(bucket_1):
+    """Should create a query link with record index"""
+    link = await bucket_1.create_query_link("entry-2", file_name="data.txt")
+    assert "links/data.txt?" in link
