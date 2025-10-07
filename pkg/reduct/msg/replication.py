@@ -62,7 +62,7 @@ class ReplicationSettings(BaseModel):
     """destination bucket name"""
     dst_host: str
     """url of the destination instance"""
-    dst_token: str = ""
+    dst_token: Optional[str] = None
     """access token for the destination instance"""
     entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
