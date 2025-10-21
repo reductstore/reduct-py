@@ -217,7 +217,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
 
     for name, value in resp.headers.items():
         if name.lower().startswith(TIME_PREFIX):
-            timestamp = int(name[len(TIME_PREFIX):])
+            timestamp = int(name[len(TIME_PREFIX) :])
             content_length, content_type, labels = _parse_header_as_csv_row(value)
 
             last = False
