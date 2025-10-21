@@ -12,6 +12,7 @@ from tests.conftest import requires_api
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.17")
 async def test__get_replications(client, replication_1, replication_2):
     """Test getting a list of replications"""
     replications = await client.get_replications()
@@ -23,6 +24,7 @@ async def test__get_replications(client, replication_1, replication_2):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.17")
 async def test__get_replication_detail(client, replication_1):
     """Test create a replication and get its details"""
     replication_detail = await client.get_replication_detail(replication_1)
@@ -32,6 +34,7 @@ async def test__get_replication_detail(client, replication_1):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.17")
 async def test__update_replication(client, replication_1):
     """Test updating an existing replication"""
     new_settings = ReplicationSettings(
@@ -48,6 +51,7 @@ async def test__update_replication(client, replication_1):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.17")
 async def test_delete_replication(client, temporary_replication):
     """Test deleting a replication"""
     await client.delete_replication(temporary_replication)
@@ -61,7 +65,7 @@ async def test_delete_replication(client, temporary_replication):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
-@requires_api("1.10")
+@requires_api("1.17")
 async def test__each_n_and_each_s_setting(client):
     """Test creating a replication"""
     replication_name = "replication-1"
@@ -82,7 +86,7 @@ async def test__each_n_and_each_s_setting(client):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
-@requires_api("1.14")
+@requires_api("1.17")
 async def test__replication_with_when(client):
     """Test creating a replication with when condition"""
     replication_name = "replication-1"
