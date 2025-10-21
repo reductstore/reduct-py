@@ -209,13 +209,15 @@ async def _read_all(buffer: List[bytes]) -> bytes:
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
-    records_total = sum(1 for header in resp.headers if header.startswith(TIME_PREFIX))
+    records_total = sum(
+        1 for header in resp.headers if header.lower().startswith(TIME_PREFIX)
+    )
     records_count = 0
     head = resp.method == "HEAD"
 
     for name, value in resp.headers.items():
-        if name.startswith(TIME_PREFIX):
-            timestamp = int(name[14:])
+        if name.lower().startswith(TIME_PREFIX):
+            timestamp = int(name[len(TIME_PREFIX) :])
             content_length, content_type, labels = _parse_header_as_csv_row(value)
 
             last = False
