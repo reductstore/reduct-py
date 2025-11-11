@@ -104,10 +104,11 @@ class HttpClient:
                 **kwargs,
             ) as response:
                 api_version = response.headers.get("x-reduct-api")
-                _check_server_api_version(api_version)
+                if api_version is not None:
+                    _check_server_api_version(api_version)
 
-                if self._api_version is None:
-                    self._api_version = _extract_api_version(api_version)
+                    if self._api_version is None:
+                        self._api_version = _extract_api_version(api_version)
 
                 if response.ok:
                     yield response
