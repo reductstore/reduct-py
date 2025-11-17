@@ -136,6 +136,9 @@ class QueryEntry(BaseModel):
     ext: Optional[Dict[str, Dict]] = None
     """additional parameters for extensions"""
 
+    base_url: Optional[str] = None
+    """base URL for generating links"""
+
 
 class CreateQueryLinkRequest(BaseModel):
     """Parameters for creating a query link"""
@@ -150,6 +153,8 @@ class CreateQueryLinkRequest(BaseModel):
     """query"""
     expire_at: int = None
     """expiration time as UNIX timestamp in seconds"""
+    base_url: Optional[str] = None
+    """base URL for generating the link"""
 
 
 class CreateQueryLinkResponse(BaseModel):

@@ -566,6 +566,7 @@ class Bucket:
             record_index: if not None, the link will point to a specific record
             expire_at: if None, the link will expire in 24 hours
             file_name: file name for download, if None: entry_name_index.bin
+            base_url: base URL for the link, if None: use server URL
 
         """
         start = unix_timestamp_from_any(start) if start else None
@@ -591,6 +592,7 @@ class Bucket:
             index=record_index,
             query=query_message,
             expire_at=int(expire_at.timestamp()),
+            base_url=kwargs.get("base_url", None),
         )
 
         file_name = kwargs.get(
