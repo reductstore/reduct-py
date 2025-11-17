@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.17.2 - 2025-11-17
+
 ### Fixed
 
 - Add base_url argument to Bucket.create_query_link, [PR-142](https://github.com/reductstore/reduct-py/pull/142)
