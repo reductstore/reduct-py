@@ -14,6 +14,7 @@ from reduct.msg.replication import (
     ReplicationInfo,
     ReplicationDetailInfo,
     ReplicationSettings,
+    ReplicationMode,
 )
 
 from reduct.msg.token import (
