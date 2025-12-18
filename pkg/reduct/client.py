@@ -1,6 +1,7 @@
 """Client module for ReductStore HTTP API"""
 
-from typing import Optional, List, Dict
+import json
+from typing import Dict, List, Optional
 
 from aiohttp import ClientSession
 
@@ -8,6 +9,7 @@ from reduct.bucket import BucketInfo, BucketSettings, Bucket
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.replication import (
+    ReplicationMode,
     ReplicationList,
     ReplicationDetailInfo,
     ReplicationSettings,
@@ -245,6 +247,24 @@ class Client:
         data = settings.model_dump_json()
         await self._http.request_all(
             "PUT", f"/replications/{replication_name}", data=data
+        )
+
+    async def set_replication_mode(
+        self, replication_name: str, mode: ReplicationMode
+    ) -> None:
+        """
+        Update mode for an existing replication without overriding settings
+        Args:
+            replication_name: Name of the replication to update
+            mode: New replication mode
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = json.dumps(
+            {"mode": mode.value if isinstance(mode, ReplicationMode) else str(mode)}
+        )
+        await self._http.request_all(
+            "PATCH", f"/replications/{replication_name}/mode", data=data
         )
 
     async def delete_replication(self, replication_name: str) -> None:

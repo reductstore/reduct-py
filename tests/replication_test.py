@@ -3,8 +3,9 @@
 import pytest
 from reduct import (
     ReductError,
-    ReplicationInfo,
     ReplicationDetailInfo,
+    ReplicationInfo,
+    ReplicationMode,
     ReplicationSettings,
 )
 from tests.conftest import requires_api
@@ -20,6 +21,7 @@ async def test__get_replications(client, replication_1, replication_2):
     for replication in replications:
         assert isinstance(replication, ReplicationInfo)
         assert replication.name in [replication_1, replication_2]
+        assert replication.mode == ReplicationMode.ENABLED
 
 
 @pytest.mark.asyncio
@@ -30,6 +32,7 @@ async def test__get_replication_detail(client, replication_1):
     replication_detail = await client.get_replication_detail(replication_1)
     assert isinstance(replication_detail, ReplicationDetailInfo)
     assert replication_detail.info.name == replication_1
+    assert replication_detail.settings.mode == ReplicationMode.ENABLED
 
 
 @pytest.mark.asyncio
@@ -82,6 +85,7 @@ async def test__each_n_and_each_s_setting(client):
 
     assert replication.settings.each_n == 10
     assert replication.settings.each_s == 0.5
+    assert replication.settings.mode == ReplicationMode.ENABLED
 
 
 @pytest.mark.asyncio
@@ -101,3 +105,15 @@ async def test__replication_with_when(client):
     replication = await client.get_replication_detail(replication_name)
 
     assert replication.settings.when == {"&number": {"$gt": 1}}
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1", "bucket_2")
+@requires_api("1.18")
+async def test__set_replication_mode(client, replication_1):
+    """Test updating replication mode without touching settings"""
+    await client.set_replication_mode(replication_1, ReplicationMode.PAUSED)
+    replication_detail = await client.get_replication_detail(replication_1)
+
+    assert replication_detail.info.mode == ReplicationMode.PAUSED
+    assert replication_detail.settings.mode == ReplicationMode.PAUSED

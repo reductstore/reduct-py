@@ -1,9 +1,18 @@
 """Message types for the Replication API"""
 
-from typing import List, Dict, Optional
+from enum import Enum
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 from typing_extensions import deprecated
+
+
+class ReplicationMode(str, Enum):
+    """Replication mode"""
+
+    ENABLED = "enabled"
+    PAUSED = "paused"
+    DISABLED = "disabled"
 
 
 class ReplicationInfo(BaseModel):
@@ -15,6 +24,8 @@ class ReplicationInfo(BaseModel):
     """replication is provisioned and can't be deleted or changed"""
     is_active: bool
     """replication is active and the remote server is reachable"""
+    mode: ReplicationMode = ReplicationMode.ENABLED
+    """current replication mode"""
     pending_records: int
     """number of records to replicate"""
 
@@ -85,6 +96,8 @@ class ReplicationSettings(BaseModel):
     )
     """replicate every Nth record"""
     when: Optional[Dict] = None
+    mode: ReplicationMode = ReplicationMode.ENABLED
+    """replication mode"""
 
 
 class ReplicationDetailInfo(BaseModel):
