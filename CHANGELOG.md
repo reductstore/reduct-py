@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Drop Python 3.9 support, require Python >=3.10
+- Drop Python 3.9 support, require Python >=3.10, [PR-147](https://github.com/reductstore/reduct-py/pull/147)
 
 ## 1.17.2 - 2025-11-17
 
