@@ -14,6 +14,13 @@ class QuotaType(Enum):
     HARD = "HARD"
 
 
+class Status(Enum):
+    """Resource status during deletion"""
+
+    READY = "READY"
+    DELETING = "DELETING"
+
+
 class BucketSettings(BaseModel):
     """Configuration for a bucket"""
 
@@ -51,6 +58,9 @@ class BucketInfo(BaseModel):
     is_provisioned: bool = False
     """bucket is provisioned amd you can't remove it or change its settings"""
 
+    status: Status = Status.READY
+    """current status of the bucket (READY or DELETING)"""
+
 
 class EntryInfo(BaseModel):
     """Entry of bucket"""
@@ -72,6 +82,9 @@ class EntryInfo(BaseModel):
 
     latest_record: int
     """UNIX timestamp of the latest record in microseconds"""
+
+    status: Status = Status.READY
+    """current status of the entry (READY or DELETING)"""
 
 
 class BucketFullInfo(BaseModel):
