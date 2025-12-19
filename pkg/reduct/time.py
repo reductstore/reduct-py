@@ -1,5 +1,7 @@
 """Helper functions for time-related operations."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TypeAlias
 

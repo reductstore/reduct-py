@@ -1,5 +1,7 @@
 """Internal HTTP helper"""
 
+from __future__ import annotations
+
 import warnings
 from contextlib import asynccontextmanager
 from typing import AsyncIterator

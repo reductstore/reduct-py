@@ -1,5 +1,7 @@
 """Client module for ReductStore HTTP API"""
 
+from __future__ import annotations
+
 import json
 
 from aiohttp import ClientSession
