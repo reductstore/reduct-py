@@ -124,7 +124,7 @@ class HttpClient:
 
     async def request_all(
         self, method: str, path: str = "", **kwargs
-    ) -> (bytes, Dict[str, str]):
+    ) -> tuple[bytes, dict[str, str]]:
         """Http request
         Args:
             method (str): HTTP method

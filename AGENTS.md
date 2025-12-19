@@ -15,6 +15,7 @@
 - Optional: start a local ReductStore for tests `docker run -p 8383:8383 -d reduct/store:latest`.
 
 ## Coding Style & Naming Conventions
+- **Python 3.10+ compatibility required**: Code must be compatible with Python 3.10 and make use of its features (e.g., use PEP 604 union syntax `X | Y` instead of `Union[X, Y]`, use `X | None` instead of `Optional[X]`).
 - Follow Black defaults (88 cols) and PEP8; prefer explicit `async`/`await` patterns and context managers for HTTP clients.
 - Module, function, and variable names use `snake_case`; classes use `PascalCase`; constants are `SCREAMING_SNAKE_CASE`.
 - Keep public API stable; favor small helper functions over inline duplication.

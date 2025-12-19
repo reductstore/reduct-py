@@ -121,9 +121,7 @@ class Bucket:
         """
         await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
 
-    async def remove_record(
-        self, entry_name: str, timestamp: TimestampLike
-    ):
+    async def remove_record(self, entry_name: str, timestamp: TimestampLike):
         """
         Remove record from entry
         Args:

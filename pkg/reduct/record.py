@@ -13,7 +13,11 @@ from typing import (
 
 from aiohttp import ClientResponse
 
-from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any, TimestampLike
+from reduct.time import (
+    unix_timestamp_to_datetime,
+    unix_timestamp_from_any,
+    TimestampLike,
+)
 
 
 @dataclass
@@ -151,7 +155,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-def _parse_header_as_csv_row(row: str) -> (int, str, Dict[str, str]):
+def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
     items = []
     escaped = ""
     for item in row.split(","):
