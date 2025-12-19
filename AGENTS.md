@@ -25,6 +25,9 @@
 - Use `pytest-asyncio` fixtures; avoid real network calls beyond the local ReductStore container.
 - Environment knobs for integration runs: `RS_API_TOKEN` (token auth), `RS_LICENSE_PATH` (license file path). Set them in the test command when needed.
 - Prefer scenario-based tests that assert HTTP error handling via `pytest.raises` and status codes exposed by `error.py`.
+- **Always test changes with both stable (`reduct/store:latest`) and development (`reduct/store:main`) versions of ReductStore** to ensure compatibility with upcoming features and avoid breaking changes.
+  - Start the development version: `docker run -p 8383:8383 -d reduct/store:main`
+  - Start the stable version: `docker run -p 8383:8383 -d reduct/store:latest`
 
 ## Commit & Pull Request Guidelines
 - Commit messages are short and imperative; include issue/PR numbers when relevant (e.g., `Fix crash on non-ReductStore response (#141)`).

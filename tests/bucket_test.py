@@ -44,7 +44,10 @@ async def test__remove_not_exist(client):
 async def test__remove_entry(bucket_1):
     """Should remove an entry in a bucket"""
     await bucket_1.remove_entry("entry-2")
-    assert "entry-2" not in [entry.name for entry in await bucket_1.get_entry_list()]
+    entries = await bucket_1.get_entry_list()
+    entry_2 = next((e for e in entries if e.name == "entry-2"), None)
+    # Entry should either be gone or in DELETING status (non-blocking deletion)
+    assert entry_2 is None or entry_2.status == Status.DELETING
 
 
 @pytest.mark.asyncio
