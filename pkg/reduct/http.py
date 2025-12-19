@@ -2,7 +2,7 @@
 
 import warnings
 from contextlib import asynccontextmanager
-from typing import Optional, AsyncIterator, Dict, Tuple
+from typing import AsyncIterator
 
 import aiohttp
 from aiohttp import ClientTimeout, ClientResponse
@@ -24,9 +24,9 @@ class HttpClient:
     def __init__(
         self,
         url: str,
-        api_token: Optional[str] = None,
-        timeout: Optional[float] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+        api_token: str | None = None,
+        timeout: float | None = None,
+        extra_headers: dict[str, str] | None = None,
         **kwargs,
     ):
         self._url = url + API_PREFIX
@@ -153,12 +153,12 @@ class HttpClient:
         return
 
     @property
-    def api_version(self) -> Optional[Tuple[int, int]]:
+    def api_version(self) -> tuple[int, int] | None:
         """API version"""
         return self._api_version
 
 
-def _extract_api_version(version: str) -> Tuple[int, int]:
+def _extract_api_version(version: str) -> tuple[int, int]:
     """Extract version"""
     major, minor = version.split(".")
     return int(major), int(minor)

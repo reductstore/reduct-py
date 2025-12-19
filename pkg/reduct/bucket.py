@@ -7,12 +7,7 @@ import warnings
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import (
-    Optional,
-    List,
     AsyncIterator,
-    Union,
-    Dict,
-    Tuple,
 )
 
 from reduct.error import ReductError
@@ -35,7 +30,7 @@ from reduct.record import (
     TIME_PREFIX,
     ERROR_PREFIX,
 )
-from reduct.time import unix_timestamp_from_any
+from reduct.time import unix_timestamp_from_any, TimestampLike
 
 
 def _check_deprecated_params(kwargs):
@@ -98,7 +93,7 @@ class Bucket:
         """
         return (await self.get_full_info()).info
 
-    async def get_entry_list(self) -> List[EntryInfo]:
+    async def get_entry_list(self) -> list[EntryInfo]:
         """
         Get list of entries with their stats
         Returns:
@@ -127,7 +122,7 @@ class Bucket:
         await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
 
     async def remove_record(
-        self, entry_name: str, timestamp: Union[int, datetime, float, str]
+        self, entry_name: str, timestamp: TimestampLike
     ):
         """
         Remove record from entry
@@ -144,7 +139,7 @@ class Bucket:
 
     async def remove_batch(
         self, entry_name: str, batch: Batch
-    ) -> Dict[int, ReductError]:
+    ) -> dict[int, ReductError]:
         """
         Remove batch of records from entries in a sole request
         Args:
@@ -168,9 +163,9 @@ class Bucket:
     async def remove_query(
         self,
         entry_name: str,
-        start: Optional[Union[int, datetime, float, str]] = None,
-        stop: Optional[Union[int, datetime, float, str]] = None,
-        when: Optional[Dict] = None,
+        start: TimestampLike | None = None,
+        stop: TimestampLike | None = None,
+        when: dict | None = None,
         **kwargs,
     ) -> int:
         """
@@ -243,7 +238,7 @@ class Bucket:
     async def read(
         self,
         entry_name: str,
-        timestamp: Optional[Union[int, datetime, float, str]] = None,
+        timestamp: TimestampLike | None = None,
         head: bool = False,
     ) -> AsyncIterator[Record]:
         """
@@ -273,9 +268,9 @@ class Bucket:
     async def write(
         self,
         entry_name: str,
-        data: Union[bytes, AsyncIterator[bytes]],
-        timestamp: Optional[Union[int, datetime, float, str]] = None,
-        content_length: Optional[int] = None,
+        data: bytes | AsyncIterator[bytes],
+        timestamp: TimestampLike | None = None,
+        content_length: int | None = None,
         **kwargs,
     ):
         """
@@ -323,7 +318,7 @@ class Bucket:
 
     async def write_batch(
         self, entry_name: str, batch: Batch
-    ) -> Dict[int, ReductError]:
+    ) -> dict[int, ReductError]:
         """
         Write a batch of records to entries in a sole request
 
@@ -355,8 +350,8 @@ class Bucket:
     async def update(
         self,
         entry_name: str,
-        timestamp: Union[int, datetime, float, str],
-        labels: Dict[str, str],
+        timestamp: TimestampLike,
+        labels: dict[str, str],
     ):
         """Update labels of an existing record
         If a label doesn't exist, it will be created.
@@ -381,7 +376,7 @@ class Bucket:
 
     async def update_batch(
         self, entry_name: str, batch: Batch
-    ) -> Dict[int, ReductError]:
+    ) -> dict[int, ReductError]:
         """Update labels of existing records
         If a label doesn't exist, it will be created.
         If a label is empty, it will be removed.
@@ -415,10 +410,10 @@ class Bucket:
     async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         entry_name: str,
-        start: Optional[Union[int, datetime, float, str]] = None,
-        stop: Optional[Union[int, datetime, float, str]] = None,
-        ttl: Optional[int] = None,
-        when: Optional[Dict] = None,
+        start: TimestampLike | None = None,
+        stop: TimestampLike | None = None,
+        ttl: int | None = None,
+        when: dict | None = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
@@ -482,9 +477,9 @@ class Bucket:
     async def subscribe(
         self,
         entry_name: str,
-        start: Optional[Union[int, datetime, float, str]] = None,
+        start: TimestampLike | None = None,
         poll_interval=1.0,
-        when: Optional[Dict] = None,
+        when: dict | None = None,
         **kwargs,
     ) -> AsyncIterator[Record]:
         """
@@ -543,9 +538,9 @@ class Bucket:
     async def create_query_link(
         self,
         entry: str,
-        start: Optional[Union[int, datetime, float, str]] = None,
-        stop: Optional[Union[int, datetime, float, str]] = None,
-        when: Optional[Dict] = None,
+        start: TimestampLike | None = None,
+        stop: TimestampLike | None = None,
+        when: dict | None = None,
         **kwargs,
     ) -> str:
         """
@@ -573,7 +568,7 @@ class Bucket:
         stop = unix_timestamp_from_any(stop) if stop else None
 
         record_index = kwargs.get("record_index", 0)
-        expire_at: Optional[datetime] = kwargs.get("expire_at", None)
+        expire_at: datetime | None = kwargs.get("expire_at", None)
 
         if expire_at is None:
             expire_at = datetime.now() + timedelta(hours=24)
@@ -638,7 +633,7 @@ class Bucket:
         return query_id
 
     @staticmethod
-    def _make_headers(batch: Batch) -> Tuple[int, Dict[str, str]]:
+    def _make_headers(batch: Batch) -> tuple[int, dict[str, str]]:
         """Make headers for batch"""
         record_headers = {}
         content_length = 0

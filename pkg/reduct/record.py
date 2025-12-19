@@ -6,19 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partial
 from typing import (
-    Dict,
     Callable,
     AsyncIterator,
     Awaitable,
-    Optional,
-    List,
-    Tuple,
-    Union,
 )
 
 from aiohttp import ClientResponse
 
-from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any
+from reduct.time import unix_timestamp_to_datetime, unix_timestamp_from_any, TimestampLike
 
 
 @dataclass
@@ -38,7 +33,7 @@ class Record:
     read: Callable[[int], AsyncIterator[bytes]]
     """read data in chunks where each chunk has size less than or equal to n"""
 
-    labels: Dict[str, str]
+    labels: dict[str, str]
     """labels of record"""
 
     def get_datetime(self) -> datetime:
@@ -53,16 +48,16 @@ class Batch:
     """Batch of records to write them in one request"""
 
     def __init__(self):
-        self._records: Dict[int, Record] = {}
+        self._records: dict[int, Record] = {}
         self._total_size = 0
         self._last_access = 0
 
     def add(
         self,
-        timestamp: Union[int, datetime, float, str],
+        timestamp: TimestampLike,
         data: bytes = b"",
-        content_type: Optional[str] = None,
-        labels: Optional[Dict[str, str]] = None,
+        content_type: str | None = None,
+        labels: dict[str, str] | None = None,
     ):
         """Add record to batch
         Args:
@@ -104,7 +99,7 @@ class Batch:
         self._last_access = time.time()
         self._records[record.timestamp] = record
 
-    def items(self) -> List[Tuple[int, Record]]:
+    def items(self) -> list[tuple[int, Record]]:
         """Get records as dict items"""
         return sorted(self._records.items())
 
@@ -184,7 +179,7 @@ def _parse_header_as_csv_row(row: str) -> (int, str, Dict[str, str]):
     return content_length, content_type, labels
 
 
-async def _read(buffer: List[bytes], n: int) -> AsyncIterator[bytes]:
+async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
     while len(buffer) > 0:
         part = buffer.pop(0)
         if len(part) == 0:
@@ -202,7 +197,7 @@ async def _read(buffer: List[bytes], n: int) -> AsyncIterator[bytes]:
             await asyncio.sleep(0)
 
 
-async def _read_all(buffer: List[bytes]) -> bytes:
+async def _read_all(buffer: list[bytes]) -> bytes:
     return b"".join(buffer)
 
 
@@ -255,7 +250,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
             yield record
 
 
-async def _read_response(resp, content_length) -> List[bytes]:
+async def _read_response(resp, content_length) -> list[bytes]:
     chunks = []
     count = 0
     while count < content_length:
