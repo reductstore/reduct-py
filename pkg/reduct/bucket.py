@@ -26,7 +26,6 @@ from reduct.msg.bucket import (
     QueryType,
     CreateQueryLinkRequest,
     CreateQueryLinkResponse,
-    Status,
 )
 from reduct.record import (
     Record,
