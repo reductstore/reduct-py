@@ -30,4 +30,6 @@
 - Commit messages are short and imperative; include issue/PR numbers when relevant (e.g., `Fix crash on non-ReductStore response (#141)`).
 - Before opening a PR, run format, lint, and tests; include what changed, why, and how it was verified. Add repro steps or screenshots for user-facing behavior.
 - Update `CHANGELOG.md` for notable behavior changes or new API surface.
+  - One PR should have one record in CHANGELOG.md
+  - Include the PR link in the format `[PR-XXX](https://github.com/reductstore/reduct-py/pull/XXX)` at the end of the changelog entry
 - Keep PRs focused; if touching public API, mention migration notes in the description or docstrings.
