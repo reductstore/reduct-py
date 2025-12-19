@@ -712,7 +712,7 @@ async def test__bucket_info_has_status(bucket_1):
     """Should have status field in bucket info"""
     info = await bucket_1.info()
     assert info.status == Status.READY
-    assert info.status.value == "ready"
+    assert info.status.value == "READY"
 
 
 @pytest.mark.asyncio
@@ -721,4 +721,4 @@ async def test__entry_info_has_status(bucket_1):
     entries = await bucket_1.get_entry_list()
     assert len(entries) > 0
     assert entries[0].status == Status.READY
-    assert entries[0].status.value == "ready"
+    assert entries[0].status.value == "READY"
