@@ -109,134 +109,23 @@ class Bucket:
         """
         return (await self.get_full_info()).entries
 
-    async def wait_for_deletion(
-        self,
-        entry_name: Optional[str] = None,
-        timeout: float = 60.0,
-        poll_interval: float = 0.5,
-    ):
-        """
-        Wait for bucket or entry deletion to complete.
-
-        When deleting a bucket or entry, the operation happens in the background.
-        This method polls the resource status until it's fully deleted or raises
-        an error if the resource is not in DELETING status.
-
-        Args:
-            entry_name: name of entry to wait for. If None, waits for bucket deletion
-            timeout: maximum time to wait in seconds (default: 60.0)
-            poll_interval: time between status checks in seconds (default: 0.5)
-        Raises:
-            ReductError: if there is an HTTP error or timeout is reached
-            TimeoutError: if deletion doesn't complete within timeout
-        Examples:
-            >>> await bucket.remove()
-            >>> await bucket.wait_for_deletion()  # Wait for bucket deletion
-            >>>
-            >>> await bucket.remove_entry("entry-1")
-            >>> await bucket.wait_for_deletion("entry-1")  # Wait for entry deletion
-        """
-        start_time = time.time()
-        first_check = True
-        while True:
-            elapsed = time.time() - start_time
-            if elapsed > timeout:
-                resource = f"entry '{entry_name}'" if entry_name else "bucket"
-                raise TimeoutError(
-                    f"Timeout waiting for {resource} deletion after {timeout}s"
-                )
-
-            try:
-                if entry_name:
-                    # Check entry status
-                    entries = await self.get_entry_list()
-                    entry = next((e for e in entries if e.name == entry_name), None)
-                    if entry is None:
-                        # Entry is fully deleted
-                        return
-                    if entry.status != Status.DELETING:
-                        # Not being deleted - this is an error condition
-                        raise ReductError(
-                            409,
-                            f"Entry '{entry_name}' is not being deleted "
-                            f"(status: {entry.status.value})",
-                        )
-                else:
-                    # Check bucket status
-                    info = await self.info()
-                    if info.status != Status.DELETING:
-                        # Not being deleted - this is an error condition
-                        raise ReductError(
-                            409,
-                            f"Bucket '{self.name}' is not being deleted "
-                            f"(status: {info.status.value})",
-                        )
-            except ReductError as err:
-                # If we get 404, the resource is fully deleted
-                if err.status_code == 404:
-                    return
-                # On first check, propagate the error if it's "not being deleted"
-                if first_check and "not being deleted" in err.message:
-                    raise
-                # If we get 409 and it's "already deleting", continue polling
-                if err.status_code == 409 and "delet" in err.message.lower():
-                    pass
-                else:
-                    raise
-
-            first_check = False
-            await asyncio.sleep(poll_interval)
-
-    async def remove(self, wait: bool = False, timeout: float = 60.0):
+    async def remove(self):
         """
         Remove bucket
-
-        The bucket deletion happens in the background. If wait=True, this method
-        will poll until the deletion completes.
-
-        Args:
-            wait: if True, wait for deletion to complete before returning
-            timeout: maximum time to wait for deletion in seconds
-                (only used if wait=True)
         Raises:
             ReductError: if there is an HTTP error
-            TimeoutError: if wait=True and deletion doesn't complete
-                within timeout
-        Examples:
-            >>> await bucket.remove()  # Start deletion, return immediately
-            >>> await bucket.remove(wait=True)  # Wait for deletion to complete
         """
         await self._http.request_all("DELETE", f"/b/{self.name}")
-        if wait:
-            await self.wait_for_deletion(timeout=timeout)
 
-    async def remove_entry(
-        self, entry_name: str, wait: bool = False, timeout: float = 60.0
-    ):
+    async def remove_entry(self, entry_name: str):
         """
         Remove entry from bucket
-
-        The entry deletion happens in the background. If wait=True, this method
-        will poll until the deletion completes.
-
         Args:
             entry_name: name of entry
-            wait: if True, wait for deletion to complete before returning
-            timeout: maximum time to wait for deletion in seconds
-                (only used if wait=True)
         Raises:
             ReductError: if there is an HTTP error
-            TimeoutError: if wait=True and deletion doesn't complete
-                within timeout
-        Examples:
-            >>> await bucket.remove_entry("entry-1")
-            >>> # Start deletion, return immediately
-            >>> await bucket.remove_entry("entry-1", wait=True)
-            >>> # Wait for deletion to complete
         """
         await self._http.request_all("DELETE", f"/b/{self.name}/{entry_name}")
-        if wait:
-            await self.wait_for_deletion(entry_name, timeout=timeout)
 
     async def remove_record(
         self, entry_name: str, timestamp: Union[int, datetime, float, str]
