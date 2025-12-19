@@ -14,11 +14,11 @@ class QuotaType(Enum):
     HARD = "HARD"
 
 
-class Status(Enum):
+class Status(str, Enum):
     """Resource status during deletion"""
 
-    READY = "READY"
-    DELETING = "DELETING"
+    READY = "ready"
+    DELETING = "deleting"
 
 
 class BucketSettings(BaseModel):
