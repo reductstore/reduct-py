@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for replication mode, [PR-143](https://github.com/reductstore/reduct-py/pull/143)
+- Add `status` field to `BucketInfo` and `EntryInfo` models to track deletion state (READY/DELETING), [PR-146](https://github.com/reductstore/reduct-py/pull/146)
 
 ## 1.17.2 - 2025-11-17
 

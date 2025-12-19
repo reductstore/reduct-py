@@ -1,4 +1,5 @@
 build/
+dist/
 pkg/reduct/VERSION
 *.egg-info
 .venv

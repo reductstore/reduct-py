@@ -33,6 +33,7 @@ from reduct.msg.server import (
 
 from reduct.msg.bucket import (
     QuotaType,
+    Status,
     BucketInfo,
     BucketSettings,
     EntryInfo,

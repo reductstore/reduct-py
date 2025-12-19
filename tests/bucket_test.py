@@ -9,7 +9,14 @@ from typing import List, Tuple
 import pytest
 import requests
 
-from reduct import ReductError, BucketSettings, QuotaType, Record, BucketFullInfo
+from reduct import (
+    ReductError,
+    BucketSettings,
+    QuotaType,
+    Record,
+    BucketFullInfo,
+    Status,
+)
 from reduct.record import Batch
 from tests.conftest import requires_api
 
@@ -37,7 +44,10 @@ async def test__remove_not_exist(client):
 async def test__remove_entry(bucket_1):
     """Should remove an entry in a bucket"""
     await bucket_1.remove_entry("entry-2")
-    assert "entry-2" not in [entry.name for entry in await bucket_1.get_entry_list()]
+    entries = await bucket_1.get_entry_list()
+    entry_2 = next((e for e in entries if e.name == "entry-2"), None)
+    # Entry should either be gone or in DELETING status (non-blocking deletion)
+    assert entry_2 is None or entry_2.status == Status.DELETING
 
 
 @pytest.mark.asyncio
@@ -64,6 +74,7 @@ async def test__get_info(bucket_2):
         "oldest_record": 5000000,
         "size": 88,
         "is_provisioned": False,
+        "status": Status.READY,
     }
 
 
@@ -88,6 +99,7 @@ async def test__get_entries(bucket_1):
         "oldest_record": 1000000,
         "record_count": 2,
         "size": 114,
+        "status": Status.READY,
     }
 
     assert entries[1].model_dump() == {
@@ -97,6 +109,7 @@ async def test__get_entries(bucket_1):
         "oldest_record": 3000000,
         "record_count": 3,
         "size": 172,
+        "status": Status.READY,
     }
 
 
@@ -695,3 +708,20 @@ async def test_create_query_link_filename(bucket_1):
     """Should create a query link with record index"""
     link = await bucket_1.create_query_link("entry-2", file_name="data.txt")
     assert "links/data.txt?" in link
+
+
+@pytest.mark.asyncio
+async def test__bucket_info_has_status(bucket_1):
+    """Should have status field in bucket info"""
+    info = await bucket_1.info()
+    assert info.status == Status.READY
+    assert info.status.value == "READY"
+
+
+@pytest.mark.asyncio
+async def test__entry_info_has_status(bucket_1):
+    """Should have status field in entry info"""
+    entries = await bucket_1.get_entry_list()
+    assert len(entries) > 0
+    assert entries[0].status == Status.READY
+    assert entries[0].status.value == "READY"
