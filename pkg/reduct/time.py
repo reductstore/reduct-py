@@ -1,12 +1,18 @@
 """Helper functions for time-related operations."""
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Union
+from typing import TypeAlias
 
 TIME_PRECISION = 1_000_000
 
+# Python 3.10+ Type Alias
+TimestampLike: TypeAlias = int | datetime | float | str
+"""Flexible timestamp input type accepting multiple formats"""
 
-def unix_timestamp_from_any(timestamp: Union[int, datetime, float, str]) -> int:
+
+def unix_timestamp_from_any(timestamp: TimestampLike) -> int:
     """Convert timestamp to UNIX timestamp in microseconds
     Args:
         timestamp (int | datetime | float | str): int (UNIX timestamp in microseconds),

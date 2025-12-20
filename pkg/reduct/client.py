@@ -1,7 +1,8 @@
 """Client module for ReductStore HTTP API"""
 
+from __future__ import annotations
+
 import json
-from typing import Dict, List, Optional
 
 from aiohttp import ClientSession
 
@@ -31,9 +32,9 @@ class Client:
     def __init__(
         self,
         url: str,
-        api_token: Optional[str] = None,
-        timeout: Optional[float] = None,
-        extra_headers: Optional[Dict[str, str]] = None,
+        api_token: str | None = None,
+        timeout: float | None = None,
+        extra_headers: dict[str, str] | None = None,
         **kwargs,
     ):
         """
@@ -75,7 +76,7 @@ class Client:
         body, _ = await self._http.request_all("GET", "/info")
         return ServerInfo.model_validate_json(body)
 
-    async def list(self) -> List[BucketInfo]:
+    async def list(self) -> list[BucketInfo]:
         """
         Get a list of all buckets on server
 
@@ -103,7 +104,7 @@ class Client:
     async def create_bucket(
         self,
         name: str,
-        settings: Optional[BucketSettings] = None,
+        settings: BucketSettings | None = None,
         exist_ok: bool = False,
     ) -> Bucket:
         """
@@ -128,7 +129,7 @@ class Client:
 
         return Bucket(name, self._http)
 
-    async def get_token_list(self) -> List[Token]:
+    async def get_token_list(self) -> list[Token]:
         """
         Get a list of all tokens
         Returns:
@@ -189,7 +190,7 @@ class Client:
         body, _ = await self._http.request_all("GET", "/me")
         return FullTokenInfo.model_validate_json(body)
 
-    async def get_replications(self) -> List[ReplicationInfo]:
+    async def get_replications(self) -> list[ReplicationInfo]:
         """
         Get a list of replications
         Returns:
