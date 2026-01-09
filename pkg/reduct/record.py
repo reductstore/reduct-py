@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import (
     Callable,
     AsyncIterator,
@@ -15,6 +13,12 @@ from typing import (
 
 from aiohttp import ClientResponse
 
+from reduct.batch import (
+    BatchedRecord,
+    LABEL_PREFIX,
+    parse_batched_records_v1,
+    parse_batched_records_v2,
+)
 from reduct.time import (
     unix_timestamp_to_datetime,
     unix_timestamp_from_any,
@@ -26,6 +30,8 @@ from reduct.time import (
 class Record:
     """Record in a query"""
 
+    entry: str
+    """entry name of record"""
     timestamp: int
     """UNIX timestamp in microseconds"""
     size: int
@@ -50,20 +56,37 @@ class Record:
         return unix_timestamp_to_datetime(self.timestamp)
 
 
+@dataclass
+class BatchItem:
+    """Single item in a batch request"""
+
+    entry: str | None
+    timestamp: int
+    data: bytes
+    content_type: str
+    labels: dict[str, str]
+
+    @property
+    def size(self) -> int:
+        """Size of the payload"""
+        return len(self.data)
+
+
 class Batch:
     """Batch of records to write them in one request"""
 
     def __init__(self):
-        self._records: dict[int, Record] = {}
+        self._items: list[BatchItem] = []
         self._total_size = 0
         self._last_access = 0
 
     def add(
         self,
         timestamp: TimestampLike,
-        data: bytes = b"",
+        data: bytes | None = b"",
         content_type: str | None = None,
         labels: dict[str, str] | None = None,
+        entry: str | None = None,
     ):
         """Add record to batch
         Args:
@@ -72,6 +95,8 @@ class Batch:
             data: data to store
             content_type: content type of data (default: application/octet-stream)
             labels: labels of record (default: {})
+            entry: explicit entry for the record. If None, the bucket entry passed to
+                the API will be used.
         """
         if content_type is None:
             content_type = ""
@@ -79,35 +104,50 @@ class Batch:
         if labels is None:
             labels = {}
 
-        rec_offset = 0
+        payload = data if data is not None else b""
 
-        async def read(n: int) -> AsyncIterator[bytes]:
-            nonlocal rec_offset
-            while rec_offset < len(data):
-                chunk = data[rec_offset : rec_offset + n]
-                rec_offset += len(chunk)
-                yield chunk
-
-        async def read_all() -> bytes:
-            return data
-
-        record = Record(
+        record = BatchItem(
+            entry=entry,
             timestamp=unix_timestamp_from_any(timestamp),
-            size=len(data),
+            data=payload,
             content_type=content_type,
             labels=labels,
-            read_all=read_all,
-            read=read,
-            last=False,
         )
 
         self._total_size += record.size
         self._last_access = time.time()
-        self._records[record.timestamp] = record
+        self._items.append(record)
 
-    def items(self) -> list[tuple[int, Record]]:
-        """Get records as dict items"""
-        return sorted(self._records.items())
+    def items(self, default_entry: str | None = None) -> list[BatchItem]:
+        """Get records sorted by entry and timestamp.
+
+        Args:
+            default_entry: entry to use when a record doesn't have an explicit entry.
+        """
+        return self.sorted_items(default_entry)
+
+    def sorted_items(self, default_entry: str | None = None) -> list[BatchItem]:
+        """Return records sorted by entry and timestamp.
+
+        Records without an explicit entry fall back to ``default_entry``.
+        """
+        resolved = []
+        for item in self._items:
+            entry = item.entry or default_entry
+            if entry is None:
+                raise ValueError("Entry is not specified for a batch item")
+
+            resolved.append(
+                BatchItem(
+                    entry=entry,
+                    timestamp=item.timestamp,
+                    data=item.data,
+                    content_type=item.content_type,
+                    labels=item.labels,
+                )
+            )
+
+        return sorted(resolved, key=lambda item: (item.entry, item.timestamp))
 
     @property
     def size(self) -> int:
@@ -121,21 +161,15 @@ class Batch:
 
     def clear(self):
         """Clear batch"""
-        self._records.clear()
+        self._items.clear()
         self._total_size = 0
         self._last_access = 0
 
     def __len__(self):
-        return len(self._records)
+        return len(self._items)
 
 
-LABEL_PREFIX = "x-reduct-label-"
-TIME_PREFIX = "x-reduct-time-"
-ERROR_PREFIX = "x-reduct-error-"
-CHUNK_SIZE = 16_000
-
-
-def parse_record(resp: ClientResponse, last=True) -> Record:
+def parse_record(resp: ClientResponse, last=True, entry: str = "") -> Record:
     """Parse record from response"""
     timestamp = int(resp.headers["x-reduct-time"])
     size = int(resp.headers["content-length"])
@@ -147,6 +181,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
     return Record(
+        entry=entry,
         timestamp=timestamp,
         size=size,
         last=last,
@@ -157,112 +192,27 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
     )
 
 
-def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
-    items = []
-    escaped = ""
-    for item in row.split(","):
-        if item.startswith('"') and not escaped:
-            escaped = item[1:]
-        if escaped:
-            if item.endswith('"'):
-                escaped = escaped[:-1]
-                items.append(escaped)
-                escaped = ""
-            else:
-                escaped += item
-        else:
-            items.append(item)
-
-    content_length = int(items[0])
-    content_type = items[1]
-
-    labels = {}
-    for label in items[2:]:
-        if "=" in label:
-            name, value = label.split("=", 1)
-            labels[name] = value
-
-    return content_length, content_type, labels
-
-
-async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
-    while len(buffer) > 0:
-        part = buffer.pop(0)
-        if len(part) == 0:
-            continue
-
-        count = 0
-        size = len(part)
-        m = min(n, size)
-
-        while count < size:
-            chunk = part[count : count + m]
-            count += len(chunk)
-            m = min(m, size - count)
-            yield chunk
-            await asyncio.sleep(0)
-
-
-async def _read_all(buffer: list[bytes]) -> bytes:
-    return b"".join(buffer)
+def _batched_to_record(batched: BatchedRecord) -> Record:
+    return Record(
+        entry=batched.entry,
+        timestamp=batched.timestamp,
+        size=batched.size,
+        last=batched.last,
+        content_type=batched.content_type,
+        labels=batched.labels,
+        read_all=batched.read_all,
+        read=batched.read,
+    )
 
 
 async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
-    records_total = sum(
-        1 for header in resp.headers if header.lower().startswith(TIME_PREFIX)
-    )
-    records_count = 0
-    head = resp.method == "HEAD"
+    parsed_v2 = await parse_batched_records_v2(resp)
+    if parsed_v2 is not None:
+        async for record in parsed_v2:
+            yield _batched_to_record(record)
+        return
 
-    for name, value in resp.headers.items():
-        if name.lower().startswith(TIME_PREFIX):
-            timestamp = int(name[len(TIME_PREFIX) :])
-            content_length, content_type, labels = _parse_header_as_csv_row(value)
-
-            last = False
-            records_count += 1
-
-            if records_count == records_total:
-                # last record in batched records read in client code
-                read_func = resp.content.iter_chunked
-                read_all_func = resp.read
-                if resp.headers.get("x-reduct-last", "false") == "true":
-                    # last record in query
-                    last = True
-            else:
-                # batched records must be read in order, so it is safe to read them here
-                # instead of reading them in the use code with an async interator.
-                # The batched records are small if they are not the last.
-                # The last batched record is read in the async generator in chunks.
-                if head:
-                    buffer = []
-                else:
-                    buffer = await _read_response(resp, content_length)
-                read_func = partial(_read, buffer)
-                read_all_func = partial(_read_all, buffer)
-
-            record = Record(
-                timestamp=timestamp,
-                size=content_length,
-                last=last,
-                content_type=content_type,
-                labels=labels,
-                read_all=read_all_func,
-                read=read_func,
-            )
-
-            yield record
-
-
-async def _read_response(resp, content_length) -> list[bytes]:
-    chunks = []
-    count = 0
-    while count < content_length:
-        n = min(CHUNK_SIZE, content_length - count)
-        chunk = await resp.content.read(n)
-        chunks.append(chunk)
-        count += len(chunk)
-
-    return chunks
+    async for record in parse_batched_records_v1(resp):
+        yield _batched_to_record(record)
