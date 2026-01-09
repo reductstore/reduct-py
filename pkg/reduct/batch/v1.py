@@ -64,8 +64,12 @@ def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
     return content_length, content_type, labels
 
 
-async def parse_batched_records_v1(resp: ClientResponse) -> AsyncIterator[BatchedRecord]:
-    records_total = sum(1 for header in resp.headers if header.lower().startswith(TIME_PREFIX))
+async def parse_batched_records_v1(
+    resp: ClientResponse,
+) -> AsyncIterator[BatchedRecord]:
+    records_total = sum(
+        1 for header in resp.headers if header.lower().startswith(TIME_PREFIX)
+    )
     records_count = 0
     head = resp.method == "HEAD"
 

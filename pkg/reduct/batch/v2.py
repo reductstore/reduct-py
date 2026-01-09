@@ -120,7 +120,9 @@ def _parse_encoded_list(raw: str) -> list[str]:
     return entries
 
 
-def _parse_label_delta_ops(raw: str, label_names: list[str] | None) -> list[tuple[str, str | None]]:
+def _parse_label_delta_ops(
+    raw: str, label_names: list[str] | None
+) -> list[tuple[str, str | None]]:
     ops: list[tuple[str, str | None]] = []
     pos = 0
     length = len(raw)
@@ -166,7 +168,9 @@ def _parse_label_delta_ops(raw: str, label_names: list[str] | None) -> list[tupl
     return ops
 
 
-def _apply_label_delta(raw: str, base: dict[str, str], label_names: list[str] | None) -> dict[str, str]:
+def _apply_label_delta(
+    raw: str, base: dict[str, str], label_names: list[str] | None
+) -> dict[str, str]:
     labels = dict(base)
     for key, value in _parse_label_delta_ops(raw, label_names):
         if value is None:
@@ -177,7 +181,9 @@ def _apply_label_delta(raw: str, base: dict[str, str], label_names: list[str] | 
 
 
 def _parse_record_header_v2(
-    raw: str, previous: tuple[int, str, dict[str, str]] | None, label_names: list[str] | None
+    raw: str,
+    previous: tuple[int, str, dict[str, str]] | None,
+    label_names: list[str] | None,
 ) -> tuple[int, str, dict[str, str]] | None:
     first_comma = raw.find(",")
     length_str = raw if first_comma == -1 else raw[:first_comma]
@@ -208,7 +214,9 @@ def _parse_record_header_v2(
     return content_length, content_type, labels
 
 
-async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[BatchedRecord] | None:
+async def parse_batched_records_v2(
+    resp: ClientResponse,
+) -> AsyncIterator[BatchedRecord] | None:
     entries_raw = resp.headers.get(ENTRIES_HEADER)
     start_ts_raw = resp.headers.get(START_TS_HEADER)
     if entries_raw is None or start_ts_raw is None:
@@ -261,7 +269,9 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Batche
             if entry_idx >= len(entries):
                 continue
 
-            header = _parse_record_header_v2(raw_value, last_header.get(entry_idx), label_names)
+            header = _parse_record_header_v2(
+                raw_value, last_header.get(entry_idx), label_names
+            )
             if header is None:
                 continue
 

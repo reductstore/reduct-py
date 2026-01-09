@@ -230,7 +230,9 @@ class Bucket:
             **kwargs,
         )
 
-        url = f"/io/{self.name}/read" if use_v2 else f"/b/{self.name}/{entry_name}/batch"
+        url = (
+            f"/io/{self.name}/read" if use_v2 else f"/b/{self.name}/{entry_name}/batch"
+        )
         extra_headers = {"x-reduct-query-id": query_id} if use_v2 else None
         resp, _ = await self._http.request_all(
             "HEAD" if head else "GET",
@@ -501,7 +503,15 @@ class Bucket:
         head = kwargs.pop("head", False)
 
         query_id = await self._query_post(
-            entries, QueryType.QUERY, start, stop, when, ttl, use_v2, head=head, **kwargs
+            entries,
+            QueryType.QUERY,
+            start,
+            stop,
+            when,
+            ttl,
+            use_v2,
+            head=head,
+            **kwargs,
         )
 
         last = False
