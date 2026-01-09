@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from typing import (
     AsyncIterator,
+    Sequence,
 )
 
 from reduct.error import ReductError
@@ -57,9 +58,13 @@ def _check_deprecated_params(kwargs):
         )
 
 
-def _parse_entry_list(entry_name: str) -> list[str]:
-    """Parse comma or whitespace separated entry names preserving order."""
-    entries = [part for part in re.split(r"[,\s]+", entry_name) if part]
+def _parse_entry_list(entry_name: str | Sequence[str]) -> list[str]:
+    """Parse entry names from a string or sequence preserving order."""
+    if isinstance(entry_name, str):
+        entries = [part for part in re.split(r"[,\s]+", entry_name) if part]
+    else:
+        entries = [part.strip() for part in entry_name if part and part.strip()]
+
     if not entries:
         raise ValueError("Entry name must not be empty")
     return entries
@@ -178,7 +183,7 @@ class Bucket:
 
     async def remove_query(
         self,
-        entry_name: str,
+        entry_name: str | Sequence[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         when: dict | None = None,
@@ -191,8 +196,9 @@ class Bucket:
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
-            entry_name: name of entry in the bucket. Comma or whitespace separated
-                lists use the multi-entry API when supported (server >= 1.18).
+            entry_name: name of entry in the bucket. Comma/whitespace separated
+                strings or sequences of names use the multi-entry API when supported
+                (server >= 1.18).
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -449,7 +455,7 @@ class Bucket:
 
     async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
-        entry_name: str,
+        entry_name: str | Sequence[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         ttl: int | None = None,
@@ -462,8 +468,9 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string),
         Args:
-            entry_name: name of entry in the bucket. Comma or whitespace separated
-                lists use the multi-entry API when supported (server >= 1.18).
+            entry_name: name of entry in the bucket. Comma/whitespace separated
+                strings or sequences of names use the multi-entry API when supported
+                (server >= 1.18).
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -534,7 +541,7 @@ class Bucket:
 
     async def subscribe(
         self,
-        entry_name: str,
+        entry_name: str | Sequence[str],
         start: TimestampLike | None = None,
         poll_interval=1.0,
         when: dict | None = None,
@@ -547,8 +554,9 @@ class Bucket:
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
-            entry_name: name of entry in the bucket. Comma or whitespace separated
-                lists use the multi-entry API when supported (server >= 1.18).
+            entry_name: name of entry in the bucket. Comma/whitespace separated
+                strings or sequences of names use the multi-entry API when supported
+                (server >= 1.18).
             start: the beginning timestamp to read records.
                 If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
