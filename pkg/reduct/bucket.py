@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 import warnings
 from contextlib import asynccontextmanager
@@ -29,9 +30,9 @@ from reduct.record import (
     parse_batched_records,
     parse_record,
     Batch,
-    TIME_PREFIX,
-    ERROR_PREFIX,
+    BatchItem,
 )
+from reduct.batch import ERROR_PREFIX, make_headers_v1, make_headers_v2
 from reduct.time import unix_timestamp_from_any, TimestampLike
 
 
@@ -54,6 +55,14 @@ def _check_deprecated_params(kwargs):
             " use '$limit' in 'when' instead.",
             DeprecationWarning,
         )
+
+
+def _parse_entry_list(entry_name: str) -> list[str]:
+    """Parse comma or whitespace separated entry names preserving order."""
+    entries = [part for part in re.split(r"[,\s]+", entry_name) if part]
+    if not entries:
+        raise ValueError("Entry name must not be empty")
+    return entries
 
 
 class Bucket:
@@ -144,18 +153,25 @@ class Bucket:
         Remove batch of records from entries in a sole request
         Args:
             entry_name: name of entry in the bucket
-            batch: list of timestamps
+            batch: list of timestamps. Items without an explicit entry use
+                ``entry_name`` as the default.
         Returns:
             Dict[int, ReductError]: the dictionary of errors
                 with  record timestamps as keys
         Raises:
-            ReductError: if there is an HTTP error
+            ReductError: if there is an HTTP error. Multi-entry batches require
+            server >= 1.18 (batch protocol v2); older servers use the legacy
+            single-entry endpoint.
         """
-        _, record_headers = self._make_headers(batch)
+        content_length, record_headers, _, protocol = self._make_headers(
+            entry_name, batch
+        )
+        path = self._batch_path(protocol, entry_name, "remove")
         _, headers = await self._http.request_all(
             "DELETE",
-            f"/b/{self.name}/{entry_name}/batch",
+            path,
             extra_headers=record_headers,
+            content_length=content_length,
         )
 
         return self._parse_errors_from_headers(headers)
@@ -175,7 +191,8 @@ class Bucket:
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
-            entry_name: name of entry in the bucket
+            entry_name: name of entry in the bucket. Comma or whitespace separated
+                lists use the multi-entry API when supported (server >= 1.18).
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -192,18 +209,27 @@ class Bucket:
         """
         _check_deprecated_params(kwargs)
 
-        start = unix_timestamp_from_any(start) if start else None
-        stop = unix_timestamp_from_any(stop) if stop else None
-
-        query_message = QueryEntry(
-            query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
+        entries = _parse_entry_list(entry_name)
+        use_v2 = self._should_use_v2(entries)
+        head = kwargs.pop("head", False)
+        query_id = await self._query_post(
+            entries,
+            QueryType.REMOVE,
+            start,
+            stop,
+            when,
+            None,
+            use_v2,
+            head=head,
+            **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+
+        url = f"/io/{self.name}/read" if use_v2 else f"/b/{self.name}/{entry_name}/batch"
+        extra_headers = {"x-reduct-query-id": query_id} if use_v2 else None
         resp, _ = await self._http.request_all(
-            "POST",
+            "HEAD" if head else "GET",
             url,
-            data=query_message.model_dump_json(),
-            content_type="application/json",
+            extra_headers=extra_headers,
         )
 
         return json.loads(resp)["removed_records"]
@@ -324,22 +350,30 @@ class Bucket:
 
         Args:
             entry_name: name of entry in the bucket
-            batch: list of records
+            batch: list of records. Items without an explicit entry use
+                ``entry_name`` as the default.
         Returns:
             Dict[int, ReductError]: the dictionary of errors
                 with record timestamps as keys
         Raises:
-            ReductError: if there is an HTTP  or communication error
+            ReductError: if there is an HTTP  or communication error. Multi-entry
+            batches require server >= 1.18 (batch protocol v2); older servers use
+            the legacy single-entry endpoint.
         """
 
-        async def iter_body():
-            for _, rec in batch.items():
-                yield await rec.read_all()
+        content_length, record_headers, items, protocol = self._make_headers(
+            entry_name, batch
+        )
+        path = self._batch_path(protocol, entry_name, "write")
 
-        content_length, record_headers = self._make_headers(batch)
+        async def iter_body():
+            for record in items:
+                if record.data:
+                    yield record.data
+
         _, headers = await self._http.request_all(
             "POST",
-            f"/b/{self.name}/{entry_name}/batch",
+            path,
             data=iter_body(),
             extra_headers=record_headers,
             content_length=content_length,
@@ -383,12 +417,15 @@ class Bucket:
 
         Args:
             entry_name: name of entry in the bucket
-            batch: dict of timestamps as keys and labels as values
+            batch: dict of timestamps as keys and labels as values. Items without an
+                explicit entry use ``entry_name`` as the default.
         Returns:
             Dict[int, ReductError]: the dictionary of errors
                 with record timestamps as keys
         Raises:
-            ReductError: if there is an HTTP error
+            ReductError: if there is an HTTP error. Multi-entry batches require
+            server >= 1.18 (batch protocol v2); older servers use the legacy
+            single-entry endpoint.
 
         Examples:
             >>> batch = Batch()
@@ -397,10 +434,13 @@ class Bucket:
 
         """
 
-        content_length, record_headers = self._make_headers(batch)
+        content_length, record_headers, _, protocol = self._make_headers(
+            entry_name, batch
+        )
+        path = self._batch_path(protocol, entry_name, "update")
         _, headers = await self._http.request_all(
             "PATCH",
-            f"/b/{self.name}/{entry_name}/batch",
+            path,
             extra_headers=record_headers,
             content_length=content_length,
         )
@@ -422,7 +462,8 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string),
         Args:
-            entry_name: name of entry in the bucket
+            entry_name: name of entry in the bucket. Comma or whitespace separated
+                lists use the multi-entry API when supported (server >= 1.18).
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -447,22 +488,39 @@ class Bucket:
         """
         _check_deprecated_params(kwargs)
 
+        entries = _parse_entry_list(entry_name)
+        use_v2 = self._should_use_v2(entries)
+
+        head = kwargs.pop("head", False)
+
         query_id = await self._query_post(
-            entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
+            entries, QueryType.QUERY, start, stop, when, ttl, use_v2, head=head, **kwargs
         )
 
         last = False
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
+        method = "HEAD" if head else "GET"
 
         while not last:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    return
-                async for record in parse_batched_records(resp):
-                    last = record.last
-                    yield record
+            if use_v2:
+                async with self._http.request(
+                    method,
+                    f"/io/{self.name}/read",
+                    extra_headers={"x-reduct-query-id": query_id},
+                ) as resp:
+                    if resp.status == 204:
+                        return
+                    async for record in parse_batched_records(resp):
+                        last = record.last
+                        yield record
+            else:
+                async with self._http.request(
+                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        return
+                    async for record in parse_batched_records(resp):
+                        last = record.last
+                        yield record
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -489,7 +547,8 @@ class Bucket:
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
         Args:
-            entry_name: name of entry in the bucket
+            entry_name: name of entry in the bucket. Comma or whitespace separated
+                lists use the multi-entry API when supported (server >= 1.18).
             start: the beginning timestamp to read records.
                 If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
@@ -512,28 +571,47 @@ class Bucket:
             >>>         print(chunk)
         """
         ttl = poll_interval * 2 + 1
+        entries = _parse_entry_list(entry_name)
+        use_v2 = self._should_use_v2(entries)
+
+        head = kwargs.pop("head", False)
         query_id = await self._query_post(
-            entry_name,
+            entries,
             QueryType.QUERY,
             start,
             None,
             when,
             ttl,
+            use_v2,
+            head=head,
             continuous=True,
             **kwargs,
         )
 
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
+        method = "HEAD" if head else "GET"
         while True:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    await asyncio.sleep(poll_interval)
-                    continue
+            if use_v2:
+                async with self._http.request(
+                    method,
+                    f"/io/{self.name}/read",
+                    extra_headers={"x-reduct-query-id": query_id},
+                ) as resp:
+                    if resp.status == 204:
+                        await asyncio.sleep(poll_interval)
+                        continue
 
-                async for record in parse_batched_records(resp):
-                    yield record
+                    async for record in parse_batched_records(resp):
+                        yield record
+            else:
+                async with self._http.request(
+                    method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
+                ) as resp:
+                    if resp.status == 204:
+                        await asyncio.sleep(poll_interval)
+                        continue
+
+                    async for record in parse_batched_records(resp):
+                        yield record
 
     async def create_query_link(
         self,
@@ -609,7 +687,16 @@ class Bucket:
         return CreateQueryLinkResponse.model_validate_json(body).link
 
     async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
-        self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
+        self,
+        entries: list[str],
+        query_type: QueryType,
+        start,
+        stop,
+        when,
+        ttl,
+        use_v2: bool,
+        head: bool = False,
+        **kwargs,
     ):
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
@@ -619,37 +706,77 @@ class Bucket:
             stop=stop,
             when=when,
             ttl=ttl,
-            only_metadata=kwargs.get("head", False),
+            only_metadata=head,
             **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+        payload = query_message.model_dump(mode="json", exclude_none=True)
+        if use_v2:
+            payload["entries"] = entries
+            url = f"/io/{self.name}/q"
+        else:
+            url = f"/b/{self.name}/{entries[0]}/q"
+
         data, _ = await self._http.request_all(
             "POST",
             url,
-            data=query_message.model_dump_json(),
+            data=json.dumps(payload),
             content_type="application/json",
         )
         query_id = json.loads(data)["id"]
         return query_id
 
-    @staticmethod
-    def _make_headers(batch: Batch) -> tuple[int, dict[str, str]]:
-        """Make headers for batch"""
-        record_headers = {}
-        content_length = 0
-        for time_stamp, record in batch.items():
-            content_length += record.size
-            header = f"{record.size},{record.content_type}"
-            for label, value in record.labels.items():
-                if "," in label or "=" in label:
-                    header += f',{label}="{value}"'
-                else:
-                    header += f",{label}={value}"
+    def _make_headers(
+        self, default_entry: str, batch: Batch
+    ) -> tuple[int, dict[str, str], list[BatchItem], str]:
+        """Make headers for batch using protocol v1 or v2 depending on entries."""
+        items = batch.sorted_items(default_entry)
+        entries = {record.entry for record in items}
+        protocol = self._select_batch_protocol(len(entries))
+        if protocol == "v2":
+            content_length, record_headers = make_headers_v2(items)
+        else:
+            content_length, record_headers = make_headers_v1(items)
 
-            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
+        return content_length, record_headers, items, protocol
 
-        record_headers["Content-Type"] = "application/octet-stream"
-        return content_length, record_headers
+    def _supports_v2(self) -> bool:
+        """Return True when server API version is >=1.18."""
+        api_version = self._http.api_version
+        if api_version is None:
+            return False
+
+        major, minor = api_version
+        return major > 1 or (major == 1 and minor >= 18)
+
+    def _should_use_v2(self, entries: list[str]) -> bool:
+        """Decide whether to use v2 query protocol."""
+        supports_v2 = self._supports_v2()
+        if len(entries) > 1 and not supports_v2:
+            raise ReductError(
+                400,
+                "Batch/query protocol v2 is required for multiple entries; "
+                "update the server to >= 1.18.0",
+            )
+        return supports_v2 or len(entries) > 1
+
+    def _select_batch_protocol(self, entry_count: int) -> str:
+        """Choose batch protocol based on server version and entry count."""
+        if entry_count > 1:
+            if not self._supports_v2():
+                raise ReductError(
+                    400,
+                    "Batch protocol v2 is required for multiple entries; "
+                    "update the server to >= 1.18.0",
+                )
+            return "v2"
+
+        return "v1"
+
+    def _batch_path(self, protocol: str, entry_name: str, operation: str) -> str:
+        """Resolve batch endpoint path based on protocol."""
+        if protocol == "v2":
+            return f"/io/{self.name}/{operation}"
+        return f"/b/{self.name}/{entry_name}/batch"
 
     @staticmethod
     def _parse_errors_from_headers(headers):
