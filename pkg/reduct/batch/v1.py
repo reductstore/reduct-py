@@ -9,7 +9,6 @@ from aiohttp import ClientResponse
 
 from . import (
     BatchedRecord,
-    LABEL_PREFIX,
     TIME_PREFIX,
     _read,
     _read_all,
@@ -67,6 +66,7 @@ def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
 async def parse_batched_records_v1(
     resp: ClientResponse,
 ) -> AsyncIterator[BatchedRecord]:
+    """Parse batched records from a response using protocol v1 (single-entry)."""
     records_total = sum(
         1 for header in resp.headers if header.lower().startswith(TIME_PREFIX)
     )
