@@ -22,7 +22,7 @@ class MockResponse:  # pylint: disable=too-few-public-methods
             "X-Reduct-Time-1627849924": "0,application/json,labelA=valueA",
             "X-Reduct-Last": "true",
         }
-
+        self.url = None  # Add url attribute
         self.content = self.MockContent()
 
     def read(self, _size):

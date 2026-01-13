@@ -217,6 +217,7 @@ def _parse_record_header_v2(
 async def parse_batched_records_v2(
     resp: ClientResponse,
 ) -> AsyncIterator[BatchedRecord] | None:
+    """Parse batched records from a response using protocol v2 (multi-entry)."""
     entries_raw = resp.headers.get(ENTRIES_HEADER)
     start_ts_raw = resp.headers.get(START_TS_HEADER)
     if entries_raw is None or start_ts_raw is None:

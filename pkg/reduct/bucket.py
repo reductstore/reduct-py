@@ -218,29 +218,35 @@ class Bucket:
         entries = _parse_entry_list(entry_name)
         use_v2 = self._should_use_v2(entries)
         head = kwargs.pop("head", False)
-        query_id = await self._query_post(
-            entries,
-            QueryType.REMOVE,
-            start,
-            stop,
-            when,
-            None,
-            use_v2,
-            head=head,
+        # POST the query - REMOVE queries return results directly
+        start_ts = unix_timestamp_from_any(start) if start else None
+        stop_ts = unix_timestamp_from_any(stop) if stop else None
+        query_message = QueryEntry(
+            query_type=QueryType.REMOVE,
+            start=start_ts,
+            stop=stop_ts,
+            when=when,
+            ttl=None,
+            only_metadata=head,
             **kwargs,
         )
+        payload = query_message.model_dump(mode="json", exclude_none=True)
+        if use_v2:
+            payload["entries"] = entries
+            url = f"/io/{self.name}/q"
+        else:
+            url = f"/b/{self.name}/{entries[0]}/q"
 
-        url = (
-            f"/io/{self.name}/read" if use_v2 else f"/b/{self.name}/{entry_name}/batch"
-        )
-        extra_headers = {"x-reduct-query-id": query_id} if use_v2 else None
-        resp, _ = await self._http.request_all(
-            "HEAD" if head else "GET",
+        data, _ = await self._http.request_all(
+            "POST",
             url,
-            extra_headers=extra_headers,
+            data=json.dumps(payload),
+            content_type="application/json",
         )
 
-        return json.loads(resp)["removed_records"]
+        # REMOVE queries return the result directly, not a query ID
+        parsed_data = json.loads(data)
+        return parsed_data["removed_records"]
 
     async def rename_entry(self, old_name: str, new_name: str):
         """
@@ -740,7 +746,8 @@ class Bucket:
             data=json.dumps(payload),
             content_type="application/json",
         )
-        query_id = json.loads(data)["id"]
+        parsed_data = json.loads(data)
+        query_id = str(parsed_data["id"])  # Convert to string for use as header value
         return query_id
 
     def _make_headers(

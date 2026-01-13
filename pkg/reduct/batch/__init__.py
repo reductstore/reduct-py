@@ -19,6 +19,8 @@ ERROR_PREFIX = "x-reduct-error-"
 
 @dataclass
 class BatchedRecord:
+    """Represents a single record within a batch response."""
+
     entry: str
     timestamp: int
     size: int
@@ -63,9 +65,9 @@ async def _read_response(resp: ClientResponse, content_length: int) -> list[byte
     return chunks
 
 
-from .v1 import parse_batched_records_v1  # noqa: E402
-from .v1 import make_headers_v1  # noqa: E402
-from .v2 import parse_batched_records_v2, make_headers_v2  # noqa: E402
+from .v1 import parse_batched_records_v1  # noqa: E402 # pylint: disable=wrong-import-position
+from .v1 import make_headers_v1  # noqa: E402 # pylint: disable=wrong-import-position
+from .v2 import parse_batched_records_v2, make_headers_v2  # noqa: E402 # pylint: disable=wrong-import-position
 
 __all__ = [
     "BatchedRecord",
