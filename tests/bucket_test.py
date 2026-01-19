@@ -245,6 +245,33 @@ async def test_query_records(bucket_1, head, content, start, stop):
 
 
 @pytest.mark.asyncio
+@requires_api("1.18")
+async def test_query_records_multy_entry(bucket_1):
+    """Should query records for a time interval from multiple entries"""
+    records: List[Tuple[Record, bytes]] = [
+        (record, await record.read_all())
+        async for record in bucket_1.query(["entry-1", "entry-2"], ttl=5)
+    ]
+    assert len(records) >= 4
+
+    assert records[0][0].entry == "entry-1"
+    assert records[0][0].timestamp == 1000000
+    assert records[0][1] == b"some-data-1"
+
+    assert records[1][0].entry == "entry-1"
+    assert records[1][0].timestamp == 2000000
+    assert records[1][1] == b"some-data-2"
+
+    assert records[2][0].entry == "entry-2"
+    assert records[2][0].timestamp == 3000000
+    assert records[2][1] == b"some-data-3"
+
+    assert records[3][0].entry == "entry-2"
+    assert records[3][0].timestamp == 4000000
+    assert records[3][1] == b"some-data-4"
+
+
+@pytest.mark.asyncio
 async def test_query_records_first(bucket_1):
     """Should query records for from first record"""
 
