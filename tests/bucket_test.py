@@ -24,16 +24,16 @@ from tests.conftest import requires_api
 @pytest.mark.asyncio
 async def test__remove_ok(client):
     """Should remove a bucket"""
-    bucket = await client.create_bucket("bucket")
+    bucket = await client.create_bucket("test-bucket", exist_ok=True)
     await bucket.remove()
     with pytest.raises(ReductError):
-        await client.get_bucket("bucket")
+        await client.get_bucket("test-bucket")
 
 
 @pytest.mark.asyncio
 async def test__remove_not_exist(client):
     """Should not remove a bucket if it doesn't exist"""
-    bucket = await client.create_bucket("bucket")
+    bucket = await client.create_bucket("test-bucket", exist_ok=True)
     await bucket.remove()
     with pytest.raises(ReductError):
         await bucket.remove()
@@ -70,7 +70,7 @@ async def test__get_info(bucket_2):
     assert info.model_dump() == {
         "entry_count": 1,
         "latest_record": 6000000,
-        "name": "bucket-2",
+        "name": bucket_2.name,
         "oldest_record": 5000000,
         "size": 88,
         "is_provisioned": False,

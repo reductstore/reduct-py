@@ -2,7 +2,7 @@
 
 import pytest
 
-from reduct.record import parse_batched_records
+from reduct.batch.batch_v1 import parse_batched_records
 
 
 class MockResponse:  # pylint: disable=too-few-public-methods

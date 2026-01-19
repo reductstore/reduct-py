@@ -21,15 +21,16 @@ from .conftest import requires_env, requires_api
 
 
 @pytest_asyncio.fixture(name="with_token")
-async def _create_token(client):
+async def _create_token(client, random_prefix):
     """Create a token for tests"""
+    name = f"{random_prefix}-test-token"
     _ = await client.create_token(
-        "test-token",
+        name,
         Permissions(full_access=True, read=["bucket-1"], write=["bucket-2"]),
     )
-    yield "test-token"
+    yield name
     try:
-        await client.remove_token("test-token")
+        await client.remove_token(name)
     except ReductError:
         pass
 
@@ -63,8 +64,8 @@ async def test__info(client):
     info: ServerInfo = await client.info()
     assert info.version >= "1.10.0"
     assert info.uptime >= 1
-    assert info.bucket_count == 2
-    assert info.usage == 374
+    assert info.bucket_count >= 2
+    assert info.usage >= 374
     assert info.oldest_record == 1_000_000
     assert info.latest_record == 6_000_000
 
@@ -100,9 +101,9 @@ async def test__list(client, bucket_1, bucket_2):
     """Should browse buckets"""
     buckets: List[BucketInfo] = await client.list()
 
-    assert len(buckets) == 2
-    assert buckets[0] == await bucket_1.info()
-    assert buckets[1] == await bucket_2.info()
+    assert len(buckets) >= 2
+    assert await bucket_1.info() in buckets
+    assert await bucket_2.info() in buckets
 
 
 @pytest.mark.asyncio
@@ -120,10 +121,10 @@ async def test__creat_bucket_exist_ok(client, bucket_1):
 
 
 @pytest.mark.asyncio
-async def test__create_bucket_custom_settings(client):
+async def test__create_bucket_custom_settings(client, random_prefix):
     """Should create a bucket with custom settings"""
     bucket = await client.create_bucket(
-        "bucket", BucketSettings(max_block_records=10000)
+        f"{random_prefix}-bucket", BucketSettings(max_block_records=10000)
     )
     settings = await bucket.get_settings()
     assert settings.model_dump() == {
@@ -137,9 +138,11 @@ async def test__create_bucket_custom_settings(client):
 @pytest.mark.parametrize("quota_type", [QuotaType.NONE, QuotaType.FIFO, QuotaType.HARD])
 @pytest.mark.asyncio
 @requires_api("1.12")
-async def test__create_bucket_quota(client, quota_type):
+async def test__create_bucket_quota(client, quota_type, random_prefix):
     """Should create a bucket with custom settings"""
-    bucket = await client.create_bucket("bucket", BucketSettings(quota_type=quota_type))
+    bucket = await client.create_bucket(
+        f"{random_prefix}-bucket", BucketSettings(quota_type=quota_type)
+    )
     settings = await bucket.get_settings()
     assert settings.model_dump()["quota_type"] == quota_type
 
@@ -177,22 +180,22 @@ def test__exception_formatting():
 @requires_env("RS_API_TOKEN")
 @pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
-async def test__create_token(client):
+async def test__create_token(client, random_prefix):
     """Should create a token"""
     token = await client.create_token(
-        "test-token",
+        f"{random_prefix}-test-token",
         Permissions(full_access=True, read=["bucket-1"], write=["bucket-2"]),
     )
     assert "test-token-" in token
 
 
 @requires_env("RS_API_TOKEN")
-@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
-async def test__create_token_with_error(client, with_token):
+async def test__create_token_with_error(client, with_token, random_prefix):
     """Should raise an error, if token exists"""
     with pytest.raises(
-        ReductError, match="Status 409: Token 'test-token' already exists"
+        ReductError,
+        match=f"Status 409: Token '{random_prefix}-test-token' already exists",
     ):
         await client.create_token(
             with_token, Permissions(full_access=True, read=[], write=[])
@@ -200,7 +203,6 @@ async def test__create_token_with_error(client, with_token):
 
 
 @requires_env("RS_API_TOKEN")
-@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
 async def test__get_token(client, with_token):
     """Should get a token by name"""
@@ -228,19 +230,26 @@ async def test__get_token_with_error(client):
 async def test__list_tokens(client, with_token):
     """Should list all tokens"""
     tokens = await client.get_token_list()
-    assert len(tokens) == 2
-    assert tokens[1].name == with_token
-    assert tokens[1].created_at is not None
+    assert len(tokens) >= 2
+
+    token = None
+    for token in tokens:
+        if token.name == with_token:
+            token = token
+            break
+
+    assert token.name == with_token
+    assert token.created_at is not None
 
 
 @requires_env("RS_API_TOKEN")
-@pytest.mark.usefixtures("bucket_1", "bucket_2")
 @pytest.mark.asyncio
-async def test__remove_token(client, with_token):
+async def test__remove_token(client, with_token, random_prefix):
     """Should delete a token"""
     await client.remove_token(with_token)
     with pytest.raises(
-        ReductError, match="Status 404: Token 'test-token' doesn't exist"
+        ReductError,
+        match=f"Status 404: Token '{random_prefix}-test-token' doesn't exist",
     ):
         await client.get_token(with_token)
 

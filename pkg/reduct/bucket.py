@@ -12,6 +12,7 @@ from typing import (
     AsyncIterator,
 )
 
+from reduct.batch.batch_v1 import parse_batched_records
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.bucket import (
@@ -26,7 +27,6 @@ from reduct.msg.bucket import (
 )
 from reduct.record import (
     Record,
-    parse_batched_records,
     parse_record,
     Batch,
     TIME_PREFIX,
