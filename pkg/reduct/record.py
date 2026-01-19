@@ -28,6 +28,8 @@ class Record:
 
     timestamp: int
     """UNIX timestamp in microseconds"""
+    entry: str
+    """entry name"""
     size: int
     """size of data"""
     last: bool
@@ -73,11 +75,30 @@ class Batch:
             content_type: content type of data (default: application/octet-stream)
             labels: labels of record (default: {})
         """
-        if content_type is None:
-            content_type = ""
+        self.add("default", timestamp, data, content_type=content_type, labels=labels)
 
-        if labels is None:
-            labels = {}
+    def add_with_entry(
+        self,
+        entry: str,
+        timestamp: TimestampLike,
+        data: bytes = b"",
+        **kwargs,
+    ):
+        """Add record to batch with entry name
+        Args:
+            entry: entry name
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
+            data: data to store
+
+        Kwargs:
+            content_type: content type of data (default: application/octet-stream)
+            labels: labels of record (default: {})
+
+        """
+
+        content_type = kwargs.get("content_type", "application/octet-stream")
+        labels = kwargs.get("labels", {})
 
         rec_offset = 0
 
@@ -92,6 +113,7 @@ class Batch:
             return data
 
         record = Record(
+            entry=entry,
             timestamp=unix_timestamp_from_any(timestamp),
             size=len(data),
             content_type=content_type,
@@ -134,7 +156,7 @@ TIME_PREFIX = "x-reduct-time-"
 ERROR_PREFIX = "x-reduct-error-"
 
 
-def parse_record(resp: ClientResponse, last=True) -> Record:
+def parse_record(resp: ClientResponse, entry_name: str, last=True) -> Record:
     """Parse record from response"""
     timestamp = int(resp.headers["x-reduct-time"])
     size = int(resp.headers["content-length"])
@@ -147,6 +169,7 @@ def parse_record(resp: ClientResponse, last=True) -> Record:
 
     return Record(
         timestamp=timestamp,
+        entry=entry_name,
         size=size,
         last=last,
         read_all=resp.read,

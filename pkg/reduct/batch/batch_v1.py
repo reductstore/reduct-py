@@ -74,7 +74,9 @@ def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
     return content_length, content_type, labels
 
 
-async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
+async def parse_batched_records_v1(
+    resp: ClientResponse, default_entry_name: str
+) -> AsyncIterator[Record]:
     """Parse batched records from response"""
 
     records_total = sum(
@@ -112,6 +114,7 @@ async def parse_batched_records(resp: ClientResponse) -> AsyncIterator[Record]:
 
             record = Record(
                 timestamp=timestamp,
+                entry=default_entry_name,
                 size=content_length,
                 last=last,
                 content_type=content_type,

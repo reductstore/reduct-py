@@ -8,11 +8,13 @@ import time
 import warnings
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from functools import partial
 from typing import (
     AsyncIterator,
 )
 
-from reduct.batch.batch_v1 import parse_batched_records
+from reduct.batch.batch_v1 import parse_batched_records_v1
+from reduct.batch.batch_v2 import parse_batched_records_v2
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.bucket import (
@@ -263,7 +265,7 @@ class Bucket:
         async with self._http.request(
             method, f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            yield parse_record(resp)
+            yield parse_record(resp, entry_name)
 
     async def write(
         self,
@@ -409,7 +411,7 @@ class Bucket:
 
     async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         ttl: int | None = None,
@@ -421,8 +423,10 @@ class Bucket:
         The time interval is defined by the start and stop parameters that can be:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string),
+
+        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -447,22 +451,10 @@ class Bucket:
         """
         _check_deprecated_params(kwargs)
 
-        query_id = await self._query_post(
-            entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
-        )
-
-        last = False
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
-
-        while not last:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    return
-                async for record in parse_batched_records(resp):
-                    last = record.last
-                    yield record
+        async for record in self._query_post(
+            entries, QueryType.QUERY, start, stop, when, ttl, **kwargs
+        ):
+            yield record
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -476,7 +468,7 @@ class Bucket:
 
     async def subscribe(
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         poll_interval=1.0,
         when: dict | None = None,
@@ -488,8 +480,10 @@ class Bucket:
         that can be: int (UNIX timestamp in microseconds) datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning timestamp to read records.
                 If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
@@ -512,32 +506,22 @@ class Bucket:
             >>>         print(chunk)
         """
         ttl = poll_interval * 2 + 1
-        query_id = await self._query_post(
-            entry_name,
+        async for record in self._query_post(
+            entries,
             QueryType.QUERY,
             start,
             None,
             when,
             ttl,
             continuous=True,
+            poll_interval=poll_interval,
             **kwargs,
-        )
-
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
-        while True:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    await asyncio.sleep(poll_interval)
-                    continue
-
-                async for record in parse_batched_records(resp):
-                    yield record
+        ):
+            yield record
 
     async def create_query_link(
         self,
-        entry: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         when: dict | None = None,
@@ -550,8 +534,10 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+
         Args:
-            entry: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -575,6 +561,7 @@ class Bucket:
 
         query_message = QueryEntry(
             query_type=QueryType.QUERY,
+            entries=entries,
             start=start,
             stop=stop,
             when=when,
@@ -583,7 +570,7 @@ class Bucket:
 
         query_link_params = CreateQueryLinkRequest(
             bucket=self.name,
-            entry=entry,
+            entry=entries if isinstance(entries, str) else "",
             index=record_index,
             query=query_message,
             expire_at=int(expire_at.timestamp()),
@@ -609,11 +596,14 @@ class Bucket:
         return CreateQueryLinkResponse.model_validate_json(body).link
 
     async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
-        self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
+        self, entries, query_type: QueryType, start, stop, when, ttl, **kwargs
     ):
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
+        is_continuous = kwargs.get("continuous", False)
+        poll_interval = kwargs.get("poll_interval", 1.0)
         query_message = QueryEntry(
+            entries=entries if isinstance(entries, list) else [entries],
             query_type=query_type,
             start=start,
             stop=stop,
@@ -622,15 +612,45 @@ class Bucket:
             only_metadata=kwargs.get("head", False),
             **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+
+        batch_api_v2 = self._http.api_version[1] >= 18
+
+        if batch_api_v2:
+            query_url = f"/io/{self.name}/q"
+            parse_func = parse_batched_records_v2
+        else:
+            query_url = f"/b/{self.name}/{entries}/q"
+            parse_func = partial(parse_batched_records_v1, default_entry_name=entries)
+
         data, _ = await self._http.request_all(
             "POST",
-            url,
+            query_url,
             data=query_message.model_dump_json(),
             content_type="application/json",
         )
         query_id = json.loads(data)["id"]
-        return query_id
+
+        method = "HEAD" if kwargs.pop("head", False) else "GET"
+        while True:
+            if batch_api_v2:
+                fetch_url = f"/io/{self.name}/read"
+                extra_headers = {"x-reduct-query-id": str(query_id)}
+            else:
+                fetch_url = f"/b/{self.name}/{entries}/batch?q={query_id}"
+                extra_headers = {}
+
+            async with self._http.request(
+                method, fetch_url, extra_headers=extra_headers
+            ) as resp:
+                if resp.status == 204:
+                    if is_continuous:
+                        await asyncio.sleep(poll_interval)
+                        continue
+                    else:
+                        return
+
+                async for record in parse_func(resp):
+                    yield record
 
     @staticmethod
     def _make_headers(batch: Batch) -> tuple[int, dict[str, str]]:
