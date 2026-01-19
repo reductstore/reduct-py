@@ -4,7 +4,8 @@ from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.record import Record
+from reduct.error import ReductError
+from reduct.record import Record, Batch, ERROR_PREFIX
 
 TIME_PREFIX = "x-reduct-time-"
 
@@ -30,11 +31,11 @@ async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
             await asyncio.sleep(0)
 
 
-async def _read_all(buffer: list[bytes]) -> bytes:
+async def read_all(buffer: list[bytes]) -> bytes:
     return b"".join(buffer)
 
 
-async def _read_response(resp, content_length) -> list[bytes]:
+async def read_response(resp, content_length) -> list[bytes]:
     chunks = []
     count = 0
     while count < content_length:
@@ -108,9 +109,9 @@ async def parse_batched_records_v1(
                 if head:
                     buffer = []
                 else:
-                    buffer = await _read_response(resp, content_length)
+                    buffer = await read_response(resp, content_length)
                 read_func = partial(_read, buffer)
-                read_all_func = partial(_read_all, buffer)
+                read_all_func = partial(read_all, buffer)
 
             record = Record(
                 timestamp=timestamp,
@@ -124,3 +125,31 @@ async def parse_batched_records_v1(
             )
 
             yield record
+
+
+def make_headers_v1(batch: Batch) -> tuple[int, dict[str, str]]:
+    """Make headers for batch"""
+    record_headers = {}
+    content_length = 0
+    for meta, record in batch.items():
+        time_stamp = meta[1]
+        content_length += record.size
+        header = f"{record.size},{record.content_type}"
+        for label, value in record.labels.items():
+            if "," in label or "=" in label:
+                header += f',{label}="{value}"'
+            else:
+                header += f",{label}={value}"
+
+        record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
+
+    record_headers["Content-Type"] = "application/octet-stream"
+    return content_length, record_headers
+
+
+def parse_errors_from_headers_v1(headers):
+    errors = {}
+    for key, value in headers.items():
+        if key.startswith(ERROR_PREFIX):
+            errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
+    return errors

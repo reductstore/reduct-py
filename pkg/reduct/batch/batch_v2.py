@@ -5,7 +5,9 @@ from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.record import Record
+from reduct.batch.batch_v1 import read_response, read_all
+from reduct.error import ReductError
+from reduct.record import Record, Batch
 
 
 HEADER_PREFIX = "x-reduct-"
@@ -29,6 +31,69 @@ class EntryRecordHeader:
     entry: str
     timestamp: int
     header: RecordHeader
+
+
+def _is_tchar(byte: int) -> bool:
+    return (
+        48 <= byte <= 57
+        or 65 <= byte <= 90
+        or 97 <= byte <= 122
+        or byte in b"!#$%&'*+-.^_`|~"
+    )
+
+
+def _encode_entry_name(entry: str) -> str:
+    encoded = []
+    for byte in entry.encode():
+        if _is_tchar(byte):
+            encoded.append(chr(byte))
+        else:
+            encoded.append(f"%{byte:02X}")
+    return "".join(encoded)
+
+
+def _format_label_value(value: str) -> str:
+    if "," in value:
+        return f'"{value}"'
+    return value
+
+
+def _build_label_delta(
+    labels: dict[str, str],
+    previous_labels: dict[str, str] | None,
+    label_index: dict[str, int],
+    label_names: list[str],
+) -> str:
+    ops: list[tuple[int, str]] = []
+
+    def ensure_label(name: str) -> int:
+        if name in label_index:
+            return label_index[name]
+        idx = len(label_names)
+        label_index[name] = idx
+        label_names.append(name)
+        return idx
+
+    if previous_labels is None:
+        for key in sorted(labels.keys()):
+            idx = ensure_label(key)
+            ops.append((idx, _format_label_value(labels[key])))
+    else:
+        keys = set(previous_labels.keys())
+        keys.update(labels.keys())
+        for key in sorted(keys):
+            prev_val = previous_labels.get(key)
+            curr_val = labels.get(key)
+            if prev_val == curr_val:
+                continue
+            idx = ensure_label(key)
+            if curr_val is None:
+                ops.append((idx, ""))
+            else:
+                ops.append((idx, _format_label_value(curr_val)))
+
+    ops.sort(key=lambda item: item[0])
+    return ",".join(f"{idx}={value}" for idx, value in ops)
 
 
 def _decode_entry_name(encoded: str) -> str:
@@ -292,22 +357,6 @@ async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
             await asyncio.sleep(0)
 
 
-async def _read_all(buffer: list[bytes]) -> bytes:
-    return b"".join(buffer)
-
-
-async def _read_response(resp: ClientResponse, content_length: int) -> list[bytes]:
-    chunks = []
-    count = 0
-    while count < content_length:
-        n = min(CHUNK_SIZE, content_length - count)
-        chunk = await resp.content.read(n)
-        chunks.append(chunk)
-        count += len(chunk)
-
-    return chunks
-
-
 async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response using batch protocol v2."""
 
@@ -323,17 +372,23 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record
         last = False
 
         if records_count == records_total:
+            # last record in batched records read in client code
             read_func = resp.content.iter_chunked
             read_all_func = resp.read
             if resp.headers.get("x-reduct-last", "false") == "true":
+                # last record in query
                 last = True
         else:
+            # batched records must be read in order, so it is safe to read them here
+            # instead of reading them in the use code with an async interator.
+            # The batched records are small if they are not the last.
+            # The last batched record is read in the async generator in chunks.
             if head:
                 buffer = []
             else:
-                buffer = await _read_response(resp, content_length)
+                buffer = await read_response(resp, content_length)
             read_func = partial(_read, buffer)
-            read_all_func = partial(_read_all, buffer)
+            read_all_func = partial(read_all, buffer)
 
         yield Record(
             timestamp=entry_header.timestamp,
@@ -345,3 +400,130 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record
             read_all=read_all_func,
             read=read_func,
         )
+
+
+def _prepare_records_v2(
+    batch: Batch,
+) -> tuple[list[str], int, list[tuple[int, int, Record]]]:
+    records = batch.items()
+    if not records:
+        return [], 0, []
+
+    entries: list[str] = []
+    entry_index_lookup: dict[str, int] = {}
+    indexed_records: list[tuple[int, int, Record]] = []
+
+    start_ts = min(meta[1] for meta, _ in records)
+
+    for meta, record in records:
+        timestamp = meta[1]
+        record_entry = record.entry
+        if record_entry is None:
+            raise ValueError("Entry name is required for batch protocol v2")
+        entry_index = entry_index_lookup.get(record_entry)
+        if entry_index is None:
+            entry_index = len(entries)
+            entries.append(record_entry)
+            entry_index_lookup[record_entry] = entry_index
+        indexed_records.append((entry_index, timestamp, record))
+
+    indexed_records.sort(key=lambda item: (item[0], item[1]))
+    return entries, start_ts, indexed_records
+
+
+def sorted_records_v2(entry_name: str | None, batch: Batch) -> list[Record]:
+    """Return records ordered by entry index then timestamp for batch protocol v2."""
+    entries, _start_ts, indexed_records = _prepare_records_v2(entry_name, batch)
+    if not indexed_records:
+        if entry_name is None and not entries:
+            raise ValueError("Entry name is required for batch protocol v2")
+        return []
+    return [record for _idx, _ts, record in indexed_records]
+
+
+def make_headers_v2(batch: Batch) -> tuple[int, dict[str, str]]:
+    """Make headers for batch protocol v2."""
+    record_headers: dict[str, str] = {}
+    content_length = 0
+    records = batch.items()
+
+    if not records:
+        record_headers[ENTRIES_HEADER] = ""
+        record_headers[START_TS_HEADER] = "0"
+        record_headers["Content-Type"] = "application/octet-stream"
+        return content_length, record_headers
+
+    entries, start_ts, indexed_records = _prepare_records_v2(batch)
+    label_index: dict[str, int] = {}
+    label_names: list[str] = []
+
+    record_headers[ENTRIES_HEADER] = ",".join(
+        _encode_entry_name(entry) for entry in entries
+    )
+    record_headers[START_TS_HEADER] = str(start_ts)
+
+    last_meta: dict[int, tuple[str, dict[str, str]]] = {}
+
+    for entry_index, timestamp, record in indexed_records:
+        content_length += record.size
+        delta = timestamp - start_ts
+        content_type = record.content_type or "application/octet-stream"
+        prev_content_type = None
+        prev_labels = None
+        if entry_index in last_meta:
+            prev_content_type, prev_labels = last_meta[entry_index]
+
+        header_parts = [str(record.size)]
+        content_type_part = ""
+        if prev_content_type is None or prev_content_type != content_type:
+            content_type_part = content_type
+
+        label_delta = _build_label_delta(
+            record.labels, prev_labels, label_index, label_names
+        )
+        has_labels = bool(label_delta)
+
+        if content_type_part or has_labels:
+            header_parts.append(content_type_part)
+        if has_labels:
+            header_parts.append(label_delta)
+
+        record_headers[f"{HEADER_PREFIX}{entry_index}-{delta}"] = ",".join(header_parts)
+        last_meta[entry_index] = (content_type, dict(record.labels))
+
+    if label_names:
+        record_headers[LABELS_HEADER] = ",".join(
+            _encode_entry_name(name) for name in label_names
+        )
+
+    record_headers["Content-Type"] = "application/octet-stream"
+    return content_length, record_headers
+
+
+def parse_errors_from_headers_v2(
+    headers: dict[str, str],
+) -> dict[str, dict[int, ReductError]]:
+    """Parse error headers for batch protocol v2."""
+    errors: dict[str, dict[int, ReductError]] = {}
+    entries = _parse_entries_header(headers.get(ENTRIES_HEADER, ""))
+    for key, value in headers.items():
+        name = key.lower()
+        if not name.startswith(ERROR_HEADER_PREFIX):
+            continue
+
+        suffix = name[len(ERROR_HEADER_PREFIX) :]
+        if "-" not in suffix:
+            raise ValueError(f"Invalid error header '{key}'")
+
+        entry_index_str, delta_str = suffix.rsplit("-", 1)
+        entry_index = int(entry_index_str)
+        delta = int(delta_str)
+
+        entry_errr = errors.get(entries[entry_index])
+        if entry_errr is None:
+            entry_errr = {}
+            errors[entries[entry_index]] = entry_errr
+
+        errors[entries[entry_index]][delta] = ReductError.from_header(value)
+
+    return errors

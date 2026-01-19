@@ -458,18 +458,22 @@ async def test_batched_write(bucket_1):
     )
     assert len(records) == 4
 
+    assert records[0].entry == "entry-3"
     assert records[0].timestamp == 1000
     assert records[0].content_type == "plain/text"
     assert records[0].labels == {"label1": "value1"}
 
+    assert records[1].entry == "entry-3"
     assert records[1].timestamp == 2000
     assert records[1].content_type == "plain/text"
     assert records[1].labels == {"label2": "value2"}
 
+    assert records[2].entry == "entry-3"
     assert records[2].timestamp == 3000
     assert records[2].content_type == "plain/text"
     assert records[2].labels == {}
 
+    assert records[3].entry == "entry-3"
     assert records[3].timestamp == 4000
     assert records[3].content_type == "application/octet-stream"
     assert records[3].labels == {}
@@ -496,6 +500,67 @@ async def test_batched_write_with_errors(bucket_1):
     errors = await bucket_1.write_batch("entry-3", batch)
     assert len(errors) == 1
     assert errors[1] == ReductError(409, "A record with timestamp 1 already exists")
+
+
+@requires_api("1.18")
+@pytest.mark.asyncio
+async def test_batched_write_v2(bucket_1):
+    """Should write batched records to multiple entries"""
+
+    batch = Batch()
+    # use different timestamp formats
+    batch.add_with_entry(
+        "entry-4", 1000, b"Hey,", content_type="plain/text", labels={"label1": "value1"}
+    )
+    batch.add_with_entry("entry-5", 1000, b"Hello,")
+
+    await bucket_1.write_batch_v2(batch)
+
+    records = [
+        record async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
+    ]
+    content = dict(
+        [
+            (record.entry, await record.read_all())
+            async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
+        ]
+    )
+    assert len(records) == 2
+
+    records = sorted(records, key=lambda r: r.entry)
+    assert records[0].entry == "entry-4"
+    assert records[0].timestamp == 1000
+    assert records[0].content_type == "plain/text"
+    assert records[0].labels == {"label1": "value1"}
+
+    assert records[1].entry == "entry-5"
+    assert records[1].timestamp == 1000
+    assert records[1].content_type == "application/octet-stream"
+    assert records[1].labels == {}
+
+    assert content["entry-4"] == b"Hey,"
+    assert content["entry-5"] == b"Hello,"
+
+
+@requires_api("1.18")
+@pytest.mark.asyncio
+async def test_batched_write_with_errors_v2(bucket_1):
+    """Should write batched records to multiple entries and return errors"""
+
+    await bucket_1.write("entry-4", b"1", timestamp=1)
+    await bucket_1.write("entry-5", b"1", timestamp=1)
+
+    batch = Batch()
+    batch.add_with_entry(
+        "entry-4", 1, b"new", content_type="plain/text", labels={"label1": "value1"}
+    )
+    batch.add_with_entry("entry-5", 2, b"record")
+
+    errors = await bucket_1.write_batch_v2(batch)
+    assert len(errors) == 1
+    assert errors["entry-4"][1] == ReductError(
+        409, "A record with timestamp 1 already exists"
+    )
 
 
 @pytest.mark.asyncio

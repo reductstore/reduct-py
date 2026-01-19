@@ -28,7 +28,7 @@ class Record:
 
     timestamp: int
     """UNIX timestamp in microseconds"""
-    entry: str
+    entry: str | None
     """entry name"""
     size: int
     """size of data"""
@@ -56,7 +56,7 @@ class Batch:
     """Batch of records to write them in one request"""
 
     def __init__(self):
-        self._records: dict[int, Record] = {}
+        self._records: dict[tuple[str, int], Record] = {}
         self._total_size = 0
         self._last_access = 0
 
@@ -75,7 +75,9 @@ class Batch:
             content_type: content type of data (default: application/octet-stream)
             labels: labels of record (default: {})
         """
-        self.add("default", timestamp, data, content_type=content_type, labels=labels)
+        self.add_with_entry(
+            None, timestamp, data, content_type=content_type, labels=labels
+        )
 
     def add_with_entry(
         self,
@@ -97,8 +99,13 @@ class Batch:
 
         """
 
-        content_type = kwargs.get("content_type", "application/octet-stream")
-        labels = kwargs.get("labels", {})
+        content_type = kwargs.pop("content_type", None)
+        if content_type is None:
+            content_type = "application/octet-stream"
+
+        labels = kwargs.pop("labels", None)
+        if labels is None:
+            labels = {}
 
         rec_offset = 0
 
@@ -112,9 +119,10 @@ class Batch:
         async def read_all() -> bytes:
             return data
 
+        ts = unix_timestamp_from_any(timestamp)
         record = Record(
             entry=entry,
-            timestamp=unix_timestamp_from_any(timestamp),
+            timestamp=ts,
             size=len(data),
             content_type=content_type,
             labels=labels,
@@ -125,9 +133,9 @@ class Batch:
 
         self._total_size += record.size
         self._last_access = time.time()
-        self._records[record.timestamp] = record
+        self._records[(entry, ts)] = record
 
-    def items(self) -> list[tuple[int, Record]]:
+    def items(self) -> list[tuple[tuple[str, int], Record]]:
         """Get records as dict items"""
         return sorted(self._records.items())
 

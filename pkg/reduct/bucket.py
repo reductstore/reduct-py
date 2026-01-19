@@ -13,8 +13,16 @@ from typing import (
     AsyncIterator,
 )
 
-from reduct.batch.batch_v1 import parse_batched_records_v1
-from reduct.batch.batch_v2 import parse_batched_records_v2
+from reduct.batch.batch_v1 import (
+    parse_batched_records_v1,
+    make_headers_v1,
+    parse_errors_from_headers_v1,
+)
+from reduct.batch.batch_v2 import (
+    parse_batched_records_v2,
+    make_headers_v2,
+    parse_errors_from_headers_v2,
+)
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.bucket import (
@@ -338,7 +346,7 @@ class Bucket:
             for _, rec in batch.items():
                 yield await rec.read_all()
 
-        content_length, record_headers = self._make_headers(batch)
+        content_length, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}/batch",
@@ -347,7 +355,35 @@ class Bucket:
             content_length=content_length,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
+
+    async def write_batch_v2(self, batch: Batch) -> dict[str, dict[int, ReductError]]:
+        """
+        Write a batch of records to entries in a sole request (Multi-entry API)
+
+        Args:
+            batch: list of records
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP  or communication error
+        """
+
+        async def iter_body():
+            for _, rec in batch.items():
+                yield await rec.read_all()
+
+        content_length, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "POST",
+            f"/io/{self.name}/write",
+            data=iter_body(),
+            extra_headers=record_headers,
+            content_length=content_length,
+        )
+
+        return parse_errors_from_headers_v2(headers)
 
     async def update(
         self,
@@ -651,30 +687,3 @@ class Bucket:
 
                 async for record in parse_func(resp):
                     yield record
-
-    @staticmethod
-    def _make_headers(batch: Batch) -> tuple[int, dict[str, str]]:
-        """Make headers for batch"""
-        record_headers = {}
-        content_length = 0
-        for time_stamp, record in batch.items():
-            content_length += record.size
-            header = f"{record.size},{record.content_type}"
-            for label, value in record.labels.items():
-                if "," in label or "=" in label:
-                    header += f',{label}="{value}"'
-                else:
-                    header += f",{label}={value}"
-
-            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
-
-        record_headers["Content-Type"] = "application/octet-stream"
-        return content_length, record_headers
-
-    @staticmethod
-    def _parse_errors_from_headers(headers):
-        errors = {}
-        for key, value in headers.items():
-            if key.startswith(ERROR_PREFIX):
-                errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
-        return errors
