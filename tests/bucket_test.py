@@ -850,6 +850,22 @@ async def test_create_query_link_record_index(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.18")
+async def test_create_query_multi_entry(bucket_1):
+    """Should create a query link with record index for multiple entries"""
+    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
+
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+
+    assert resp.content == b"some-data-2"
+    assert resp.headers["content-type"] == "application/octet-stream"
+    assert resp.headers["x-reduct-time"] == "2000000"
+    assert resp.headers["x-reduct-entry"] == "entry-1"
+    assert resp.headers["x-reduct-label-number"] == "2"
+
+
+@pytest.mark.asyncio
 @requires_api("1.17")
 async def test_create_query_link_filename(bucket_1):
     """Should create a query link with record index"""

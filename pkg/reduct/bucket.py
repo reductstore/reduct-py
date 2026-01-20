@@ -202,7 +202,7 @@ class Bucket:
 
     async def remove_query(
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         when: dict | None = None,
@@ -214,12 +214,15 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+
+
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
-            when: condtion to filter
+            when: condition to filter
         Keyword Args:
             each_s(Union[int, float]): remove a record for each S seconds
                 (DEPRECATED use $each_t in when)
@@ -236,9 +239,25 @@ class Bucket:
         stop = unix_timestamp_from_any(stop) if stop else None
 
         query_message = QueryEntry(
-            query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
+            query_type=QueryType.REMOVE,
+            entries=entries if isinstance(entries, list) else [entries],
+            start=start,
+            stop=stop,
+            when=when,
+            **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+
+        batch_api_v2 = self._http.api_version[1] >= 18
+        if batch_api_v2:
+            url = f"/io/{self.name}/q"
+        else:
+            if isinstance(entries, list):
+                raise ReductError(
+                    "Multi-entry remove query is not supported by the server. "
+                    "Requires server version 1.18 or higher."
+                )
+            url = f"/b/{self.name}/{entries}/q"
+
         resp, _ = await self._http.request_all(
             "POST",
             url,
@@ -673,7 +692,7 @@ class Bucket:
 
         query_message = QueryEntry(
             query_type=QueryType.QUERY,
-            entries=entries,
+            entries=entries if isinstance(entries, list) else [entries],
             start=start,
             stop=stop,
             when=when,
@@ -688,6 +707,11 @@ class Bucket:
             expire_at=int(expire_at.timestamp()),
             base_url=kwargs.get("base_url", None),
         )
+
+        if isinstance(entries, str):
+            entry = entries
+        else:
+            entry = self.name
 
         file_name = kwargs.get(
             "file_name",
@@ -731,6 +755,12 @@ class Bucket:
             query_url = f"/io/{self.name}/q"
             parse_func = parse_batched_records_v2
         else:
+            if isinstance(entries, list):
+                raise ReductError(
+                    "Multi-entry query is not supported by the server. "
+                    "Requires server version 1.18 or higher."
+                )
+
             query_url = f"/b/{self.name}/{entries}/q"
             parse_func = partial(parse_batched_records_v1, default_entry_name=entries)
 
