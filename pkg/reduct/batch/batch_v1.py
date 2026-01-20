@@ -3,7 +3,7 @@ from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.batch.common import BaseBatch
+from reduct.batch.common import BaseBatch, read_response, read, read_all
 from reduct.error import ReductError
 from reduct.record import Record, ERROR_PREFIX
 from reduct.time import TimestampLike
@@ -67,7 +67,7 @@ async def parse_batched_records_v1(
                     buffer = []
                 else:
                     buffer = await read_response(resp, content_length)
-                read_func = partial(_read, buffer)
+                read_func = partial(read, buffer)
                 read_all_func = partial(read_all, buffer)
 
             record = Record(

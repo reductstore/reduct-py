@@ -36,7 +36,7 @@ async def test_parsing_capitalized_headers():
 
     resp = MockResponse()
     records = []
-    async for record in parse_batched_records_v1(resp):
+    async for record in parse_batched_records_v1(resp, "default-entry"):
         records.append(record)
 
     assert len(records) == 2

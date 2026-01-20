@@ -1,7 +1,9 @@
 """Common fixtures"""
 
 import os
-from typing import Optional, Any, AsyncIterator, AsyncGenerator
+import random
+import string
+from typing import Optional, Any, AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -45,9 +47,6 @@ def _token() -> Optional[str]:
 
 @pytest.fixture(name="random_prefix")
 def _prefix() -> str:
-    import random
-    import string
-
     prefix = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
     return prefix
 

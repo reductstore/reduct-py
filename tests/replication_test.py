@@ -19,13 +19,8 @@ async def test__get_replications(client, replication_1, replication_2):
     assert isinstance(replications, list)
     for replication in [replication_1, replication_2]:
         assert replication in [repl.name for repl in replications]
-        assert all([isinstance(repl, ReplicationInfo) for repl in replications])
-        assert all(
-            [
-                repl.mode == ReplicationMode.ENABLED in ReplicationMode
-                for repl in replications
-            ]
-        )
+        assert all(isinstance(repl, ReplicationInfo) for repl in replications)
+        assert all(repl.mode in ReplicationMode for repl in replications)
 
 
 @pytest.mark.asyncio

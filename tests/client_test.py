@@ -148,11 +148,10 @@ async def test__create_bucket_quota(client, quota_type, random_prefix):
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("bucket_1")
-async def test__create_bucket_with_error(client):
+async def test__create_bucket_with_error(client, bucket_1):
     """Should raise an error, if bucket exists"""
     with pytest.raises(ReductError):
-        await client.create_bucket("bucket-1")
+        await client.create_bucket(bucket_1.name)
 
 
 @pytest.mark.asyncio
@@ -232,14 +231,10 @@ async def test__list_tokens(client, with_token):
     tokens = await client.get_token_list()
     assert len(tokens) >= 2
 
-    token = None
-    for token in tokens:
-        if token.name == with_token:
-            token = token
-            break
-
-    assert token.name == with_token
-    assert token.created_at is not None
+    token_info = next((token for token in tokens if token.name == with_token), None)
+    assert token_info is not None
+    assert token_info.name == with_token
+    assert token_info.created_at is not None
 
 
 @requires_env("RS_API_TOKEN")

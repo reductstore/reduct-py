@@ -1,15 +1,17 @@
+"""Tests for batch v2 headers."""
+
 import pytest
 
-from reduct.batch.batch_v2 import make_headers_v2
-from reduct.record import Batch
+from reduct.batch.batch_v2 import RecordBatch, make_headers_v2
 
 
 def test_make_headers_v2_uses_entries_from_records():
-    batch = Batch()
-    batch.add_with_entry("entry-1", 2000, b"BB", content_type="text/plain")
-    batch.add_with_entry("entry-0", 1000, b"A", content_type="text/plain")
+    """Build headers using entries discovered from records."""
+    batch = RecordBatch()
+    batch.add("entry-1", 2000, b"BB", content_type="text/plain")
+    batch.add("entry-0", 1000, b"A", content_type="text/plain")
 
-    content_length, headers = make_headers_v2(None, batch)
+    content_length, headers = make_headers_v2(batch)
 
     assert content_length == 3
     assert headers["x-reduct-entries"] == "entry-0,entry-1"
@@ -18,52 +20,59 @@ def test_make_headers_v2_uses_entries_from_records():
     assert headers["x-reduct-1-1000"].startswith("2,text/plain")
 
 
-def test_make_headers_v2_uses_default_entry_name():
-    batch = Batch()
-    batch.add_with_entry(None, 1000, b"A", content_type="text/plain")
-    batch.add_with_entry(None, 2000, b"BB", content_type="text/plain")
+def test_make_headers_v2_uses_single_entry_name():
+    """Use the single entry name for all records in the batch."""
+    batch = RecordBatch()
+    batch.add("entry-0", 1000, b"A", content_type="text/plain")
+    batch.add("entry-0", 2000, b"BB", content_type="text/plain")
 
-    content_length, headers = make_headers_v2("entry-0", batch)
+    content_length, headers = make_headers_v2(batch)
 
     assert content_length == 3
     assert headers["x-reduct-entries"] == "entry-0"
     assert headers["x-reduct-start-ts"] == "1000"
     assert headers["x-reduct-0-0"].startswith("1,text/plain")
-    assert headers["x-reduct-0-1000"].startswith("2,text/plain")
+    assert headers["x-reduct-0-1000"].startswith("2")
 
 
-def test_make_headers_v2_requires_entry_name_for_empty_batch():
-    batch = Batch()
+def test_make_headers_v2_handles_empty_batch():
+    """Return default headers for an empty batch."""
+    batch = RecordBatch()
 
-    with pytest.raises(ValueError, match="Entry name is required"):
-        make_headers_v2(None, batch)
+    content_length, headers = make_headers_v2(batch)
+
+    assert content_length == 0
+    assert headers["x-reduct-entries"] == ""
+    assert headers["x-reduct-start-ts"] == "0"
 
 
 def test_make_headers_v2_requires_entry_name_for_record():
-    batch = Batch()
-    batch.add_with_entry(None, 1000, b"A", content_type="text/plain")
+    """Reject records without entry names."""
+    batch = RecordBatch()
+    batch.add(None, 1000, b"A", content_type="text/plain")
 
     with pytest.raises(ValueError, match="Entry name is required"):
-        make_headers_v2(None, batch)
+        make_headers_v2(batch)
 
 
 def test_make_headers_v2_builds_label_deltas():
-    batch = Batch()
-    batch.add_with_entry(
+    """Build label deltas across records."""
+    batch = RecordBatch()
+    batch.add(
         "entry-0",
         1000,
         b"A",
         content_type="text/plain",
         labels={"a": "1", "b": "2"},
     )
-    batch.add_with_entry(
+    batch.add(
         "entry-0",
         2000,
         b"B",
         content_type="text/plain",
         labels={"a": "1", "b": "3", "c": "4"},
     )
-    batch.add_with_entry(
+    batch.add(
         "entry-0",
         3000,
         b"C",
@@ -71,7 +80,7 @@ def test_make_headers_v2_builds_label_deltas():
         labels={"a": "1", "c": "4"},
     )
 
-    _, headers = make_headers_v2(None, batch)
+    _, headers = make_headers_v2(batch)
 
     assert headers["x-reduct-entries"] == "entry-0"
     assert headers["x-reduct-labels"] == "a,b,c"

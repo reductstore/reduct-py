@@ -519,12 +519,10 @@ async def test_batched_write_v2(bucket_1):
     records = [
         record async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
     ]
-    content = dict(
-        [
-            (record.entry, await record.read_all())
-            async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
-        ]
-    )
+    content = {
+        record.entry: await record.read_all()
+        async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
+    }
     assert len(records) == 2
 
     records = sorted(records, key=lambda r: r.entry)
