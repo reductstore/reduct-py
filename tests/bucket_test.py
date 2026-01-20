@@ -730,6 +730,27 @@ async def test_remove_batched_records(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.18")
+async def test_remove_batched_records_v2(bucket_1):
+    """Should remove batched records from multiple entries"""
+    batch = RecordBatch()
+    batch.add("entry-2", 3000000)
+    batch.add("entry-2", 4000000)
+    batch.add("entry-1", 8000000)
+
+    errors = await bucket_1.remove_record_batch(batch)
+    assert len(errors) == 1
+    assert errors["entry-1"][8000000] == ReductError(
+        404, "No record with timestamp 8000000"
+    )
+
+    records = [record async for record in bucket_1.query("entry-2")]
+    assert len(records) == 1
+
+    assert records[0].timestamp == 5000000
+
+
+@pytest.mark.asyncio
 @requires_api("1.12")
 async def test_remove_query(bucket_1):
     """Should remove records by query"""

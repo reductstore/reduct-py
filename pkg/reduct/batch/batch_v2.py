@@ -148,11 +148,21 @@ def _decode_entry_name(encoded: str) -> str:
         ) from exc
 
 
-def _parse_entries_header(entries: str) -> list[str]:
-    entries = entries.strip()
+def _parse_entries_header(headers: dict) -> list[str]:
+    entries = headers.get(ENTRIES_HEADER, "")
     if not entries:
-        raise ValueError("x-reduct-entries header is required")
+        raise ValueError(f"{ENTRIES_HEADER} header is required")
     return [_decode_entry_name(entry.strip()) for entry in entries.split(",")]
+
+
+def _parse_start_timestamp(headers: dict) -> int:
+    start_ts = headers.get(START_TS_HEADER, "")
+    if not start_ts:
+        raise ValueError(f"{START_TS_HEADER} header is required")
+    try:
+        return int(start_ts)
+    except ValueError as exc:
+        raise ValueError("Invalid x-reduct-start-ts header") from exc
 
 
 def _parse_labels_header(labels: str) -> list[str]:
@@ -326,18 +336,8 @@ def _sort_headers_by_entry_and_time(
 
 
 def _parse_batched_headers(headers: dict[str, str]) -> list[EntryRecordHeader]:
-    entries_raw = headers.get(ENTRIES_HEADER)
-    if entries_raw is None:
-        raise ValueError("x-reduct-entries header is required")
-    entries = _parse_entries_header(entries_raw)
-
-    start_ts_raw = headers.get(START_TS_HEADER)
-    if start_ts_raw is None:
-        raise ValueError("x-reduct-start-ts header is required")
-    try:
-        start_ts = int(start_ts_raw)
-    except ValueError as exc:
-        raise ValueError("Invalid x-reduct-start-ts header") from exc
+    entries = _parse_entries_header(headers)
+    start_ts = _parse_start_timestamp(headers)
 
     labels_raw = headers.get(LABELS_HEADER)
     label_names = _parse_labels_header(labels_raw) if labels_raw else None
@@ -437,16 +437,6 @@ def _prepare_records_v2(
     return entries, start_ts, indexed_records
 
 
-def sorted_records_v2(entry_name: str | None, batch: RecordBatch) -> list[Record]:
-    """Return records ordered by entry index then timestamp for batch protocol v2."""
-    entries, _start_ts, indexed_records = _prepare_records_v2(entry_name, batch)
-    if not indexed_records:
-        if entry_name is None and not entries:
-            raise ValueError("Entry name is required for batch protocol v2")
-        return []
-    return [record for _idx, _ts, record in indexed_records]
-
-
 def make_headers_v2(batch: RecordBatch) -> tuple[int, dict[str, str]]:
     """Make headers for batch protocol v2."""
     record_headers: dict[str, str] = {}
@@ -511,7 +501,8 @@ def parse_errors_from_headers_v2(
 ) -> dict[str, dict[int, ReductError]]:
     """Parse error headers for batch protocol v2."""
     errors: dict[str, dict[int, ReductError]] = {}
-    entries = _parse_entries_header(headers.get(ENTRIES_HEADER, ""))
+    entries = _parse_entries_header(headers)
+    start_ts = _parse_start_timestamp(headers)
     for key, value in headers.items():
         name = key.lower()
         if not name.startswith(ERROR_HEADER_PREFIX):
@@ -530,6 +521,6 @@ def parse_errors_from_headers_v2(
             entry_errr = {}
             errors[entries[entry_index]] = entry_errr
 
-        errors[entries[entry_index]][delta] = ReductError.from_header(value)
+        errors[entries[entry_index]][delta + start_ts] = ReductError.from_header(value)
 
     return errors

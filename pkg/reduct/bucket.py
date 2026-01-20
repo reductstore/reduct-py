@@ -162,14 +162,43 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        _, record_headers = self._make_headers(batch)
+        _, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "DELETE",
             f"/b/{self.name}/{entry_name}/batch",
             extra_headers=record_headers,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
+
+    async def remove_record_batch(
+        self, batch: RecordBatch
+    ) -> dict[str, dict[int, ReductError]]:
+        """
+        Remove batch of records from entries in a sole request (Multi-entry API)
+        Args:
+            batch: list of timestamps
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher."
+            )
+
+        _, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "DELETE",
+            f"/io/{self.name}/remove",
+            extra_headers=record_headers,
+        )
+
+        return parse_errors_from_headers_v2(headers)
 
     async def remove_query(
         self,
@@ -359,7 +388,7 @@ class Bucket:
         return parse_errors_from_headers_v1(headers)
 
     async def write_record_batch(
-        self, batch: Batch
+        self, batch: RecordBatch
     ) -> dict[str, dict[int, ReductError]]:
         """
         Write a batch of records to entries in a sole request (Multi-entry API)
