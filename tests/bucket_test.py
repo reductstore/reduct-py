@@ -664,7 +664,7 @@ async def test_update_labels_batch(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.11")
+@requires_api("1.18")
 async def test_update_labels_record_batch(bucket_1):
     """Should update labels of records in a record batch"""
 

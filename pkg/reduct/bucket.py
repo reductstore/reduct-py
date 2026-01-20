@@ -785,7 +785,8 @@ class Bucket:  # pylint: disable=too-many-public-methods
         query_id = json.loads(data)["id"]
 
         method = "HEAD" if kwargs.pop("head", False) else "GET"
-        while True:
+        last = False
+        while not last:
             if batch_api_v2:
                 fetch_url = f"/io/{self.name}/read"
                 extra_headers = {"x-reduct-query-id": str(query_id)}
@@ -803,4 +804,5 @@ class Bucket:  # pylint: disable=too-many-public-methods
                     return
 
                 async for record in parse_func(resp):
+                    last = record.last and not is_continuous
                     yield record
