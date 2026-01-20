@@ -17,11 +17,13 @@ from reduct.batch.batch_v1 import (
     parse_batched_records_v1,
     make_headers_v1,
     parse_errors_from_headers_v1,
+    Batch,
 )
 from reduct.batch.batch_v2 import (
     parse_batched_records_v2,
     make_headers_v2,
     parse_errors_from_headers_v2,
+    RecordBatch,
 )
 from reduct.error import ReductError
 from reduct.http import HttpClient
@@ -38,7 +40,6 @@ from reduct.msg.bucket import (
 from reduct.record import (
     Record,
     parse_record,
-    Batch,
     TIME_PREFIX,
     ERROR_PREFIX,
 )
@@ -357,7 +358,9 @@ class Bucket:
 
         return parse_errors_from_headers_v1(headers)
 
-    async def write_batch_v2(self, batch: Batch) -> dict[str, dict[int, ReductError]]:
+    async def write_record_batch(
+        self, batch: Batch
+    ) -> dict[str, dict[int, ReductError]]:
         """
         Write a batch of records to entries in a sole request (Multi-entry API)
 
@@ -369,6 +372,12 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP  or communication error
         """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher."
+            )
 
         async def iter_body():
             for _, rec in batch.items():
@@ -416,7 +425,7 @@ class Bucket:
         self, entry_name: str, batch: Batch
     ) -> dict[int, ReductError]:
         """Update labels of existing records
-        If a label doesn't exist, it will be created.
+
         If a label is empty, it will be removed.
 
         Args:
@@ -429,13 +438,13 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> batch = Batch()
-            >>> batch.add(1640995200000000, labels={"label1": "value1", "label2": ""})
-            >>> await bucket.update_batch("entry-1", batch)
+            >>> batch = RecordBatch()
+            >>> batch.add("entry-1", 1640995200000000, labels={"label1": "value1", "label2": ""})
+            >>> await bucket.update_record_batch("entry-1", batch)
 
         """
 
-        content_length, record_headers = self._make_headers(batch)
+        content_length, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "PATCH",
             f"/b/{self.name}/{entry_name}/batch",
@@ -443,7 +452,45 @@ class Bucket:
             content_length=content_length,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
+
+    async def update_record_batch(
+        self, batch: RecordBatch
+    ) -> dict[str, dict[int, ReductError]]:
+        """Update labels of existing records using Multi-entry API
+        If a label doesn't exist, it will be created.
+        If a label is empty, it will be removed.
+
+        Args:
+            batch : dict of entry names as keys and dict of timestamps as keys and labels as values
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> batch = Batch()
+            >>> batch.add(1640995200000000, labels={"label1": "value1", "label2": ""})
+            >>> await bucket.update_batch("entry-1", batch)
+
+        """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher."
+            )
+
+        content_length, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "PATCH",
+            f"/io/{self.name}/update",
+            extra_headers=record_headers,
+            content_length=content_length,
+        )
+
+        return parse_errors_from_headers_v2(headers)
 
     async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,

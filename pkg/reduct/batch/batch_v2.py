@@ -1,14 +1,13 @@
-import asyncio
 from dataclasses import dataclass
 from functools import partial
 from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.batch.batch_v1 import read_response, read_all
+from reduct.batch.common import BaseBatch, read_response, read_all, read
 from reduct.error import ReductError
-from reduct.record import Record, Batch
-
+from reduct.record import Record
+from reduct.time import TimestampLike
 
 HEADER_PREFIX = "x-reduct-"
 ERROR_HEADER_PREFIX = "x-reduct-error-"
@@ -17,6 +16,31 @@ START_TS_HEADER = "x-reduct-start-ts"
 LABELS_HEADER = "x-reduct-labels"
 
 CHUNK_SIZE = 16_000
+
+
+class RecordBatch(BaseBatch):
+    """Batch of records to write them in one request (v1)"""
+
+    def add(
+        self,
+        entry: str,
+        timestamp: TimestampLike,
+        data: bytes = b"",
+        **kwargs,
+    ):
+        """Add record to batch with entry name
+        Args:
+            entry: entry name
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
+            data: data to store
+
+        Kwargs:
+            content_type: content type of data (default: application/octet-stream)
+            labels: labels of record (default: {})
+
+        """
+        super()._add(entry, timestamp, data, **kwargs)
 
 
 @dataclass
@@ -339,24 +363,6 @@ def _parse_batched_headers(headers: dict[str, str]) -> list[EntryRecordHeader]:
     return parsed
 
 
-async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
-    while len(buffer) > 0:
-        part = buffer.pop(0)
-        if len(part) == 0:
-            continue
-
-        count = 0
-        size = len(part)
-        m = min(n, size)
-
-        while count < size:
-            chunk = part[count : count + m]
-            count += len(chunk)
-            m = min(m, size - count)
-            yield chunk
-            await asyncio.sleep(0)
-
-
 async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record]:
     """Parse batched records from response using batch protocol v2."""
 
@@ -387,7 +393,7 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record
                 buffer = []
             else:
                 buffer = await read_response(resp, content_length)
-            read_func = partial(_read, buffer)
+            read_func = partial(read, buffer)
             read_all_func = partial(read_all, buffer)
 
         yield Record(
@@ -403,7 +409,7 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record
 
 
 def _prepare_records_v2(
-    batch: Batch,
+    batch: RecordBatch,
 ) -> tuple[list[str], int, list[tuple[int, int, Record]]]:
     records = batch.items()
     if not records:
@@ -431,7 +437,7 @@ def _prepare_records_v2(
     return entries, start_ts, indexed_records
 
 
-def sorted_records_v2(entry_name: str | None, batch: Batch) -> list[Record]:
+def sorted_records_v2(entry_name: str | None, batch: RecordBatch) -> list[Record]:
     """Return records ordered by entry index then timestamp for batch protocol v2."""
     entries, _start_ts, indexed_records = _prepare_records_v2(entry_name, batch)
     if not indexed_records:
@@ -441,7 +447,7 @@ def sorted_records_v2(entry_name: str | None, batch: Batch) -> list[Record]:
     return [record for _idx, _ts, record in indexed_records]
 
 
-def make_headers_v2(batch: Batch) -> tuple[int, dict[str, str]]:
+def make_headers_v2(batch: RecordBatch) -> tuple[int, dict[str, str]]:
     """Make headers for batch protocol v2."""
     record_headers: dict[str, str] = {}
     content_length = 0

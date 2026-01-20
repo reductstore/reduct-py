@@ -16,8 +16,9 @@ from reduct import (
     Record,
     BucketFullInfo,
     Status,
+    Batch,
+    RecordBatch,
 )
-from reduct.record import Batch
 from tests.conftest import requires_api
 
 
@@ -506,15 +507,14 @@ async def test_batched_write_with_errors(bucket_1):
 @pytest.mark.asyncio
 async def test_batched_write_v2(bucket_1):
     """Should write batched records to multiple entries"""
-
-    batch = Batch()
+    batch = RecordBatch()
     # use different timestamp formats
-    batch.add_with_entry(
+    batch.add(
         "entry-4", 1000, b"Hey,", content_type="plain/text", labels={"label1": "value1"}
     )
-    batch.add_with_entry("entry-5", 1000, b"Hello,")
+    batch.add("entry-5", 1000, b"Hello,")
 
-    await bucket_1.write_batch_v2(batch)
+    await bucket_1.write_record_batch(batch)
 
     records = [
         record async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
@@ -550,13 +550,13 @@ async def test_batched_write_with_errors_v2(bucket_1):
     await bucket_1.write("entry-4", b"1", timestamp=1)
     await bucket_1.write("entry-5", b"1", timestamp=1)
 
-    batch = Batch()
-    batch.add_with_entry(
+    batch = RecordBatch()
+    batch.add(
         "entry-4", 1, b"new", content_type="plain/text", labels={"label1": "value1"}
     )
-    batch.add_with_entry("entry-5", 2, b"record")
+    batch.add("entry-5", 2, b"record")
 
-    errors = await bucket_1.write_batch_v2(batch)
+    errors = await bucket_1.write_record_batch(batch)
     assert len(errors) == 1
     assert errors["entry-4"][1] == ReductError(
         409, "A record with timestamp 1 already exists"
@@ -663,6 +663,40 @@ async def test_update_labels_batch(bucket_1):
             "label4": "value4",
             "number": "2",
         }
+
+
+@pytest.mark.asyncio
+@requires_api("1.11")
+async def test_update_labels_record_batch(bucket_1):
+    """Should update labels of records in a record batch"""
+
+    batch = RecordBatch()
+    batch.add(
+        "entry-1",
+        1000000,
+        labels={"label1": "new-value", "label2": "", "label3": "value3"},
+    )
+    batch.add("entry-1", 2000000)
+    batch.add("entry-2", 8000000, labels={"label1": "new-value"})
+
+    errors = await bucket_1.update_record_batch(batch)
+    assert len(errors) == 1
+    assert errors["entry-2"][8000000] == ReductError(
+        404, "No record with timestamp 8000000"
+    )
+
+    records = [record async for record in bucket_1.query("entry-1", start=0)]
+    assert len(records) == 2
+
+    assert records[0].timestamp == 1000000
+    assert records[0].labels == {
+        "label1": "new-value",
+        "label3": "value3",
+        "number": "1",
+    }
+
+    assert records[1].timestamp == 2000000
+    assert records[1].labels == {"number": "2"}
 
 
 @pytest.mark.asyncio

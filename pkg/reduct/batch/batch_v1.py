@@ -1,78 +1,35 @@
-import asyncio
 from functools import partial
 from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
+from reduct.batch.common import BaseBatch
 from reduct.error import ReductError
-from reduct.record import Record, Batch, ERROR_PREFIX
+from reduct.record import Record, ERROR_PREFIX
+from reduct.time import TimestampLike
 
 TIME_PREFIX = "x-reduct-time-"
 
 
-CHUNK_SIZE = 16_000
+class Batch(BaseBatch):
+    """Batch of records to write them in one request (v1)"""
 
-
-async def _read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
-    while len(buffer) > 0:
-        part = buffer.pop(0)
-        if len(part) == 0:
-            continue
-
-        count = 0
-        size = len(part)
-        m = min(n, size)
-
-        while count < size:
-            chunk = part[count : count + m]
-            count += len(chunk)
-            m = min(m, size - count)
-            yield chunk
-            await asyncio.sleep(0)
-
-
-async def read_all(buffer: list[bytes]) -> bytes:
-    return b"".join(buffer)
-
-
-async def read_response(resp, content_length) -> list[bytes]:
-    chunks = []
-    count = 0
-    while count < content_length:
-        n = min(CHUNK_SIZE, content_length - count)
-        chunk = await resp.content.read(n)
-        chunks.append(chunk)
-        count += len(chunk)
-
-    return chunks
-
-
-def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
-    items = []
-    escaped = ""
-    for item in row.split(","):
-        if item.startswith('"') and not escaped:
-            escaped = item[1:]
-        if escaped:
-            if item.endswith('"'):
-                escaped = escaped[:-1]
-                items.append(escaped)
-                escaped = ""
-            else:
-                escaped += item
-        else:
-            items.append(item)
-
-    content_length = int(items[0])
-    content_type = items[1]
-
-    labels = {}
-    for label in items[2:]:
-        if "=" in label:
-            name, value = label.split("=", 1)
-            labels[name] = value
-
-    return content_length, content_type, labels
+    def add(
+        self,
+        timestamp: TimestampLike,
+        data: bytes = b"",
+        content_type: str | None = None,
+        labels: dict[str, str] | None = None,
+    ):
+        """Add record to batch
+        Args:
+            timestamp: timestamp of record. int (UNIX timestamp in microseconds),
+                datetime, float (UNIX timestamp in seconds), str (ISO 8601 string)
+            data: data to store
+            content_type: content type of data (default: application/octet-stream)
+            labels: labels of record (default: {})
+        """
+        super()._add(None, timestamp, data, content_type=content_type, labels=labels)
 
 
 async def parse_batched_records_v1(
@@ -153,3 +110,31 @@ def parse_errors_from_headers_v1(headers):
         if key.startswith(ERROR_PREFIX):
             errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
     return errors
+
+
+def _parse_header_as_csv_row(row: str) -> tuple[int, str, dict[str, str]]:
+    items = []
+    escaped = ""
+    for item in row.split(","):
+        if item.startswith('"') and not escaped:
+            escaped = item[1:]
+        if escaped:
+            if item.endswith('"'):
+                escaped = escaped[:-1]
+                items.append(escaped)
+                escaped = ""
+            else:
+                escaped += item
+        else:
+            items.append(item)
+
+    content_length = int(items[0])
+    content_type = items[1]
+
+    labels = {}
+    for label in items[2:]:
+        if "=" in label:
+            name, value = label.split("=", 1)
+            labels[name] = value
+
+    return content_length, content_type, labels
