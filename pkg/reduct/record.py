@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
-import time
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import (
     Callable,
     AsyncIterator,
@@ -15,15 +12,11 @@ from typing import (
 
 from aiohttp import ClientResponse
 
-from reduct.time import (
-    unix_timestamp_to_datetime,
-    unix_timestamp_from_any,
-    TimestampLike,
-)
+from reduct.time import unix_timestamp_to_datetime
 
 
 @dataclass
-class Record:
+class Record:  # pylint: disable=too-many-instance-attributes
     """Record in a query"""
 
     timestamp: int

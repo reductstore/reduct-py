@@ -1,8 +1,11 @@
+"""Shared helpers for batch protocols."""
+
+from functools import partial
 import asyncio
 import time
-from typing import AsyncIterator
+from typing import AsyncIterator, Awaitable, Callable
 
-from reduct import Record
+from reduct.record import Record
 from reduct.time import TimestampLike, unix_timestamp_from_any
 
 
@@ -32,14 +35,14 @@ class BaseBatch:
 
         rec_offset = 0
 
-        async def read(n: int) -> AsyncIterator[bytes]:
+        async def read_chunk(n: int) -> AsyncIterator[bytes]:
             nonlocal rec_offset
             while rec_offset < len(data):
                 chunk = data[rec_offset : rec_offset + n]
                 rec_offset += len(chunk)
                 yield chunk
 
-        async def read_all() -> bytes:
+        async def read_all_data() -> bytes:
             return data
 
         ts = unix_timestamp_from_any(timestamp)
@@ -49,8 +52,8 @@ class BaseBatch:
             size=len(data),
             content_type=content_type,
             labels=labels,
-            read_all=read_all,
-            read=read,
+            read_all=read_all_data,
+            read=read_chunk,
             last=False,
         )
 
@@ -83,6 +86,7 @@ class BaseBatch:
 
 
 async def read_all(buffer: list[bytes]) -> bytes:
+    """Join buffered chunks into a single bytes payload."""
     return b"".join(buffer)
 
 
@@ -90,6 +94,7 @@ CHUNK_SIZE = 16_000
 
 
 async def read_response(resp, content_length) -> list[bytes]:
+    """Read a response body into fixed-size chunks."""
     chunks = []
     count = 0
     while count < content_length:
@@ -102,6 +107,7 @@ async def read_response(resp, content_length) -> list[bytes]:
 
 
 async def read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
+    """Yield buffered chunks in sizes up to n bytes."""
     while len(buffer) > 0:
         part = buffer.pop(0)
         if len(part) == 0:
@@ -117,3 +123,31 @@ async def read(buffer: list[bytes], n: int) -> AsyncIterator[bytes]:
             m = min(m, size - count)
             yield chunk
             await asyncio.sleep(0)
+
+
+async def prepare_batched_record_read(
+    resp,
+    content_length: int,
+    record_index: int,
+    records_total: int,
+    head: bool,
+) -> tuple[
+    Callable[[int], AsyncIterator[bytes]],
+    Callable[[], Awaitable[bytes]],
+    bool,
+]:
+    """Build read helpers for a batched record response."""
+    last = False
+    if record_index == records_total:
+        read_func = resp.content.iter_chunked
+        read_all_func = resp.read
+        if resp.headers.get("x-reduct-last", "false") == "true":
+            last = True
+    else:
+        if head:
+            buffer = []
+        else:
+            buffer = await read_response(resp, content_length)
+        read_func = partial(read, buffer)
+        read_all_func = partial(read_all, buffer)
+    return read_func, read_all_func, last

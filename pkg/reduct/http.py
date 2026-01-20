@@ -122,7 +122,7 @@ class HttpClient:
                         )
                     raise ReductError(response.status, "Unknown error")
         except ClientConnectorError as error:
-            raise ReductError(599, str(error)) from None
+            raise ReductError(-1, str(error)) from None
 
     async def request_all(
         self, method: str, path: str = "", **kwargs

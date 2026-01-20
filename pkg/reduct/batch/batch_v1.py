@@ -1,9 +1,10 @@
-from functools import partial
+"""Batch protocol v1 support."""
+
 from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.batch.common import BaseBatch, read_response, read, read_all
+from reduct.batch.common import BaseBatch, prepare_batched_record_read
 from reduct.error import ReductError
 from reduct.record import Record, ERROR_PREFIX
 from reduct.time import TimestampLike
@@ -32,7 +33,7 @@ class Batch(BaseBatch):
         super()._add(None, timestamp, data, content_type=content_type, labels=labels)
 
 
-async def parse_batched_records_v1(
+async def parse_batched_records_v1(  # pylint: disable=too-many-locals
     resp: ClientResponse, default_entry_name: str
 ) -> AsyncIterator[Record]:
     """Parse batched records from response"""
@@ -48,27 +49,10 @@ async def parse_batched_records_v1(
             timestamp = int(name[len(TIME_PREFIX) :])
             content_length, content_type, labels = _parse_header_as_csv_row(value)
 
-            last = False
             records_count += 1
-
-            if records_count == records_total:
-                # last record in batched records read in client code
-                read_func = resp.content.iter_chunked
-                read_all_func = resp.read
-                if resp.headers.get("x-reduct-last", "false") == "true":
-                    # last record in query
-                    last = True
-            else:
-                # batched records must be read in order, so it is safe to read them here
-                # instead of reading them in the use code with an async interator.
-                # The batched records are small if they are not the last.
-                # The last batched record is read in the async generator in chunks.
-                if head:
-                    buffer = []
-                else:
-                    buffer = await read_response(resp, content_length)
-                read_func = partial(read, buffer)
-                read_all_func = partial(read_all, buffer)
+            read_func, read_all_func, last = await prepare_batched_record_read(
+                resp, content_length, records_count, records_total, head
+            )
 
             record = Record(
                 timestamp=timestamp,
@@ -105,6 +89,7 @@ def make_headers_v1(batch: Batch) -> tuple[int, dict[str, str]]:
 
 
 def parse_errors_from_headers_v1(headers):
+    """Parse error headers for batch protocol v1."""
     errors = {}
     for key, value in headers.items():
         if key.startswith(ERROR_PREFIX):

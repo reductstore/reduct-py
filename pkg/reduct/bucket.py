@@ -37,12 +37,7 @@ from reduct.msg.bucket import (
     CreateQueryLinkRequest,
     CreateQueryLinkResponse,
 )
-from reduct.record import (
-    Record,
-    parse_record,
-    TIME_PREFIX,
-    ERROR_PREFIX,
-)
+from reduct.record import Record, parse_record
 from reduct.time import unix_timestamp_from_any, TimestampLike
 
 
@@ -67,7 +62,7 @@ def _check_deprecated_params(kwargs):
         )
 
 
-class Bucket:
+class Bucket:  # pylint: disable=too-many-public-methods
     """A bucket of data in Reduct Storage"""
 
     def __init__(self, name: str, http: HttpClient):
@@ -187,8 +182,9 @@ class Bucket:
 
         if self._http.api_version[1] < 18:
             raise ReductError(
+                -1,
                 "Multi-entry batch API is not supported by the server. "
-                "Requires server version 1.18 or higher."
+                "Requires server version 1.18 or higher.",
             )
 
         _, record_headers = make_headers_v2(batch)
@@ -214,7 +210,8 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
-        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
 
 
         Args:
@@ -253,8 +250,9 @@ class Bucket:
         else:
             if isinstance(entries, list):
                 raise ReductError(
+                    -1,
                     "Multi-entry remove query is not supported by the server. "
-                    "Requires server version 1.18 or higher."
+                    "Requires server version 1.18 or higher.",
                 )
             url = f"/b/{self.name}/{entries}/q"
 
@@ -423,8 +421,9 @@ class Bucket:
 
         if self._http.api_version[1] < 18:
             raise ReductError(
+                -1,
                 "Multi-entry batch API is not supported by the server. "
-                "Requires server version 1.18 or higher."
+                "Requires server version 1.18 or higher.",
             )
 
         async def iter_body():
@@ -460,8 +459,9 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.update("entry-1", "2022-01-01T01:00:00",
-                    {"label1": "value1", "label2": ""})
+            >>> await bucket.update(
+            >>>     "entry-1", "2022-01-01T01:00:00", {"label1": "value1", "label2": ""}
+            >>> )
 
         """
         timestamp = unix_timestamp_from_any(timestamp)
@@ -487,7 +487,11 @@ class Bucket:
 
         Examples:
             >>> batch = RecordBatch()
-            >>> batch.add("entry-1", 1640995200000000, labels={"label1": "value1", "label2": ""})
+            >>> batch.add(
+            >>>     "entry-1",
+            >>>     1640995200000000,
+            >>>     labels={"label1": "value1", "label2": ""},
+            >>> )
             >>> await bucket.update_record_batch("entry-1", batch)
 
         """
@@ -510,7 +514,8 @@ class Bucket:
         If a label is empty, it will be removed.
 
         Args:
-            batch : dict of entry names as keys and dict of timestamps as keys and labels as values
+            batch : dict of entry names as keys and dict of timestamps as keys and
+                labels as values
         Returns:
             Dict[str, Dict[int, ReductError]]: the dictionary of errors
                 with entry names as keys and dictionaries of record timestamps as keys
@@ -526,8 +531,9 @@ class Bucket:
 
         if self._http.api_version[1] < 18:
             raise ReductError(
+                -1,
                 "Multi-entry batch API is not supported by the server. "
-                "Requires server version 1.18 or higher."
+                "Requires server version 1.18 or higher.",
             )
 
         content_length, record_headers = make_headers_v2(batch)
@@ -540,7 +546,8 @@ class Bucket:
 
         return parse_errors_from_headers_v2(headers)
 
-    async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    async def query(
         self,
         entries: str | list[str],
         start: TimestampLike | None = None,
@@ -555,7 +562,8 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string),
 
-        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
         Args:
             entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
@@ -611,7 +619,8 @@ class Bucket:
         that can be: int (UNIX timestamp in microseconds) datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
-        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
 
         Args:
             entries: name(s) of entry in the bucket
@@ -665,7 +674,8 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
-        Since version 1.18: entry_name can be a list of entries to query from multiple entries. You can also use wildcards in entry names.
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
 
         Args:
             entries: name(s) of entry in the bucket
@@ -731,7 +741,8 @@ class Bucket:
 
         return CreateQueryLinkResponse.model_validate_json(body).link
 
-    async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
+    # pylint: disable=too-many-positional-arguments, too-many-arguments, too-many-locals
+    async def _query_post(
         self, entries, query_type: QueryType, start, stop, when, ttl, **kwargs
     ):
         start = unix_timestamp_from_any(start) if start else None
@@ -757,8 +768,9 @@ class Bucket:
         else:
             if isinstance(entries, list):
                 raise ReductError(
+                    -1,
                     "Multi-entry query is not supported by the server. "
-                    "Requires server version 1.18 or higher."
+                    "Requires server version 1.18 or higher.",
                 )
 
             query_url = f"/b/{self.name}/{entries}/q"
@@ -788,8 +800,7 @@ class Bucket:
                     if is_continuous:
                         await asyncio.sleep(poll_interval)
                         continue
-                    else:
-                        return
+                    return
 
                 async for record in parse_func(resp):
                     yield record

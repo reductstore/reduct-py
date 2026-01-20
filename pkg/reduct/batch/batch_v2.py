@@ -1,10 +1,11 @@
+"""Batch protocol v2 support."""
+
 from dataclasses import dataclass
-from functools import partial
 from typing import AsyncIterator
 
 from aiohttp import ClientResponse
 
-from reduct.batch.common import BaseBatch, read_response, read_all, read
+from reduct.batch.common import BaseBatch, prepare_batched_record_read
 from reduct.error import ReductError
 from reduct.record import Record
 from reduct.time import TimestampLike
@@ -45,6 +46,8 @@ class RecordBatch(BaseBatch):
 
 @dataclass
 class RecordHeader:
+    """Parsed record header fields."""
+
     content_length: int
     content_type: str
     labels: dict[str, str]
@@ -52,6 +55,8 @@ class RecordHeader:
 
 @dataclass
 class EntryRecordHeader:
+    """Entry name, timestamp, and parsed header data."""
+
     entry: str
     timestamp: int
     header: RecordHeader
@@ -241,7 +246,6 @@ def _parse_record_header_with_defaults(
 ) -> RecordHeader:
     if "," in raw:
         content_length_str, rest = raw.split(",", 1)
-        rest = rest
     else:
         content_length_str, rest = raw, None
 
@@ -253,7 +257,8 @@ def _parse_record_header_with_defaults(
     if rest is None:
         if previous is None:
             raise ValueError(
-                "Content-type and labels must be provided for the first record of an entry"
+                "Content-type and labels must be provided for the first record of an "
+                "entry"
             )
         return RecordHeader(
             content_length=content_length,
@@ -348,7 +353,8 @@ def _parse_batched_headers(headers: dict[str, str]) -> list[EntryRecordHeader]:
     for entry_index, delta, value in _sort_headers_by_entry_and_time(headers):
         if entry_index < 0 or entry_index >= len(entries):
             raise ValueError(
-                f"Invalid header '{HEADER_PREFIX}{entry_index}-{delta}': entry index out of range"
+                f"Invalid header '{HEADER_PREFIX}{entry_index}-{delta}': "
+                "entry index out of range"
             )
         entry = entries[entry_index]
         header = _parse_record_header_with_defaults(
@@ -375,26 +381,9 @@ async def parse_batched_records_v2(resp: ClientResponse) -> AsyncIterator[Record
     for entry_header in parsed_headers:
         records_count += 1
         content_length = entry_header.header.content_length
-        last = False
-
-        if records_count == records_total:
-            # last record in batched records read in client code
-            read_func = resp.content.iter_chunked
-            read_all_func = resp.read
-            if resp.headers.get("x-reduct-last", "false") == "true":
-                # last record in query
-                last = True
-        else:
-            # batched records must be read in order, so it is safe to read them here
-            # instead of reading them in the use code with an async interator.
-            # The batched records are small if they are not the last.
-            # The last batched record is read in the async generator in chunks.
-            if head:
-                buffer = []
-            else:
-                buffer = await read_response(resp, content_length)
-            read_func = partial(read, buffer)
-            read_all_func = partial(read_all, buffer)
+        read_func, read_all_func, last = await prepare_batched_record_read(
+            resp, content_length, records_count, records_total, head
+        )
 
         yield Record(
             timestamp=entry_header.timestamp,
@@ -437,7 +426,9 @@ def _prepare_records_v2(
     return entries, start_ts, indexed_records
 
 
-def make_headers_v2(batch: RecordBatch) -> tuple[int, dict[str, str]]:
+def make_headers_v2(  # pylint: disable=too-many-locals
+    batch: RecordBatch,
+) -> tuple[int, dict[str, str]]:
     """Make headers for batch protocol v2."""
     record_headers: dict[str, str] = {}
     content_length = 0
