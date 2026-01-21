@@ -8,10 +8,23 @@ import time
 import warnings
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from functools import partial
 from typing import (
     AsyncIterator,
 )
 
+from reduct.batch.batch_v1 import (
+    parse_batched_records_v1,
+    make_headers_v1,
+    parse_errors_from_headers_v1,
+    Batch,
+)
+from reduct.batch.batch_v2 import (
+    parse_batched_records_v2,
+    make_headers_v2,
+    parse_errors_from_headers_v2,
+    RecordBatch,
+)
 from reduct.error import ReductError
 from reduct.http import HttpClient
 from reduct.msg.bucket import (
@@ -24,14 +37,7 @@ from reduct.msg.bucket import (
     CreateQueryLinkRequest,
     CreateQueryLinkResponse,
 )
-from reduct.record import (
-    Record,
-    parse_batched_records,
-    parse_record,
-    Batch,
-    TIME_PREFIX,
-    ERROR_PREFIX,
-)
+from reduct.record import Record, parse_record
 from reduct.time import unix_timestamp_from_any, TimestampLike
 
 
@@ -56,7 +62,7 @@ def _check_deprecated_params(kwargs):
         )
 
 
-class Bucket:
+class Bucket:  # pylint: disable=too-many-public-methods
     """A bucket of data in Reduct Storage"""
 
     def __init__(self, name: str, http: HttpClient):
@@ -151,18 +157,48 @@ class Bucket:
         Raises:
             ReductError: if there is an HTTP error
         """
-        _, record_headers = self._make_headers(batch)
+        _, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "DELETE",
             f"/b/{self.name}/{entry_name}/batch",
             extra_headers=record_headers,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
+
+    async def remove_record_batch(
+        self, batch: RecordBatch
+    ) -> dict[str, dict[int, ReductError]]:
+        """
+        Remove batch of records from entries in a sole request (Multi-entry API)
+        Args:
+            batch: list of timestamps
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                -1,
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher.",
+            )
+
+        _, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "DELETE",
+            f"/io/{self.name}/remove",
+            extra_headers=record_headers,
+        )
+
+        return parse_errors_from_headers_v2(headers)
 
     async def remove_query(
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         when: dict | None = None,
@@ -174,12 +210,16 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
+
+
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
-            when: condtion to filter
+            when: condition to filter
         Keyword Args:
             each_s(Union[int, float]): remove a record for each S seconds
                 (DEPRECATED use $each_t in when)
@@ -196,9 +236,26 @@ class Bucket:
         stop = unix_timestamp_from_any(stop) if stop else None
 
         query_message = QueryEntry(
-            query_type=QueryType.REMOVE, start=start, stop=stop, when=when, **kwargs
+            query_type=QueryType.REMOVE,
+            entries=entries if isinstance(entries, list) else [entries],
+            start=start,
+            stop=stop,
+            when=when,
+            **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+
+        batch_api_v2 = self._http.api_version[1] >= 18
+        if batch_api_v2:
+            url = f"/io/{self.name}/q"
+        else:
+            if isinstance(entries, list):
+                raise ReductError(
+                    -1,
+                    "Multi-entry remove query is not supported by the server. "
+                    "Requires server version 1.18 or higher.",
+                )
+            url = f"/b/{self.name}/{entries}/q"
+
         resp, _ = await self._http.request_all(
             "POST",
             url,
@@ -263,7 +320,7 @@ class Bucket:
         async with self._http.request(
             method, f"/b/{self.name}/{entry_name}", params=params
         ) as resp:
-            yield parse_record(resp)
+            yield parse_record(resp, entry_name)
 
     async def write(
         self,
@@ -336,7 +393,7 @@ class Bucket:
             for _, rec in batch.items():
                 yield await rec.read_all()
 
-        content_length, record_headers = self._make_headers(batch)
+        content_length, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}/batch",
@@ -345,7 +402,44 @@ class Bucket:
             content_length=content_length,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
+
+    async def write_record_batch(
+        self, batch: RecordBatch
+    ) -> dict[str, dict[int, ReductError]]:
+        """
+        Write a batch of records to entries in a sole request (Multi-entry API)
+
+        Args:
+            batch: list of records
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP  or communication error
+        """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                -1,
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher.",
+            )
+
+        async def iter_body():
+            for _, rec in batch.items():
+                yield await rec.read_all()
+
+        content_length, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "POST",
+            f"/io/{self.name}/write",
+            data=iter_body(),
+            extra_headers=record_headers,
+            content_length=content_length,
+        )
+
+        return parse_errors_from_headers_v2(headers)
 
     async def update(
         self,
@@ -365,8 +459,9 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.update("entry-1", "2022-01-01T01:00:00",
-                    {"label1": "value1", "label2": ""})
+            >>> await bucket.update(
+            >>>     "entry-1", "2022-01-01T01:00:00", {"label1": "value1", "label2": ""}
+            >>> )
 
         """
         timestamp = unix_timestamp_from_any(timestamp)
@@ -378,7 +473,7 @@ class Bucket:
         self, entry_name: str, batch: Batch
     ) -> dict[int, ReductError]:
         """Update labels of existing records
-        If a label doesn't exist, it will be created.
+
         If a label is empty, it will be removed.
 
         Args:
@@ -391,13 +486,17 @@ class Bucket:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> batch = Batch()
-            >>> batch.add(1640995200000000, labels={"label1": "value1", "label2": ""})
-            >>> await bucket.update_batch("entry-1", batch)
+            >>> batch = RecordBatch()
+            >>> batch.add(
+            >>>     "entry-1",
+            >>>     1640995200000000,
+            >>>     labels={"label1": "value1", "label2": ""},
+            >>> )
+            >>> await bucket.update_record_batch("entry-1", batch)
 
         """
 
-        content_length, record_headers = self._make_headers(batch)
+        content_length, record_headers = make_headers_v1(batch)
         _, headers = await self._http.request_all(
             "PATCH",
             f"/b/{self.name}/{entry_name}/batch",
@@ -405,11 +504,52 @@ class Bucket:
             content_length=content_length,
         )
 
-        return self._parse_errors_from_headers(headers)
+        return parse_errors_from_headers_v1(headers)
 
-    async def query(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    async def update_record_batch(
+        self, batch: RecordBatch
+    ) -> dict[str, dict[int, ReductError]]:
+        """Update labels of existing records using Multi-entry API
+        If a label doesn't exist, it will be created.
+        If a label is empty, it will be removed.
+
+        Args:
+            batch : dict of entry names as keys and dict of timestamps as keys and
+                labels as values
+        Returns:
+            Dict[str, Dict[int, ReductError]]: the dictionary of errors
+                with entry names as keys and dictionaries of record timestamps as keys
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> batch = Batch()
+            >>> batch.add(1640995200000000, labels={"label1": "value1", "label2": ""})
+            >>> await bucket.update_batch("entry-1", batch)
+
+        """
+
+        if self._http.api_version[1] < 18:
+            raise ReductError(
+                -1,
+                "Multi-entry batch API is not supported by the server. "
+                "Requires server version 1.18 or higher.",
+            )
+
+        content_length, record_headers = make_headers_v2(batch)
+        _, headers = await self._http.request_all(
+            "PATCH",
+            f"/io/{self.name}/update",
+            extra_headers=record_headers,
+            content_length=content_length,
+        )
+
+        return parse_errors_from_headers_v2(headers)
+
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
+    async def query(
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         ttl: int | None = None,
@@ -421,8 +561,11 @@ class Bucket:
         The time interval is defined by the start and stop parameters that can be:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string),
+
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -447,22 +590,10 @@ class Bucket:
         """
         _check_deprecated_params(kwargs)
 
-        query_id = await self._query_post(
-            entry_name, QueryType.QUERY, start, stop, when, ttl, **kwargs
-        )
-
-        last = False
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
-
-        while not last:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    return
-                async for record in parse_batched_records(resp):
-                    last = record.last
-                    yield record
+        async for record in self._query_post(
+            entries, QueryType.QUERY, start, stop, when, ttl, **kwargs
+        ):
+            yield record
 
     async def get_full_info(self) -> BucketFullInfo:
         """
@@ -476,7 +607,7 @@ class Bucket:
 
     async def subscribe(
         self,
-        entry_name: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         poll_interval=1.0,
         when: dict | None = None,
@@ -488,8 +619,11 @@ class Bucket:
         that can be: int (UNIX timestamp in microseconds) datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
+
         Args:
-            entry_name: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning timestamp to read records.
                 If None, then from the first record.
             poll_interval: inteval to ask new records in seconds
@@ -512,32 +646,22 @@ class Bucket:
             >>>         print(chunk)
         """
         ttl = poll_interval * 2 + 1
-        query_id = await self._query_post(
-            entry_name,
+        async for record in self._query_post(
+            entries,
             QueryType.QUERY,
             start,
             None,
             when,
             ttl,
             continuous=True,
+            poll_interval=poll_interval,
             **kwargs,
-        )
-
-        method = "HEAD" if kwargs.pop("head", False) else "GET"
-        while True:
-            async with self._http.request(
-                method, f"/b/{self.name}/{entry_name}/batch?q={query_id}"
-            ) as resp:
-                if resp.status == 204:
-                    await asyncio.sleep(poll_interval)
-                    continue
-
-                async for record in parse_batched_records(resp):
-                    yield record
+        ):
+            yield record
 
     async def create_query_link(
         self,
-        entry: str,
+        entries: str | list[str],
         start: TimestampLike | None = None,
         stop: TimestampLike | None = None,
         when: dict | None = None,
@@ -550,8 +674,11 @@ class Bucket:
         int (UNIX timestamp in microseconds), datetime,
         float (UNIX timestamp in seconds) or str (ISO 8601 string).
 
+        Since version 1.18: entry_name can be a list of entries to query from
+        multiple entries. You can also use wildcards in entry names.
+
         Args:
-            entry: name of entry in the bucket
+            entries: name(s) of entry in the bucket
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
@@ -575,6 +702,7 @@ class Bucket:
 
         query_message = QueryEntry(
             query_type=QueryType.QUERY,
+            entries=entries if isinstance(entries, list) else [entries],
             start=start,
             stop=stop,
             when=when,
@@ -583,12 +711,17 @@ class Bucket:
 
         query_link_params = CreateQueryLinkRequest(
             bucket=self.name,
-            entry=entry,
+            entry=entries if isinstance(entries, str) else "",
             index=record_index,
             query=query_message,
             expire_at=int(expire_at.timestamp()),
             base_url=kwargs.get("base_url", None),
         )
+
+        if isinstance(entries, str):
+            entry = entries
+        else:
+            entry = self.name
 
         file_name = kwargs.get(
             "file_name",
@@ -608,12 +741,16 @@ class Bucket:
 
         return CreateQueryLinkResponse.model_validate_json(body).link
 
-    async def _query_post(  # pylint: disable=too-many-positional-arguments, too-many-arguments
-        self, entry_name, query_type: QueryType, start, stop, when, ttl, **kwargs
+    # pylint: disable=too-many-positional-arguments, too-many-arguments, too-many-locals
+    async def _query_post(
+        self, entries, query_type: QueryType, start, stop, when, ttl, **kwargs
     ):
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
+        is_continuous = kwargs.get("continuous", False)
+        poll_interval = kwargs.get("poll_interval", 1.0)
         query_message = QueryEntry(
+            entries=entries if isinstance(entries, list) else [entries],
             query_type=query_type,
             start=start,
             stop=stop,
@@ -622,39 +759,50 @@ class Bucket:
             only_metadata=kwargs.get("head", False),
             **kwargs,
         )
-        url = f"/b/{self.name}/{entry_name}/q"
+
+        batch_api_v2 = self._http.api_version[1] >= 18
+
+        if batch_api_v2:
+            query_url = f"/io/{self.name}/q"
+            parse_func = parse_batched_records_v2
+        else:
+            if isinstance(entries, list):
+                raise ReductError(
+                    -1,
+                    "Multi-entry query is not supported by the server. "
+                    "Requires server version 1.18 or higher.",
+                )
+
+            query_url = f"/b/{self.name}/{entries}/q"
+            parse_func = partial(parse_batched_records_v1, default_entry_name=entries)
+
         data, _ = await self._http.request_all(
             "POST",
-            url,
+            query_url,
             data=query_message.model_dump_json(),
             content_type="application/json",
         )
         query_id = json.loads(data)["id"]
-        return query_id
 
-    @staticmethod
-    def _make_headers(batch: Batch) -> tuple[int, dict[str, str]]:
-        """Make headers for batch"""
-        record_headers = {}
-        content_length = 0
-        for time_stamp, record in batch.items():
-            content_length += record.size
-            header = f"{record.size},{record.content_type}"
-            for label, value in record.labels.items():
-                if "," in label or "=" in label:
-                    header += f',{label}="{value}"'
-                else:
-                    header += f",{label}={value}"
+        method = "HEAD" if kwargs.pop("head", False) else "GET"
+        last = False
+        while not last:
+            if batch_api_v2:
+                fetch_url = f"/io/{self.name}/read"
+                extra_headers = {"x-reduct-query-id": str(query_id)}
+            else:
+                fetch_url = f"/b/{self.name}/{entries}/batch?q={query_id}"
+                extra_headers = {}
 
-            record_headers[f"{TIME_PREFIX}{time_stamp}"] = header
+            async with self._http.request(
+                method, fetch_url, extra_headers=extra_headers
+            ) as resp:
+                if resp.status == 204:
+                    if is_continuous:
+                        await asyncio.sleep(poll_interval)
+                        continue
+                    return
 
-        record_headers["Content-Type"] = "application/octet-stream"
-        return content_length, record_headers
-
-    @staticmethod
-    def _parse_errors_from_headers(headers):
-        errors = {}
-        for key, value in headers.items():
-            if key.startswith(ERROR_PREFIX):
-                errors[int(key[len(ERROR_PREFIX) :])] = ReductError.from_header(value)
-        return errors
+                async for record in parse_func(resp):
+                    last = record.last and not is_continuous
+                    yield record

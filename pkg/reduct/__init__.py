@@ -1,6 +1,8 @@
 """Reduct module"""
 
-from reduct.record import Record, Batch
+from reduct.record import Record
+from reduct.batch.batch_v1 import Batch
+from reduct.batch.batch_v2 import RecordBatch
 
 from reduct.bucket import (
     Bucket,

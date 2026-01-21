@@ -2,7 +2,7 @@
 
 import pytest
 
-from reduct.record import parse_batched_records
+from reduct.batch.batch_v1 import parse_batched_records_v1
 
 
 class MockResponse:  # pylint: disable=too-few-public-methods
@@ -36,7 +36,7 @@ async def test_parsing_capitalized_headers():
 
     resp = MockResponse()
     records = []
-    async for record in parse_batched_records(resp):
+    async for record in parse_batched_records_v1(resp, "default-entry"):
         records.append(record)
 
     assert len(records) == 2

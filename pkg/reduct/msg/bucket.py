@@ -116,6 +116,9 @@ class QueryEntry(BaseModel):
     query_type: QueryType
     """query type"""
 
+    entries: List[str]
+    """list of entry names to query"""
+
     start: Optional[int] = None
     """start time in microseconds"""
 

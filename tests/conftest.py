@@ -1,7 +1,9 @@
 """Common fixtures"""
 
 import os
-from typing import Optional
+import random
+import string
+from typing import Optional, Any, AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -43,27 +45,35 @@ def _token() -> Optional[str]:
     return api_token
 
 
+@pytest.fixture(name="random_prefix")
+def _prefix() -> str:
+    prefix = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return prefix
+
+
 @pytest_asyncio.fixture(name="client")
-async def _make_client(url, api_token):
+async def _make_client(url, api_token, random_prefix):
     client = Client(url, api_token=api_token)
     buckets = await client.list()
     for info in buckets:
-        bucket = await client.get_bucket(info.name)
-        await bucket.remove()
+        if info.name.startswith(random_prefix):
+            bucket = await client.get_bucket(info.name)
+            await bucket.remove()
 
     for token in await client.get_token_list():
-        if token.name != "init-token":
+        if token.name != "init-token" and token.name.startswith(random_prefix):
             await client.remove_token(token.name)
 
     for replication in await client.get_replications():
-        await client.delete_replication(replication.name)
+        if replication.name.startswith(random_prefix):
+            await client.delete_replication(replication.name)
 
     yield client
 
 
 @pytest_asyncio.fixture(name="bucket_1")
-async def _bucket_1(client) -> Bucket:
-    bucket = await client.create_bucket("bucket-1")
+async def _bucket_1(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
+    bucket = await client.create_bucket(f"{random_prefix}-bucket-1")
     await bucket.write(
         "entry-1", b"some-data-1", timestamp=1_000_000, labels={"number": 1}
     )
@@ -85,8 +95,8 @@ async def _bucket_1(client) -> Bucket:
 
 
 @pytest_asyncio.fixture(name="bucket_2")
-async def _bucket_2(client) -> Bucket:
-    bucket = await client.create_bucket("bucket-2")
+async def _bucket_2(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
+    bucket = await client.create_bucket(f"{random_prefix}-bucket-2")
     await bucket.write("entry-1", b"some-data-1", timestamp=5_000_000)
     await bucket.write("entry-1", b"some-data-2", timestamp=6_000_000)
     yield bucket
@@ -94,11 +104,13 @@ async def _bucket_2(client) -> Bucket:
 
 
 @pytest_asyncio.fixture(name="replication_1")
-async def _replication_1(client) -> str:
-    replication_name = "replication-1"
+async def _replication_1(
+    client, bucket_1, bucket_2, random_prefix
+) -> AsyncGenerator[str, Any]:
+    replication_name = f"{random_prefix}-replication-1"
     replication_settings = ReplicationSettings(
-        src_bucket="bucket-1",
-        dst_bucket="bucket-2",
+        src_bucket=bucket_1.name,
+        dst_bucket=bucket_2.name,
         dst_host="http://127.0.0.1:8383",
     )
     await client.create_replication(replication_name, replication_settings)
@@ -107,11 +119,13 @@ async def _replication_1(client) -> str:
 
 
 @pytest_asyncio.fixture(name="replication_2")
-async def _replication_2(client) -> str:
-    replication_name = "replication-2"
+async def _replication_2(
+    client, bucket_1, bucket_2, random_prefix
+) -> AsyncGenerator[str, Any]:
+    replication_name = f"{random_prefix}-replication-2"
     replication_settings = ReplicationSettings(
-        src_bucket="bucket-1",
-        dst_bucket="bucket-2",
+        src_bucket=bucket_1.name,
+        dst_bucket=bucket_2.name,
         dst_host="http://127.0.0.1:8383",
     )
     await client.create_replication(replication_name, replication_settings)
@@ -120,11 +134,13 @@ async def _replication_2(client) -> str:
 
 
 @pytest_asyncio.fixture(name="temporary_replication")
-async def _temporary_replication(client) -> str:
-    replication_name = "temp-replication"
+async def _temporary_replication(
+    client, bucket_1, bucket_2, random_prefix
+) -> AsyncGenerator[str, Any]:
+    replication_name = f"{random_prefix}-temp-replication"
     replication_settings = ReplicationSettings(
-        src_bucket="bucket-1",
-        dst_bucket="bucket-2",
+        src_bucket=bucket_1.name,
+        dst_bucket=bucket_2.name,
         dst_host="http://127.0.0.1:8383",
     )
     await client.create_replication(replication_name, replication_settings)

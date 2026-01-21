@@ -16,24 +16,25 @@ from reduct import (
     Record,
     BucketFullInfo,
     Status,
+    Batch,
+    RecordBatch,
 )
-from reduct.record import Batch
 from tests.conftest import requires_api
 
 
 @pytest.mark.asyncio
 async def test__remove_ok(client):
     """Should remove a bucket"""
-    bucket = await client.create_bucket("bucket")
+    bucket = await client.create_bucket("test-bucket", exist_ok=True)
     await bucket.remove()
     with pytest.raises(ReductError):
-        await client.get_bucket("bucket")
+        await client.get_bucket("test-bucket")
 
 
 @pytest.mark.asyncio
 async def test__remove_not_exist(client):
     """Should not remove a bucket if it doesn't exist"""
-    bucket = await client.create_bucket("bucket")
+    bucket = await client.create_bucket("test-bucket", exist_ok=True)
     await bucket.remove()
     with pytest.raises(ReductError):
         await bucket.remove()
@@ -70,7 +71,7 @@ async def test__get_info(bucket_2):
     assert info.model_dump() == {
         "entry_count": 1,
         "latest_record": 6000000,
-        "name": "bucket-2",
+        "name": bucket_2.name,
         "oldest_record": 5000000,
         "size": 88,
         "is_provisioned": False,
@@ -242,6 +243,33 @@ async def test_query_records(bucket_1, head, content, start, stop):
     assert records[1][0].size == 11
     assert records[1][0].content_type == "application/octet-stream"
     assert records[1][1] == content[1]
+
+
+@pytest.mark.asyncio
+@requires_api("1.18")
+async def test_query_records_multy_entry(bucket_1):
+    """Should query records for a time interval from multiple entries"""
+    records: List[Tuple[Record, bytes]] = [
+        (record, await record.read_all())
+        async for record in bucket_1.query(["entry-1", "entry-2"], ttl=5)
+    ]
+    assert len(records) >= 4
+
+    assert records[0][0].entry == "entry-1"
+    assert records[0][0].timestamp == 1000000
+    assert records[0][1] == b"some-data-1"
+
+    assert records[1][0].entry == "entry-1"
+    assert records[1][0].timestamp == 2000000
+    assert records[1][1] == b"some-data-2"
+
+    assert records[2][0].entry == "entry-2"
+    assert records[2][0].timestamp == 3000000
+    assert records[2][1] == b"some-data-3"
+
+    assert records[3][0].entry == "entry-2"
+    assert records[3][0].timestamp == 4000000
+    assert records[3][1] == b"some-data-4"
 
 
 @pytest.mark.asyncio
@@ -431,18 +459,22 @@ async def test_batched_write(bucket_1):
     )
     assert len(records) == 4
 
+    assert records[0].entry == "entry-3"
     assert records[0].timestamp == 1000
     assert records[0].content_type == "plain/text"
     assert records[0].labels == {"label1": "value1"}
 
+    assert records[1].entry == "entry-3"
     assert records[1].timestamp == 2000
     assert records[1].content_type == "plain/text"
     assert records[1].labels == {"label2": "value2"}
 
+    assert records[2].entry == "entry-3"
     assert records[2].timestamp == 3000
     assert records[2].content_type == "plain/text"
     assert records[2].labels == {}
 
+    assert records[3].entry == "entry-3"
     assert records[3].timestamp == 4000
     assert records[3].content_type == "application/octet-stream"
     assert records[3].labels == {}
@@ -469,6 +501,64 @@ async def test_batched_write_with_errors(bucket_1):
     errors = await bucket_1.write_batch("entry-3", batch)
     assert len(errors) == 1
     assert errors[1] == ReductError(409, "A record with timestamp 1 already exists")
+
+
+@requires_api("1.18")
+@pytest.mark.asyncio
+async def test_batched_write_v2(bucket_1):
+    """Should write batched records to multiple entries"""
+    batch = RecordBatch()
+    # use different timestamp formats
+    batch.add(
+        "entry-4", 1000, b"Hey,", content_type="plain/text", labels={"label1": "value1"}
+    )
+    batch.add("entry-5", 1000, b"Hello,")
+
+    await bucket_1.write_record_batch(batch)
+
+    records = [
+        record async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
+    ]
+    content = {
+        record.entry: await record.read_all()
+        async for record in bucket_1.query(["entry-4", "entry-5"], start=0)
+    }
+    assert len(records) == 2
+
+    records = sorted(records, key=lambda r: r.entry)
+    assert records[0].entry == "entry-4"
+    assert records[0].timestamp == 1000
+    assert records[0].content_type == "plain/text"
+    assert records[0].labels == {"label1": "value1"}
+
+    assert records[1].entry == "entry-5"
+    assert records[1].timestamp == 1000
+    assert records[1].content_type == "application/octet-stream"
+    assert records[1].labels == {}
+
+    assert content["entry-4"] == b"Hey,"
+    assert content["entry-5"] == b"Hello,"
+
+
+@requires_api("1.18")
+@pytest.mark.asyncio
+async def test_batched_write_with_errors_v2(bucket_1):
+    """Should write batched records to multiple entries and return errors"""
+
+    await bucket_1.write("entry-4", b"1", timestamp=1)
+    await bucket_1.write("entry-5", b"1", timestamp=1)
+
+    batch = RecordBatch()
+    batch.add(
+        "entry-4", 1, b"new", content_type="plain/text", labels={"label1": "value1"}
+    )
+    batch.add("entry-5", 2, b"record")
+
+    errors = await bucket_1.write_record_batch(batch)
+    assert len(errors) == 1
+    assert errors["entry-4"][1] == ReductError(
+        409, "A record with timestamp 1 already exists"
+    )
 
 
 @pytest.mark.asyncio
@@ -574,6 +664,40 @@ async def test_update_labels_batch(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.18")
+async def test_update_labels_record_batch(bucket_1):
+    """Should update labels of records in a record batch"""
+
+    batch = RecordBatch()
+    batch.add(
+        "entry-1",
+        1000000,
+        labels={"label1": "new-value", "label2": "", "label3": "value3"},
+    )
+    batch.add("entry-1", 2000000)
+    batch.add("entry-2", 8000000, labels={"label1": "new-value"})
+
+    errors = await bucket_1.update_record_batch(batch)
+    assert len(errors) == 1
+    assert errors["entry-2"][8000000] == ReductError(
+        404, "No record with timestamp 8000000"
+    )
+
+    records = [record async for record in bucket_1.query("entry-1", start=0)]
+    assert len(records) == 2
+
+    assert records[0].timestamp == 1000000
+    assert records[0].labels == {
+        "label1": "new-value",
+        "label3": "value3",
+        "number": "1",
+    }
+
+    assert records[1].timestamp == 2000000
+    assert records[1].labels == {"number": "2"}
+
+
+@pytest.mark.asyncio
 @requires_api("1.12")
 async def test_remove_single_record(bucket_1):
     """Should remove a single record"""
@@ -596,6 +720,27 @@ async def test_remove_batched_records(bucket_1):
     errors = await bucket_1.remove_batch("entry-2", batch)
     assert len(errors) == 1
     assert errors[8000000] == ReductError(404, "No record with timestamp 8000000")
+
+    records = [record async for record in bucket_1.query("entry-2")]
+    assert len(records) == 1
+
+    assert records[0].timestamp == 5000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.18")
+async def test_remove_batched_records_v2(bucket_1):
+    """Should remove batched records from multiple entries"""
+    batch = RecordBatch()
+    batch.add("entry-2", 3000000)
+    batch.add("entry-2", 4000000)
+    batch.add("entry-1", 8000000)
+
+    errors = await bucket_1.remove_record_batch(batch)
+    assert len(errors) == 1
+    assert errors["entry-1"][8000000] == ReductError(
+        404, "No record with timestamp 8000000"
+    )
 
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 1
@@ -699,6 +844,22 @@ async def test_create_query_link_record_index(bucket_1):
     assert resp.content == b"some-data-4"
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "4000000"
+    assert resp.headers["x-reduct-label-number"] == "2"
+
+
+@pytest.mark.asyncio
+@requires_api("1.18")
+async def test_create_query_multi_entry(bucket_1):
+    """Should create a query link with record index for multiple entries"""
+    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
+
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+
+    assert resp.content == b"some-data-2"
+    assert resp.headers["content-type"] == "application/octet-stream"
+    assert resp.headers["x-reduct-time"] == "2000000"
+    assert resp.headers["x-reduct-entry"] == "entry-1"
     assert resp.headers["x-reduct-label-number"] == "2"
 
 
