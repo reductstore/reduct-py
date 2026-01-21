@@ -155,11 +155,10 @@ async def test__create_bucket_with_error(client, bucket_1):
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures("bucket_1")
-async def test__get_bucket(client):
+async def test__get_bucket(client, bucket_1):
     """Should get a bucket by name"""
-    bucket = await client.get_bucket("bucket-1")
-    assert bucket.name == "bucket-1"
+    bucket = await client.get_bucket(bucket_1.name)
+    assert bucket.name == bucket_1.name
 
 
 @pytest.mark.asyncio
