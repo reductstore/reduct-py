@@ -2,7 +2,7 @@
 
 import pytest
 
-from reduct.batch.batch_v2 import RecordBatch, make_headers_v2
+from reduct.batch.batch_v2 import RecordBatch, make_headers_v2, _parse_batched_headers
 
 
 def test_make_headers_v2_uses_entries_from_records():
@@ -87,3 +87,15 @@ def test_make_headers_v2_builds_label_deltas():
     assert headers["x-reduct-0-0"].startswith("1,text/plain,0=1,1=2")
     assert headers["x-reduct-0-1000"].startswith("1,,1=3,2=4")
     assert headers["x-reduct-0-2000"].startswith("1,,1=")
+
+
+def test_parse_empty_batch_headers():
+    """Parse headers for an empty batch without raising an error."""
+    headers = {
+        "x-reduct-entries": "",
+        "x-reduct-start-ts": "0",
+    }
+
+    parsed_headers = _parse_batched_headers(headers)
+
+    assert not parsed_headers

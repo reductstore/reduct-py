@@ -156,7 +156,7 @@ def _decode_entry_name(encoded: str) -> str:
 def _parse_entries_header(headers: dict) -> list[str]:
     entries = headers.get(ENTRIES_HEADER, "")
     if not entries:
-        raise ValueError(f"{ENTRIES_HEADER} header is required")
+        return []  # Empty batch has no entries
     return [_decode_entry_name(entry.strip()) for entry in entries.split(",")]
 
 
