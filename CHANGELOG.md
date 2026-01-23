@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Drop Python 3.9 support, require Python >=3.10, [PR-147](https://github.com/reductstore/reduct-py/pull/147)
 
+### Fixed
+
+- Fix `ValueError: x-reduct-entries header is required` when server sends empty batch responses, [PR-XXX](https://github.com/reductstore/reduct-py/pull/XXX)
+
 ## 1.17.2 - 2025-11-17
 
 ### Fixed
