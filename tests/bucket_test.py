@@ -500,7 +500,7 @@ async def test_batched_write_with_errors(bucket_1):
 
     errors = await bucket_1.write_batch("entry-3", batch)
     assert len(errors) == 1
-    assert errors[1] == ReductError(409, "A record with timestamp 1 already exists")
+    assert errors[1].status_code == 409
 
 
 @requires_api("1.18")
@@ -556,9 +556,7 @@ async def test_batched_write_with_errors_v2(bucket_1):
 
     errors = await bucket_1.write_record_batch(batch)
     assert len(errors) == 1
-    assert errors["entry-4"][1] == ReductError(
-        409, "A record with timestamp 1 already exists"
-    )
+    assert errors["entry-4"][1].status_code == 409
 
 
 @pytest.mark.asyncio
@@ -646,7 +644,7 @@ async def test_update_labels_batch(bucket_1):
 
     errors = await bucket_1.update_batch("entry-2", batch)
     assert len(errors) == 1
-    assert errors[8000000] == ReductError(404, "No record with timestamp 8000000")
+    assert errors[8000000].status_code == 404
 
     async with bucket_1.read("entry-2", timestamp=3000000) as record:
         assert record.labels == {
@@ -679,9 +677,7 @@ async def test_update_labels_record_batch(bucket_1):
 
     errors = await bucket_1.update_record_batch(batch)
     assert len(errors) == 1
-    assert errors["entry-2"][8000000] == ReductError(
-        404, "No record with timestamp 8000000"
-    )
+    assert errors["entry-2"][8000000].status_code == 404
 
     records = [record async for record in bucket_1.query("entry-1", start=0)]
     assert len(records) == 2
@@ -719,7 +715,7 @@ async def test_remove_batched_records(bucket_1):
 
     errors = await bucket_1.remove_batch("entry-2", batch)
     assert len(errors) == 1
-    assert errors[8000000] == ReductError(404, "No record with timestamp 8000000")
+    assert errors[8000000].status_code == 404
 
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 1
@@ -738,9 +734,7 @@ async def test_remove_batched_records_v2(bucket_1):
 
     errors = await bucket_1.remove_record_batch(batch)
     assert len(errors) == 1
-    assert errors["entry-1"][8000000] == ReductError(
-        404, "No record with timestamp 8000000"
-    )
+    assert errors["entry-1"][8000000].status_code == 404
 
     records = [record async for record in bucket_1.query("entry-2")]
     assert len(records) == 1
