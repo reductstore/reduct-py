@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix `ValueError: x-reduct-entries header is required` when server sends empty batch responses, [PR-XXX](https://github.com/reductstore/reduct-py/pull/XXX)
+- Fix crash when server sends empty batch responses, [PR-XXX](https://github.com/reductstore/reduct-py/pull/XXX)
 
 ## 1.17.2 - 2025-11-17
 
