@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix crash when server sends empty batch responses, [PR-156](https://github.com/reductstore/reduct-py/pull/156)
 
+### Removed
+
+- Remove deprecated `limit` and `each` parameters in `Bucket.query` and `ReplicationSettings`, [PR-157](https://github.com/reductstore/reduct-py/pull/157)
+
 ## 1.17.2 - 2025-11-17
 
 ### Fixed
