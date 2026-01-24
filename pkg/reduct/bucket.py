@@ -41,25 +41,15 @@ from reduct.record import Record, parse_record
 from reduct.time import unix_timestamp_from_any, TimestampLike
 
 
-def _check_deprecated_params(kwargs):
-    if "each_s" in kwargs:
-        warnings.warn(
-            "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
-            " use '$each_t' in 'when' instead.",
-            DeprecationWarning,
-        )
-    if "each_n" in kwargs:
-        warnings.warn(
-            "The 'each_n' argument is deprecated and will be removed in v1.18.0,"
-            " use '$each_n' in 'when' instead.",
-            DeprecationWarning,
-        )
-    if "limit" in kwargs:
-        warnings.warn(
-            "The 'limit' argument is deprecated and will be removed in v1.18.0,"
-            " use '$limit' in 'when' instead.",
-            DeprecationWarning,
-        )
+def _check_deprecated_params(_kwargs):
+    # We want to keep the function for future deprecations
+    pass
+    # if "each_s" in kwargs:
+    #     warnings.warn(
+    #         "The 'each_s' argument is deprecated and will be removed in v1.18.0,"
+    #         " use '$each_t' in 'when' instead.",
+    #         DeprecationWarning,
+    #     )
 
 
 class Bucket:  # pylint: disable=too-many-public-methods

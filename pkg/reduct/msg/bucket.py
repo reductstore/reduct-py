@@ -125,15 +125,6 @@ class QueryEntry(BaseModel):
     stop: Optional[int] = None
     """end time in microseconds"""
 
-    each_s: Optional[float] = None
-    """return a record every S seconds"""
-
-    each_n: Optional[int] = None
-    """return every Nth record"""
-
-    limit: Optional[int] = None
-    """limit the number of records returned"""
-
     ttl: Optional[int] = None
     """time to live of the query in seconds"""
 
@@ -151,9 +142,6 @@ class QueryEntry(BaseModel):
 
     ext: Optional[Dict[str, Dict]] = None
     """additional parameters for extensions"""
-
-    base_url: Optional[str] = None
-    """base URL for generating links"""
 
 
 class CreateQueryLinkRequest(BaseModel):
