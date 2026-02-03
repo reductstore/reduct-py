@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
-from typing_extensions import deprecated
 
 
 class ReplicationMode(str, Enum):
@@ -78,24 +77,8 @@ class ReplicationSettings(BaseModel):
     entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
     Wildcards are supported"""
-
-    each_s: Optional[float] = Field(
-        None,
-        deprecated=deprecated(
-            "Use `$each_t` operator in `when` condition. "
-            "It will be removed in v1.18.0."
-        ),
-    )
-    """replicate a record every S seconds"""
-    each_n: Optional[int] = Field(
-        None,
-        deprecated=deprecated(
-            "Use `$each_n` operator in `when` condition. "
-            "It will be removed in v1.18.0."
-        ),
-    )
-    """replicate every Nth record"""
     when: Optional[Dict] = None
+    """replication schedule in cron format"""
     mode: ReplicationMode = ReplicationMode.ENABLED
     """replication mode"""
 

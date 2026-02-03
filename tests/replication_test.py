@@ -63,26 +63,6 @@ async def test_delete_replication(client, temporary_replication):
 
 
 @pytest.mark.asyncio
-async def test__each_n_and_each_s_setting(client, random_prefix, bucket_1, bucket_2):
-    """Test creating a replication"""
-    replication_name = f"{random_prefix}-replication-each-n-s"
-    settings = ReplicationSettings(
-        src_bucket=bucket_1.name,
-        dst_bucket=bucket_2.name,
-        dst_host="https://play.reduct.store",
-        each_n=10,
-        each_s=0.5,
-    )
-
-    await client.create_replication(replication_name, settings)
-    replication = await client.get_replication_detail(replication_name)
-
-    assert replication.settings.each_n == 10
-    assert replication.settings.each_s == 0.5
-    assert replication.settings.mode == ReplicationMode.ENABLED
-
-
-@pytest.mark.asyncio
 async def test__replication_with_when(client, random_prefix, bucket_1, bucket_2):
     """Test creating a replication with when condition"""
     replication_name = f"{random_prefix}-replication-when"

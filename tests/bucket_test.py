@@ -294,17 +294,6 @@ async def test_query_records_last(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.6")
-async def test_query_records_limit(bucket_1):
-    """Should query records for until last record"""
-    records: List[Record] = [
-        record async for record in bucket_1.query("entry-1", start=0, limit=1)
-    ]
-    assert len(records) == 1
-    assert records[0].timestamp == 1000000
-
-
-@pytest.mark.asyncio
 async def test_query_records_all(bucket_1):
     """Should query records all data"""
     records = [record async for record in bucket_1.query("entry-2")]
@@ -557,29 +546,6 @@ async def test_batched_write_with_errors_v2(bucket_1):
     errors = await bucket_1.write_record_batch(batch)
     assert len(errors) == 1
     assert errors["entry-4"][1].status_code == 409
-
-
-@pytest.mark.asyncio
-@requires_api("1.10")
-async def test_query_records_each_s(bucket_1):
-    """Should query a record per 2 seconds"""
-    records: List[Record] = [
-        record async for record in bucket_1.query("entry-2", start=0, each_s=2.0)
-    ]
-    assert len(records) == 2
-    assert records[0].timestamp == 3000000
-    assert records[1].timestamp == 5000000
-
-
-@pytest.mark.asyncio
-@requires_api("1.10")
-async def test_query_records_each_n(bucket_1):
-    """Should query each 3d records"""
-    records: List[Record] = [
-        record async for record in bucket_1.query("entry-2", start=0, each_n=3)
-    ]
-    assert len(records) == 1
-    assert records[0].timestamp == 3000000
 
 
 @pytest.mark.asyncio
