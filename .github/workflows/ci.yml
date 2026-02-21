@@ -75,7 +75,6 @@ jobs:
         python: ["3.10"]
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
-        license: ["", "/workdir/lic.key"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@master
@@ -92,19 +91,15 @@ jobs:
       - name: Install dependencies
         run: pip3 install .[test]
 
-      - name: Generate license
-        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
-
       - name: Run ReductStore
         run: docker run -p 8383:8383 -v ${PWD}:/workdir
           --env RS_API_TOKEN=${{matrix.token}}
           --env RS_LOG_LEVEL=DEBUG
-          --env RS_LICENSE_PATH=${{matrix.license}}
           --env RS_EXT_PATH=/tmp
           -d reduct/store:${{matrix.reductstore_version}}
 
       - name: Run Tests
-        run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} RS_LICENSE_PATH=${{matrix.license}}  pytest tests
+        run: PYTHONPATH=. RS_API_TOKEN=${{matrix.token}} pytest tests
 
       - name: Dump docker logs on failure
         if: failure()

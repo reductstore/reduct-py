@@ -99,3 +99,24 @@ def test_parse_empty_batch_headers():
     parsed_headers = _parse_batched_headers(headers)
 
     assert not parsed_headers
+
+
+def test_parse_batched_headers_sorted_globally_by_timestamp():
+    """Parse interleaved multi-entry headers in global timestamp order."""
+    headers = {
+        "x-reduct-entries": "entry-0,entry-1",
+        "x-reduct-start-ts": "1000",
+        "x-reduct-0-0": "1,text/plain",
+        "x-reduct-1-1000": "1,text/plain",
+        "x-reduct-0-2000": "1",
+        "x-reduct-1-3000": "1",
+    }
+
+    parsed_headers = _parse_batched_headers(headers)
+
+    assert [(header.entry, header.timestamp) for header in parsed_headers] == [
+        ("entry-0", 1000),
+        ("entry-1", 2000),
+        ("entry-0", 3000),
+        ("entry-1", 4000),
+    ]

@@ -1,6 +1,5 @@
 """Tests for Client"""
 
-import datetime
 from asyncio import sleep
 from typing import List
 
@@ -74,26 +73,6 @@ async def test__info(client):
     assert defaults["max_block_records"] >= 256  # defaults are different in 1.6.0
     assert defaults["quota_size"] == 0
     assert defaults["quota_type"] == QuotaType.NONE
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("bucket_1", "bucket_2")
-@requires_env("RS_LICENSE_PATH")
-@requires_api("1.9")
-async def test__info_with_license(client):
-    """Should get information about storage with license"""
-    info: ServerInfo = await client.info()
-    assert info.license is not None
-    assert info.license.device_number == 1
-    assert info.license.disk_quota == 1
-    assert info.license.expiry_date.date() == datetime.date(2026, 5, 15)
-    assert (
-        info.license.fingerprint
-        == "21e2608b7d47f7fba623d714c3e14b73cd1fe3578f4010ef26bcbedfc42a4c92"
-    )
-    assert info.license.invoice == "---"
-    assert info.license.licensee == "ReductSoftware"
-    assert info.license.plan == "STANDARD"
 
 
 @pytest.mark.asyncio

@@ -336,7 +336,7 @@ def _sort_headers_by_entry_and_time(
         entry_index, delta = _parse_batched_header_name(lower_name)
         parsed_headers.append((entry_index, delta, value))
 
-    parsed_headers.sort(key=lambda item: (item[0], item[1]))
+    parsed_headers.sort(key=lambda item: (item[1], item[0]))
     return parsed_headers
 
 
