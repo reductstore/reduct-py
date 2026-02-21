@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix global timestamp ordering for multi-entry query batches, [PR-159](https://github.com/reductstore/reduct-py/pull/159)
+
 ## 1.18.0 - 2026-02-03
 
 ### Added
