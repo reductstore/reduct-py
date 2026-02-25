@@ -737,12 +737,16 @@ class Bucket:  # pylint: disable=too-many-public-methods
 
         Args:
             entry_name: name of entry in the bucket
-            attachments: dict of attachment names and their content, content must be serializable to JSON
+            attachments: dict of attachment names and their content.
+                Content must be serializable to JSON.
         Raises:
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> await bucket.write_attachments("entry-1", {"attachment1": b"data1", "attachment2": b"data2"})
+            >>> await bucket.write_attachments(
+            >>>     "entry-1",
+            >>>     {"attachment1": b"data1", "attachment2": b"data2"},
+            >>> )
 
         """
         batch = RecordBatch()
@@ -769,7 +773,9 @@ class Bucket:  # pylint: disable=too-many-public-methods
             ReductError: if there is an HTTP error
 
         Examples:
-            >>> attachments = await bucket.read_attachments("entry-1", "2022-01-01T01:00:00")
+            >>> attachments = await bucket.read_attachments(
+            >>>     "entry-1", "2022-01-01T01:00:00"
+            >>> )
 
         """
         attachments = {}
