@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from typing import (
     AsyncIterator,
+    Any,
 )
 
 from reduct.batch.batch_v1 import (
@@ -729,6 +730,87 @@ class Bucket:  # pylint: disable=too-many-public-methods
         )
 
         return CreateQueryLinkResponse.model_validate_json(body).link
+
+    async def write_attachments(self, entry_name: str, attachments: dict[str, dict]):
+        """
+        Write attachments to an entry
+
+        Args:
+            entry_name: name of entry in the bucket
+            attachments: dict of attachment names and their content.
+                Content must be serializable to JSON.
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> await bucket.write_attachments(
+            >>>     "entry-1",
+            >>>     {"attachment1": b"data1", "attachment2": b"data2"},
+            >>> )
+
+        """
+        batch = RecordBatch()
+        for name, content in attachments.items():
+            batch.add(
+                f"{entry_name}/$meta",
+                timestamp=unix_timestamp_from_any(int(time.time_ns() / 1000)),
+                data=json.dumps(content).encode(),
+                content_type="application/json",
+                labels={"key": name},
+            )
+        await self.write_record_batch(batch)
+
+    async def read_attachments(self, entry_name: str) -> dict[str, Any]:
+        """
+        Read attachments of a record
+
+        Args:
+            entry_name: name of entry in the bucket
+            timestamp: timestamp of record in microseconds
+        Returns:
+            dict of attachment names and their content
+        Raises:
+            ReductError: if there is an HTTP error
+
+        Examples:
+            >>> attachments = await bucket.read_attachments(
+            >>>     "entry-1", "2022-01-01T01:00:00"
+            >>> )
+
+        """
+        attachments = {}
+        async for record in self.query(f"{entry_name}/$meta"):
+            if "key" in record.labels:
+                key = record.labels["key"]
+                content = await record.read_all()
+                attachments[key] = json.loads(content.decode())
+        return attachments
+
+    async def remove_attachments(
+        self, entry_name: str, attachment_keys: list[str] = None
+    ):
+        """
+        Remove attachments from an entry
+        If attachment_keys is None, remove all attachments from the entry
+
+        Args:
+            entry_name: name of entry in the bucket
+            attachment_keys: list of attachment keys to remove
+        """
+
+        remove_batch = RecordBatch()
+
+        async for attachment in self.query(
+            f"{entry_name}/$meta",
+            when={"$in": ["&key", *attachment_keys]} if attachment_keys else {},
+        ):
+            remove_batch.add(
+                attachment.entry,
+                attachment.timestamp,
+                labels=attachment.labels | {"remove": "true"},
+            )
+
+        await self.update_record_batch(remove_batch)
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments, too-many-locals
     async def _query_post(

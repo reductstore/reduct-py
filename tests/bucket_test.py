@@ -832,6 +832,61 @@ async def test_create_query_link_filename(bucket_1):
 
 
 @pytest.mark.asyncio
+@requires_api("1.19")
+async def test_write_read_attachments(bucket_1):
+    """Should write and read entry attachments"""
+    await bucket_1.write_attachments(
+        "entry-1",
+        {
+            "meta-1": {"enabled": True, "values": [1, 2, 3]},
+            "meta-2": {"name": "test"},
+        },
+    )
+
+    attachments = await bucket_1.read_attachments("entry-1")
+    assert attachments == {
+        "meta-1": {"enabled": True, "values": [1, 2, 3]},
+        "meta-2": {"name": "test"},
+    }
+
+
+@pytest.mark.asyncio
+@requires_api("1.19")
+async def test_remove_selected_attachments(bucket_1):
+    """Should remove selected attachments from an entry"""
+    await bucket_1.write_attachments(
+        "entry-1",
+        {
+            "meta-1": {"value": 1},
+            "meta-2": {"value": 2},
+        },
+    )
+
+    await bucket_1.remove_attachments("entry-1", ["meta-1"])
+    attachments = await bucket_1.read_attachments("entry-1")
+
+    assert attachments == {"meta-2": {"value": 2}}
+
+
+@pytest.mark.asyncio
+@requires_api("1.19")
+async def test_remove_all_attachments(bucket_1):
+    """Should remove all attachments from an entry"""
+    await bucket_1.write_attachments(
+        "entry-1",
+        {
+            "meta-1": {"value": 1},
+            "meta-2": {"value": 2},
+        },
+    )
+
+    await bucket_1.remove_attachments("entry-1")
+    attachments = await bucket_1.read_attachments("entry-1")
+
+    assert attachments == {}
+
+
+@pytest.mark.asyncio
 async def test__bucket_info_has_status(bucket_1):
     """Should have status field in bucket info"""
     info = await bucket_1.info()
