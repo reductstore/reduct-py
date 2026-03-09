@@ -802,7 +802,11 @@ class Bucket:  # pylint: disable=too-many-public-methods
 
         async for attachment in self.query(
             f"{entry_name}/$meta",
-            when={"$in": ["&key", *attachment_keys]} if attachment_keys else {},
+            when=(
+                {"$in": [{"&key": {"$cast": "string"}}, *attachment_keys]}
+                if attachment_keys
+                else {}
+            ),
         ):
             remove_batch.add(
                 attachment.entry,
