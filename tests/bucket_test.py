@@ -852,6 +852,29 @@ async def test_write_read_attachments(bucket_1):
 
 @pytest.mark.asyncio
 @requires_api("1.19")
+async def test_remove_attachments_with_numeric_keys(bucket_1):
+    """Should write and read entry attachments"""
+    await bucket_1.write_attachments(
+        "entry-1",
+        {
+            "1": {"enabled": True, "values": [1, 2, 3]},
+            "2.5": {"name": "test"},
+        },
+    )
+
+    attachments = await bucket_1.read_attachments("entry-1")
+    assert attachments == {
+        "1": {"enabled": True, "values": [1, 2, 3]},
+        "2.5": {"name": "test"},
+    }
+
+    await bucket_1.remove_attachments("entry-1", attachment_keys=["1", "2.5"])
+    attachments = await bucket_1.read_attachments("entry-1")
+    assert attachments == {}
+
+
+@pytest.mark.asyncio
+@requires_api("1.19")
 async def test_remove_selected_attachments(bucket_1):
     """Should remove selected attachments from an entry"""
     await bucket_1.write_attachments(
