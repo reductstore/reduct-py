@@ -799,12 +799,16 @@ class Bucket:  # pylint: disable=too-many-public-methods
         """
 
         remove_batch = RecordBatch()
+        escaped_keys = [
+            f"${attachment_key}" if attachment_key.startswith("$") else attachment_key
+            for attachment_key in attachment_keys
+        ]
 
         async for attachment in self.query(
             f"{entry_name}/$meta",
             when=(
-                {"$in": [{"&key": {"$cast": "string"}}, *attachment_keys]}
-                if attachment_keys
+                {"$in": [{"&key": {"$cast": "string"}}, *escaped_keys]}
+                if escaped_keys
                 else {}
             ),
         ):

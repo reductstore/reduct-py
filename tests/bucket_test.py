@@ -882,10 +882,11 @@ async def test_remove_selected_attachments(bucket_1):
         {
             "meta-1": {"value": 1},
             "meta-2": {"value": 2},
+            "$system": {"value": "test"},
         },
     )
 
-    await bucket_1.remove_attachments("entry-1", ["meta-1"])
+    await bucket_1.remove_attachments("entry-1", ["meta-1", "$system"])
     attachments = await bucket_1.read_attachments("entry-1")
 
     assert attachments == {"meta-2": {"value": 2}}
