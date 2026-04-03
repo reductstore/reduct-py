@@ -23,6 +23,7 @@ from reduct.msg.token import (
     Token,
     Permissions,
     FullTokenInfo,
+    TokenCreateRequest,
     TokenList,
 )
 
