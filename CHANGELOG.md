@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add entry attachments API (`write_attachments`, `read_attachments`, `remove_attachments`) with integration tests for API v1.19, [PR-160](https://github.com/reductstore/reduct-py/pull/160)
+- Update token API support with token rotation, TTL/expiry/last-access fields, top-level IP allowlist, and API v1.19+ create-token payload handling with backward compatibility for older servers, [PR-164](https://github.com/reductstore/reduct-py/pull/164)
 
 ### Fixed
 

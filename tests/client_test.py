@@ -1,6 +1,7 @@
 """Tests for Client"""
 
 from asyncio import sleep
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import pytest
@@ -191,6 +192,10 @@ async def test__get_token(client, with_token):
         "read": ["bucket-1"],
         "write": ["bucket-2"],
     }
+    assert token.ip_allowlist == []
+    assert token.ttl is None
+    assert token.is_expired is False
+    assert token.last_access is None or isinstance(token.last_access, datetime)
 
 
 @requires_env("RS_API_TOKEN")
@@ -213,6 +218,11 @@ async def test__list_tokens(client, with_token):
     assert token_info is not None
     assert token_info.name == with_token
     assert token_info.created_at is not None
+    assert token_info.last_access is None or isinstance(
+        token_info.last_access, datetime
+    )
+    assert token_info.is_expired is False
+    assert isinstance(token_info.ip_allowlist, list)
 
 
 @requires_env("RS_API_TOKEN")
@@ -238,6 +248,66 @@ async def test__me(client):
         "read": [],
         "write": [],
     }
+    assert isinstance(current_token.ip_allowlist, list)
+    assert current_token.last_access is None or isinstance(
+        current_token.last_access, datetime
+    )
+    assert current_token.is_expired is False
+
+
+@requires_env("RS_API_TOKEN")
+@requires_api("1.19")
+@pytest.mark.asyncio
+async def test__create_token_with_ttl(client, random_prefix):
+    """Should create a token with inactivity TTL"""
+    name = f"{random_prefix}-ttl-token"
+    try:
+        _ = await client.create_token(
+            name,
+            Permissions(full_access=True),
+            ttl=60,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+            ip_allowlist=["203.0.113.10", "10.10.0.0/16"],
+        )
+    except ReductError as err:
+        if err.status_code in (404, 405, 422):
+            pytest.skip("Current ReductStore API doesn't support TTL token payload yet")
+        raise
+
+    token = await client.get_token(name)
+    assert token.ttl == 60
+    assert token.ip_allowlist == ["203.0.113.10", "10.10.0.0/16"]
+
+    await client.remove_token(name)
+
+
+@requires_env("RS_API_TOKEN")
+@pytest.mark.asyncio
+async def test__rotate_token(client, with_token, url):
+    """Should rotate a token and invalidate previous token value"""
+    old_value = await client.create_token(
+        f"{with_token}-to-rotate",
+        Permissions(full_access=True),
+    )
+    try:
+        new_value = await client.rotate_token(f"{with_token}-to-rotate")
+    except ReductError as err:
+        await client.remove_token(f"{with_token}-to-rotate")
+        if err.status_code in (404, 405):
+            pytest.skip("Current ReductStore API doesn't support token rotation yet")
+        raise
+
+    assert new_value != old_value
+
+    async with Client(url, api_token=old_value) as old_client:
+        with pytest.raises(ReductError, match="Status 401"):
+            await old_client.me()
+
+    async with Client(url, api_token=new_value) as new_client:
+        me = await new_client.me()
+        assert me.name == f"{with_token}-to-rotate"
+
+    await client.remove_token(f"{with_token}-to-rotate")
 
 
 @pytest.mark.asyncio

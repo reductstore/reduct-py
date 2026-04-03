@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 from aiohttp import ClientSession
 
@@ -18,6 +19,7 @@ from reduct.msg.replication import (
 )
 from reduct.msg.server import ServerInfo, BucketList
 from reduct.msg.token import (
+    TokenCreateRequest,
     TokenCreateResponse,
     Token,
     TokenList,
@@ -153,20 +155,63 @@ class Client:
         body, _ = await self._http.request_all("GET", f"/tokens/{name}")
         return FullTokenInfo.model_validate_json(body)
 
-    async def create_token(self, name: str, permissions: Permissions) -> str:
+    async def create_token(
+        self,
+        name: str,
+        permissions: Permissions,
+        **kwargs,
+    ) -> str:
         """
         Create a new token
         Args:
             name: name of the token
             permissions: permissions for the token
+        Keyword Args:
+            expires_at: absolute expiration time
+            ttl: inactivity timeout in seconds
+            ip_allowlist: list of allowed client IPs or CIDRs
         Returns:
             str: token value
         Raises:
             ReductError: if there is an HTTP error
         """
+        expires_at: datetime | None = kwargs.get("expires_at")
+        ttl: int | None = kwargs.get("ttl")
+        ip_allowlist: list[str] | None = kwargs.get("ip_allowlist")
+
+        if self._http.api_version is None:
+            await self.info()
+
+        api_minor = self._http.api_version[1]
+
+        if api_minor < 19:
+            payload = permissions.model_dump_json()
+        else:
+            payload = TokenCreateRequest(
+                permissions=permissions,
+                expires_at=expires_at,
+                ttl=ttl,
+                ip_allowlist=ip_allowlist or [],
+            ).model_dump_json(exclude_none=True)
+
         body, _ = await self._http.request_all(
-            "POST", f"/tokens/{name}", data=permissions.model_dump_json()
+            "POST",
+            f"/tokens/{name}",
+            data=payload,
         )
+        return TokenCreateResponse.model_validate_json(body).value
+
+    async def rotate_token(self, name: str) -> str:
+        """
+        Rotate token value and invalidate previous secret
+        Args:
+            name: name of the token
+        Returns:
+            str: new token value
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        body, _ = await self._http.request_all("POST", f"/tokens/{name}/rotate")
         return TokenCreateResponse.model_validate_json(body).value
 
     async def remove_token(self, name: str) -> None:
