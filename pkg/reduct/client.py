@@ -159,15 +159,14 @@ class Client:
         self,
         name: str,
         permissions: Permissions,
-        expires_at: datetime | None = None,
-        ttl: int | None = None,
-        ip_allowlist: list[str] | None = None,
+        **kwargs,
     ) -> str:
         """
         Create a new token
         Args:
             name: name of the token
             permissions: permissions for the token
+        Keyword Args:
             expires_at: absolute expiration time
             ttl: inactivity timeout in seconds
             ip_allowlist: list of allowed client IPs or CIDRs
@@ -176,6 +175,10 @@ class Client:
         Raises:
             ReductError: if there is an HTTP error
         """
+        expires_at: datetime | None = kwargs.get("expires_at")
+        ttl: int | None = kwargs.get("ttl")
+        ip_allowlist: list[str] | None = kwargs.get("ip_allowlist")
+
         if self._http.api_version is None:
             await self.info()
 
