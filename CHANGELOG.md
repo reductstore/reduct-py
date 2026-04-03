@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix removing entry attachments with numeric keys, [PR-162](https://github.com/reductstore/reduct-py/pull/162)
+- Fix removing entry attachments with reserved `$`-prefixed keys, [PR-163](https://github.com/reductstore/reduct-py/pull/163)
 
 ## 1.18.1 - 2026-02-21
 
