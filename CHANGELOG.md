@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.19.0 - 2026-04-07
+
 ### Added
 
 - Add entry attachments API (`write_attachments`, `read_attachments`, `remove_attachments`) with integration tests for API v1.19, [PR-160](https://github.com/reductstore/reduct-py/pull/160)
