@@ -154,9 +154,9 @@ class CreateQueryLinkRequest(BaseModel):
     index: Optional[int] = None
     """record index"""
     record_entry: Optional[str] = None
-    """resolved entry name for the indexed record"""
+    """selected record entry name"""
     record_timestamp: Optional[int] = None
-    """resolved UNIX timestamp in microseconds for the indexed record"""
+    """selected UNIX timestamp in microseconds"""
     query: QueryEntry
     """query"""
     expire_at: int = None

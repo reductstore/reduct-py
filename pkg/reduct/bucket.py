@@ -672,10 +672,13 @@ class Bucket:  # pylint: disable=too-many-public-methods
             start: the beginning of the time interval.
                 If None, then from the first record
             stop: the end of the time interval. If None, then to the latest record
-            when: condtiion to filter records
+            when: condition to filter records
 
         Keyword Args:
             record_index: if not None, the link will point to a specific record
+                (legacy API < 1.19 only)
+            record_entry: explicit entry name of the record (API >= 1.19)
+            record_timestamp: explicit timestamp of the record (API >= 1.19)
             expire_at: if None, the link will expire in 24 hours
             file_name: file name for download, if None: entry_name_index.bin
             base_url: base URL for the link, if None: use server URL
@@ -692,6 +695,34 @@ class Bucket:  # pylint: disable=too-many-public-methods
         ):
             raise ValueError("record_index must be a non-negative integer")
 
+        has_record_entry = "record_entry" in kwargs
+        has_record_timestamp = "record_timestamp" in kwargs
+        if has_record_entry != has_record_timestamp:
+            if has_record_entry:
+                raise ValueError("record_timestamp must be provided with record_entry")
+            raise ValueError("record_entry must be provided with record_timestamp")
+
+        if has_record_entry and "record_index" in kwargs:
+            raise ValueError(
+                "record_index cannot be used with record_entry/record_timestamp"
+            )
+
+        record_entry = kwargs.get("record_entry")
+        record_timestamp = kwargs.get("record_timestamp")
+        if has_record_timestamp:
+            record_timestamp = unix_timestamp_from_any(record_timestamp)
+            record_index = None
+
+        if (
+            record_index is not None
+            and self._http.api_version is not None
+            and self._http.api_version[1] >= 19
+        ):
+            raise ValueError(
+                "Numeric record index selector was removed from ReductStore v1.19 API "
+                "because it is broken. Use record_entry + record_timestamp."
+            )
+
         expire_at: datetime | None = kwargs.get("expire_at", None)
 
         if expire_at is None:
@@ -705,17 +736,6 @@ class Bucket:  # pylint: disable=too-many-public-methods
             when=when,
             only_metadata=False,
         )
-
-        record_entry = None
-        record_timestamp = None
-        if record_index is not None:
-            record_entry, record_timestamp = await self._resolve_record_identity(
-                entries,
-                record_index,
-                start,
-                stop,
-                when,
-            )
 
         query_link_params = CreateQueryLinkRequest(
             bucket=self.name,
@@ -738,7 +758,11 @@ class Bucket:  # pylint: disable=too-many-public-methods
             (
                 f"{entry}_{record_index}.bin"
                 if record_index is not None
-                else f"{entry}.bin"
+                else (
+                    f"{entry}_{record_timestamp}.bin"
+                    if record_timestamp is not None
+                    else f"{entry}.bin"
+                )
             ),
         )
 
@@ -750,30 +774,6 @@ class Bucket:  # pylint: disable=too-many-public-methods
         )
 
         return CreateQueryLinkResponse.model_validate_json(body).link
-
-    async def _resolve_record_identity(
-        self,
-        entries: str | list[str],
-        record_index: int,
-        start: int | None,
-        stop: int | None,
-        when: dict | None,
-    ) -> tuple[str | None, int | None]:
-        """Resolve an indexed record to exact entry + timestamp identity."""
-
-        current_index = 0
-        async for record in self.query(
-            entries,
-            start=start,
-            stop=stop,
-            when=when,
-            head=True,
-        ):
-            if current_index == record_index:
-                return record.entry, record.timestamp
-            current_index += 1
-
-        return None, None
 
     async def write_attachments(self, entry_name: str, attachments: dict[str, dict]):
         """

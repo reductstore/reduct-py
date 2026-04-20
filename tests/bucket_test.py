@@ -796,12 +796,19 @@ async def test_create_query_link_expired(bucket_1):
 @pytest.mark.asyncio
 @requires_api("1.17")
 async def test_create_query_link_record_index(bucket_1):
-    """Should create a query link with record index"""
-    link = await bucket_1.create_query_link("entry-2", record_index=1)
+    """Should handle record index selector according to server API version"""
+    api_minor = bucket_1._http.api_version[1]
+    if api_minor >= 19:
+        with pytest.raises(
+            ValueError,
+            match="Numeric record index selector was removed from ReductStore v1.19 API",
+        ):
+            await bucket_1.create_query_link("entry-2", record_index=1)
+        return
 
+    link = await bucket_1.create_query_link("entry-2", record_index=1)
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
-
     assert resp.content == b"some-data-4"
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "4000000"
@@ -811,12 +818,19 @@ async def test_create_query_link_record_index(bucket_1):
 @pytest.mark.asyncio
 @requires_api("1.18")
 async def test_create_query_multi_entry(bucket_1):
-    """Should create a query link with record index for multiple entries"""
-    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
+    """Should handle multi-entry index selector according to server API version"""
+    api_minor = bucket_1._http.api_version[1]
+    if api_minor >= 19:
+        with pytest.raises(
+            ValueError,
+            match="Numeric record index selector was removed from ReductStore v1.19 API",
+        ):
+            await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
+        return
 
+    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
-
     assert resp.content == b"some-data-2"
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "2000000"
@@ -828,21 +842,31 @@ async def test_create_query_multi_entry(bucket_1):
 @requires_api("1.19")
 # pylint: disable=protected-access
 async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
-    """Should include resolved record identity in query link payload"""
+    """Should pass explicit record identity in query link payload"""
 
     captured_payload = {}
     original_request_all = bucket_1._http.request_all
+
+    async def fail_query(*args, **kwargs):
+        raise AssertionError(
+            "create_query_link must not call query() to resolve identity"
+        )
 
     async def request_all_with_capture(method, path, **kwargs):
         if method == "POST" and path.startswith("/links/"):
             captured_payload.update(json.loads(kwargs["data"]))
         return await original_request_all(method, path, **kwargs)
 
+    monkeypatch.setattr(bucket_1, "query", fail_query)
     monkeypatch.setattr(bucket_1._http, "request_all", request_all_with_capture)
 
-    await bucket_1.create_query_link("entry-2", record_index=1)
-
-    assert captured_payload["index"] == 1
+    link = await bucket_1.create_query_link(
+        "entry-2", record_entry="entry-2", record_timestamp=4_000_000
+    )
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+    assert resp.content == b"some-data-4"
+    assert "index" not in captured_payload
     assert captured_payload["record_entry"] == "entry-2"
     assert captured_payload["record_timestamp"] == 4000000
 
