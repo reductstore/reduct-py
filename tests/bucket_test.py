@@ -794,19 +794,12 @@ async def test_create_query_link_expired(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link_record_index(bucket_1):
-    """Should handle record index selector according to server API version"""
-    api_minor = bucket_1._http.api_version[1]
-    if api_minor >= 19:
-        with pytest.raises(
-            ValueError,
-            match="Numeric record index selector was removed from ReductStore v1.19 API",
-        ):
-            await bucket_1.create_query_link("entry-2", record_index=1)
-        return
-
-    link = await bucket_1.create_query_link("entry-2", record_index=1)
+@requires_api("1.19")
+async def test_create_query_link_record_identity(bucket_1):
+    """Should create a query link with explicit record identity"""
+    link = await bucket_1.create_query_link(
+        "entry-2", record_entry="entry-2", record_timestamp=4_000_000
+    )
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
     assert resp.content == b"some-data-4"
@@ -816,19 +809,12 @@ async def test_create_query_link_record_index(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.18")
+@requires_api("1.19")
 async def test_create_query_multi_entry(bucket_1):
-    """Should handle multi-entry index selector according to server API version"""
-    api_minor = bucket_1._http.api_version[1]
-    if api_minor >= 19:
-        with pytest.raises(
-            ValueError,
-            match="Numeric record index selector was removed from ReductStore v1.19 API",
-        ):
-            await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
-        return
-
-    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
+    """Should create a query link for multiple entries using record identity"""
+    link = await bucket_1.create_query_link(
+        ["entry-1", "entry-2"], record_entry="entry-1", record_timestamp=2_000_000
+    )
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
     assert resp.content == b"some-data-2"
@@ -872,12 +858,19 @@ async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
 
 
 @pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link_invalid_record_index(bucket_1):
-    """Should validate record index argument"""
+@requires_api("1.19")
+async def test_create_query_link_invalid_record_identity(bucket_1):
+    """Should validate explicit record identity arguments"""
 
-    with pytest.raises(ValueError, match="record_index must be a non-negative integer"):
-        await bucket_1.create_query_link("entry-2", record_index=-1)
+    with pytest.raises(
+        ValueError, match="record_timestamp must be provided with record_entry"
+    ):
+        await bucket_1.create_query_link("entry-2", record_entry="entry-2")
+
+    with pytest.raises(
+        ValueError, match="record_entry must be provided with record_timestamp"
+    ):
+        await bucket_1.create_query_link("entry-2", record_timestamp=4_000_000)
 
 
 @pytest.mark.asyncio

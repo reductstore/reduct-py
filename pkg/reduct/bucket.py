@@ -687,6 +687,52 @@ class Bucket:  # pylint: disable=too-many-public-methods
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
 
+        record_index, record_entry, record_timestamp = self._parse_query_link_selector(
+            kwargs
+        )
+
+        expire_at: datetime | None = kwargs.get("expire_at", None)
+
+        if expire_at is None:
+            expire_at = datetime.now() + timedelta(hours=24)
+
+        query_message = QueryEntry(
+            query_type=QueryType.QUERY,
+            entries=entries if isinstance(entries, list) else [entries],
+            start=start,
+            stop=stop,
+            when=when,
+            only_metadata=False,
+        )
+
+        entry = entries if isinstance(entries, str) else self.name
+
+        file_name = kwargs.get(
+            "file_name",
+            self._query_link_file_name(entry, record_index, record_timestamp),
+        )
+
+        body, _ = await self._http.request_all(
+            "POST",
+            f"/links/{file_name}",
+            data=CreateQueryLinkRequest(
+                bucket=self.name,
+                entry=entries if isinstance(entries, str) else "",
+                index=record_index,
+                record_entry=record_entry,
+                record_timestamp=record_timestamp,
+                query=query_message,
+                expire_at=int(expire_at.timestamp()),
+                base_url=kwargs.get("base_url", None),
+            ).model_dump_json(exclude_none=True),
+            content_type="application/json",
+        )
+
+        return CreateQueryLinkResponse.model_validate_json(body).link
+
+    def _parse_query_link_selector(
+        self, kwargs: dict[str, Any]
+    ) -> tuple[int | None, str | None, int | None]:
         record_index = kwargs.get("record_index", 0)
         if record_index is not None and (
             not isinstance(record_index, int)
@@ -723,57 +769,17 @@ class Bucket:  # pylint: disable=too-many-public-methods
                 "because it is broken. Use record_entry + record_timestamp."
             )
 
-        expire_at: datetime | None = kwargs.get("expire_at", None)
+        return record_index, record_entry, record_timestamp
 
-        if expire_at is None:
-            expire_at = datetime.now() + timedelta(hours=24)
-
-        query_message = QueryEntry(
-            query_type=QueryType.QUERY,
-            entries=entries if isinstance(entries, list) else [entries],
-            start=start,
-            stop=stop,
-            when=when,
-            only_metadata=False,
-        )
-
-        query_link_params = CreateQueryLinkRequest(
-            bucket=self.name,
-            entry=entries if isinstance(entries, str) else "",
-            index=record_index,
-            record_entry=record_entry,
-            record_timestamp=record_timestamp,
-            query=query_message,
-            expire_at=int(expire_at.timestamp()),
-            base_url=kwargs.get("base_url", None),
-        )
-
-        if isinstance(entries, str):
-            entry = entries
-        else:
-            entry = self.name
-
-        file_name = kwargs.get(
-            "file_name",
-            (
-                f"{entry}_{record_index}.bin"
-                if record_index is not None
-                else (
-                    f"{entry}_{record_timestamp}.bin"
-                    if record_timestamp is not None
-                    else f"{entry}.bin"
-                )
-            ),
-        )
-
-        body, _ = await self._http.request_all(
-            "POST",
-            f"/links/{file_name}",
-            data=query_link_params.model_dump_json(exclude_none=True),
-            content_type="application/json",
-        )
-
-        return CreateQueryLinkResponse.model_validate_json(body).link
+    @staticmethod
+    def _query_link_file_name(
+        entry: str, record_index: int | None, record_timestamp: int | None
+    ) -> str:
+        if record_index is not None:
+            return f"{entry}_{record_index}.bin"
+        if record_timestamp is not None:
+            return f"{entry}_{record_timestamp}.bin"
+        return f"{entry}.bin"
 
     async def write_attachments(self, entry_name: str, attachments: dict[str, dict]):
         """
