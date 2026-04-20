@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Sync query link creation with record identity API without client-side resolution: use legacy `record_index` only for pre-1.19 servers, and use explicit `record_entry` + `record_timestamp` for API v1.19+, [PR-167](https://github.com/reductstore/reduct-py/pull/167)
+- Sync query link creation with record identity API without client-side resolution: use legacy `record_index` only for pre-1.19 servers, and use explicit `record_entry` + `record_timestamp` for API v1.19+, [PR-168](https://github.com/reductstore/reduct-py/pull/168)
 
 ## 1.19.0 - 2026-04-07
 
