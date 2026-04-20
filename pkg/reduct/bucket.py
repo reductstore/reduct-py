@@ -685,6 +685,13 @@ class Bucket:  # pylint: disable=too-many-public-methods
         stop = unix_timestamp_from_any(stop) if stop else None
 
         record_index = kwargs.get("record_index", 0)
+        if record_index is not None and (
+            not isinstance(record_index, int)
+            or isinstance(record_index, bool)
+            or record_index < 0
+        ):
+            raise ValueError("record_index must be a non-negative integer")
+
         expire_at: datetime | None = kwargs.get("expire_at", None)
 
         if expire_at is None:
@@ -699,10 +706,23 @@ class Bucket:  # pylint: disable=too-many-public-methods
             only_metadata=False,
         )
 
+        record_entry = None
+        record_timestamp = None
+        if record_index is not None:
+            record_entry, record_timestamp = await self._resolve_record_identity(
+                entries,
+                record_index,
+                start,
+                stop,
+                when,
+            )
+
         query_link_params = CreateQueryLinkRequest(
             bucket=self.name,
             entry=entries if isinstance(entries, str) else "",
             index=record_index,
+            record_entry=record_entry,
+            record_timestamp=record_timestamp,
             query=query_message,
             expire_at=int(expire_at.timestamp()),
             base_url=kwargs.get("base_url", None),
@@ -725,11 +745,35 @@ class Bucket:  # pylint: disable=too-many-public-methods
         body, _ = await self._http.request_all(
             "POST",
             f"/links/{file_name}",
-            data=query_link_params.model_dump_json(),
+            data=query_link_params.model_dump_json(exclude_none=True),
             content_type="application/json",
         )
 
         return CreateQueryLinkResponse.model_validate_json(body).link
+
+    async def _resolve_record_identity(
+        self,
+        entries: str | list[str],
+        record_index: int,
+        start: int | None,
+        stop: int | None,
+        when: dict | None,
+    ) -> tuple[str | None, int | None]:
+        """Resolve an indexed record to exact entry + timestamp identity."""
+
+        current_index = 0
+        async for record in self.query(
+            entries,
+            start=start,
+            stop=stop,
+            when=when,
+            head=True,
+        ):
+            if current_index == record_index:
+                return record.entry, record.timestamp
+            current_index += 1
+
+        return None, None
 
     async def write_attachments(self, entry_name: str, attachments: dict[str, dict]):
         """

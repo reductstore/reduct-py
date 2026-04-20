@@ -1,6 +1,7 @@
 """Tests for Bucket"""
 
 import asyncio
+import json
 import time
 from datetime import datetime, timedelta
 
@@ -821,6 +822,38 @@ async def test_create_query_multi_entry(bucket_1):
     assert resp.headers["x-reduct-time"] == "2000000"
     assert resp.headers["x-reduct-entry"] == "entry-1"
     assert resp.headers["x-reduct-label-number"] == "2"
+
+
+@pytest.mark.asyncio
+@requires_api("1.19")
+# pylint: disable=protected-access
+async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
+    """Should include resolved record identity in query link payload"""
+
+    captured_payload = {}
+    original_request_all = bucket_1._http.request_all
+
+    async def request_all_with_capture(method, path, **kwargs):
+        if method == "POST" and path.startswith("/links/"):
+            captured_payload.update(json.loads(kwargs["data"]))
+        return await original_request_all(method, path, **kwargs)
+
+    monkeypatch.setattr(bucket_1._http, "request_all", request_all_with_capture)
+
+    await bucket_1.create_query_link("entry-2", record_index=1)
+
+    assert captured_payload["index"] == 1
+    assert captured_payload["record_entry"] == "entry-2"
+    assert captured_payload["record_timestamp"] == 4000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.17")
+async def test_create_query_link_invalid_record_index(bucket_1):
+    """Should validate record index argument"""
+
+    with pytest.raises(ValueError, match="record_index must be a non-negative integer"):
+        await bucket_1.create_query_link("entry-2", record_index=-1)
 
 
 @pytest.mark.asyncio
