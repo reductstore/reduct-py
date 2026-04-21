@@ -8,6 +8,7 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from functools import partial
+from glob import has_magic
 from typing import (
     AsyncIterator,
     Any,
@@ -687,6 +688,7 @@ class Bucket:  # pylint: disable=too-many-public-methods
         start = unix_timestamp_from_any(start) if start else None
         stop = unix_timestamp_from_any(stop) if stop else None
 
+        kwargs = self._with_default_record_entry(entries, kwargs)
         record_index, record_entry, record_timestamp = self._parse_query_link_selector(
             kwargs
         )
@@ -729,6 +731,24 @@ class Bucket:  # pylint: disable=too-many-public-methods
         )
 
         return CreateQueryLinkResponse.model_validate_json(body).link
+
+    @staticmethod
+    def _with_default_record_entry(
+        entries: str | list[str], kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        if "record_entry" in kwargs or "record_timestamp" not in kwargs:
+            return kwargs
+
+        default_record_entry: str | None = None
+        if isinstance(entries, str):
+            default_record_entry = entries
+        elif len(entries) == 1:
+            default_record_entry = entries[0]
+
+        if default_record_entry is None or has_magic(default_record_entry):
+            return kwargs
+
+        return {**kwargs, "record_entry": default_record_entry}
 
     def _parse_query_link_selector(
         self, kwargs: dict[str, Any]
