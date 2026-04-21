@@ -3,7 +3,7 @@
 import asyncio
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from typing import List, Tuple
 
@@ -831,6 +831,7 @@ async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
 
 @pytest.mark.asyncio
 @requires_api("1.19")
+# pylint: disable=protected-access
 async def test_create_query_link_record_identity_defaults_entry(bucket_1, monkeypatch):
     """Should default record_entry from a single entry selector"""
 
