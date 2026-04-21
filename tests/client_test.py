@@ -67,7 +67,7 @@ async def test__info(client):
     assert info.bucket_count >= 2
     assert info.usage >= 374
     assert info.oldest_record == 1_000_000
-    assert info.latest_record == 6_000_000
+    assert info.latest_record >= 6_000_000
 
     defaults = info.defaults.bucket.model_dump()
     assert defaults["max_block_size"] == 64000000

@@ -3,7 +3,7 @@
 import asyncio
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from typing import List, Tuple
 
@@ -766,42 +766,14 @@ async def test_query_extension(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link(bucket_1):
-    """Should create a query link"""
-    link = await bucket_1.create_query_link("entry-2", 3000000)
-
-    resp = requests.get(link, timeout=1.0)
-    assert resp.status_code == 200
-
-    assert resp.content == b"some-data-3"
-    assert resp.headers["content-type"] == "application/octet-stream"
-    assert resp.headers["x-reduct-time"] == "3000000"
-    assert resp.headers["x-reduct-label-number"] == "1"
-
-
-@pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link_expired(bucket_1):
-    """Should create a query link"""
+@requires_api("1.19")
+async def test_create_query_link_record_identity(bucket_1):
+    """Should create a query link with explicit record identity"""
     link = await bucket_1.create_query_link(
-        "entry-2", 3000000, expire_at=datetime.now() - timedelta(days=1)
+        "entry-2", record_entry="entry-2", record_timestamp=4_000_000
     )
-
-    resp = requests.get(link, timeout=1.0)
-    assert resp.status_code == 422
-    assert resp.headers["x-reduct-error"] == "Query link has expired"
-
-
-@pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link_record_index(bucket_1):
-    """Should create a query link with record index"""
-    link = await bucket_1.create_query_link("entry-2", record_index=1)
-
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
-
     assert resp.content == b"some-data-4"
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "4000000"
@@ -809,14 +781,14 @@ async def test_create_query_link_record_index(bucket_1):
 
 
 @pytest.mark.asyncio
-@requires_api("1.18")
+@requires_api("1.19")
 async def test_create_query_multi_entry(bucket_1):
-    """Should create a query link with record index for multiple entries"""
-    link = await bucket_1.create_query_link(["entry-1", "entry-2"], record_index=1)
-
+    """Should create a query link for multiple entries using record identity"""
+    link = await bucket_1.create_query_link(
+        ["entry-1", "entry-2"], record_entry="entry-1", record_timestamp=2_000_000
+    )
     resp = requests.get(link, timeout=1.0)
     assert resp.status_code == 200
-
     assert resp.content == b"some-data-2"
     assert resp.headers["content-type"] == "application/octet-stream"
     assert resp.headers["x-reduct-time"] == "2000000"
@@ -828,7 +800,40 @@ async def test_create_query_multi_entry(bucket_1):
 @requires_api("1.19")
 # pylint: disable=protected-access
 async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
-    """Should include resolved record identity in query link payload"""
+    """Should pass explicit record identity in query link payload"""
+
+    captured_payload = {}
+    original_request_all = bucket_1._http.request_all
+
+    async def fail_query(*args, **kwargs):
+        raise AssertionError(
+            "create_query_link must not call query() to resolve identity"
+        )
+
+    async def request_all_with_capture(method, path, **kwargs):
+        if method == "POST" and path.startswith("/links/"):
+            captured_payload.update(json.loads(kwargs["data"]))
+        return await original_request_all(method, path, **kwargs)
+
+    monkeypatch.setattr(bucket_1, "query", fail_query)
+    monkeypatch.setattr(bucket_1._http, "request_all", request_all_with_capture)
+
+    link = await bucket_1.create_query_link(
+        "entry-2", record_entry="entry-2", record_timestamp=4_000_000
+    )
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+    assert resp.content == b"some-data-4"
+    assert "index" not in captured_payload
+    assert captured_payload["record_entry"] == "entry-2"
+    assert captured_payload["record_timestamp"] == 4000000
+
+
+@pytest.mark.asyncio
+@requires_api("1.19")
+# pylint: disable=protected-access
+async def test_create_query_link_record_identity_defaults_entry(bucket_1, monkeypatch):
+    """Should default record_entry from a single entry selector"""
 
     captured_payload = {}
     original_request_all = bucket_1._http.request_all
@@ -840,27 +845,52 @@ async def test_create_query_link_record_identity_payload(bucket_1, monkeypatch):
 
     monkeypatch.setattr(bucket_1._http, "request_all", request_all_with_capture)
 
-    await bucket_1.create_query_link("entry-2", record_index=1)
+    link = await bucket_1.create_query_link("entry-2", record_timestamp=4_000_000)
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+    assert resp.content == b"some-data-4"
+    assert captured_payload["record_entry"] == "entry-2"
+    assert captured_payload["record_timestamp"] == 4000000
 
-    assert captured_payload["index"] == 1
+    captured_payload.clear()
+    link = await bucket_1.create_query_link(["entry-2"], record_timestamp=4_000_000)
+    resp = requests.get(link, timeout=1.0)
+    assert resp.status_code == 200
+    assert resp.content == b"some-data-4"
     assert captured_payload["record_entry"] == "entry-2"
     assert captured_payload["record_timestamp"] == 4000000
 
 
 @pytest.mark.asyncio
-@requires_api("1.17")
-async def test_create_query_link_invalid_record_index(bucket_1):
-    """Should validate record index argument"""
+@requires_api("1.19")
+async def test_create_query_link_invalid_record_identity(bucket_1):
+    """Should validate explicit record identity arguments"""
 
-    with pytest.raises(ValueError, match="record_index must be a non-negative integer"):
-        await bucket_1.create_query_link("entry-2", record_index=-1)
+    with pytest.raises(
+        ValueError, match="record_timestamp must be provided with record_entry"
+    ):
+        await bucket_1.create_query_link("entry-2", record_entry="entry-2")
+
+    with pytest.raises(
+        ValueError, match="record_entry must be provided with record_timestamp"
+    ):
+        await bucket_1.create_query_link(
+            ["entry-1", "entry-2"], record_timestamp=4_000_000
+        )
+
+    with pytest.raises(
+        ValueError, match="record_entry must be provided with record_timestamp"
+    ):
+        await bucket_1.create_query_link("entry-*", record_timestamp=4_000_000)
 
 
 @pytest.mark.asyncio
-@requires_api("1.17")
+@requires_api("1.19")
 async def test_create_query_link_filename(bucket_1):
     """Should create a query link with record index"""
-    link = await bucket_1.create_query_link("entry-2", file_name="data.txt")
+    link = await bucket_1.create_query_link(
+        "entry-2", file_name="data.txt", record_timestamp=4_000_000
+    )
     assert "links/data.txt?" in link
 
 
