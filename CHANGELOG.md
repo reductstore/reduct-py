@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support non-JSON content types in `write_attachments` and `read_attachments`, [PR-173](https://github.com/reductstore/reduct-py/pull/173)
+
 ## 1.19.1 - 2026-04-20
 
 ### Fixed
