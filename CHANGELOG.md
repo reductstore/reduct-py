@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support non-JSON content types in `write_attachments` and `read_attachments`, [PR-173](https://github.com/reductstore/reduct-py/pull/173)
 
+### Changed
+
+- Pin third-party GitHub Actions in CI workflows to immutable commit SHAs for SSDLC hardening, [PR-174](https://github.com/reductstore/reduct-py/pull/174)
+
 ## 1.19.1 - 2026-04-20
 
 ### Fixed
