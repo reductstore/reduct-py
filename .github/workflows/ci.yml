@@ -106,7 +106,7 @@ jobs:
 
       - name: Dump docker logs on failure
         if: failure()
-        uses: jwalton/gh-docker-logs@v2
+        uses: jwalton/gh-docker-logs@2741064ab9d7af54b0b1ffb6076cf64c16f0220e # v2
         with:
           dest: './logs'
       - name: Tar logs
@@ -160,7 +160,7 @@ jobs:
           name: package
           path: ./dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.5.0
+      - uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295 # v1.5.0
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
