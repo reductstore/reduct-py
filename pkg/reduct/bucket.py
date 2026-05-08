@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import time
 from contextlib import asynccontextmanager
@@ -52,11 +51,6 @@ def _check_deprecated_params(_kwargs):
     #         " use '$each_t' in 'when' instead.",
     #         DeprecationWarning,
     #     )
-
-
-def _is_json_content_type(content_type: str) -> bool:
-    ct = content_type.split(";")[0].strip().lower()
-    return ct == "application/json" or ct == "text/json" or ct.endswith("+json")
 
 
 class Bucket:  # pylint: disable=too-many-public-methods
@@ -807,9 +801,7 @@ class Bucket:  # pylint: disable=too-many-public-methods
             return f"{entry}_{record_timestamp}.bin"
         return f"{entry}.bin"
 
-    async def write_attachments(
-        self, entry_name: str, attachments: dict[str, dict], content_type: str = None
-    ):
+    async def write_attachments(self, entry_name: str, attachments: dict[str, dict]):
         """
         Write attachments to an entry
 
@@ -827,20 +819,13 @@ class Bucket:  # pylint: disable=too-many-public-methods
             >>> )
 
         """
-        ct = content_type if content_type else "application/json"
-        is_json = _is_json_content_type(ct)
-
         batch = RecordBatch()
         for name, content in attachments.items():
-            if is_json:
-                data = json.dumps(content).encode()
-            else:
-                data = base64.b64decode(content)
             batch.add(
                 f"{entry_name}/$meta",
                 timestamp=unix_timestamp_from_any(int(time.time_ns() / 1000)),
-                data=data,
-                content_type=ct,
+                data=json.dumps(content).encode(),
+                content_type="application/json",
                 labels={"key": name},
             )
         await self.write_record_batch(batch)
@@ -868,10 +853,7 @@ class Bucket:  # pylint: disable=too-many-public-methods
             if "key" in record.labels:
                 key = record.labels["key"]
                 content = await record.read_all()
-                if _is_json_content_type(record.content_type):
-                    attachments[key] = json.loads(content.decode())
-                else:
-                    attachments[key] = base64.b64encode(content).decode()
+                attachments[key] = json.loads(content.decode())
         return attachments
 
     async def remove_attachments(
