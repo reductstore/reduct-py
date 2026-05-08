@@ -14,7 +14,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip setuptools wheel
 
@@ -28,7 +28,7 @@ jobs:
     needs: format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip pipx
 
@@ -44,16 +44,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Update pip
         run: python3 -m pip install --no-cache --upgrade pip pipx
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@master
         with:
           name: package
           path: ./dist
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{matrix.python}}
 
@@ -79,12 +79,12 @@ jobs:
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@master
         with:
           name: package
           path: ./dist
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{matrix.python}}
 
@@ -106,7 +106,7 @@ jobs:
 
       - name: Dump docker logs on failure
         if: failure()
-        uses: jwalton/gh-docker-logs@v2
+        uses: jwalton/gh-docker-logs@2741064ab9d7af54b0b1ffb6076cf64c16f0220e # v2
         with:
           dest: './logs'
       - name: Tar logs
@@ -122,7 +122,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/download-artifact@master
         with:
           name: package
@@ -153,14 +153,14 @@ jobs:
 
     if: ${{ startsWith(github.event.ref, 'refs/tags/v') }}
     steps:
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v6
 
       - uses: actions/download-artifact@master
         with:
           name: package
           path: ./dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.5.0
+      - uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295 # v1.5.0
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
