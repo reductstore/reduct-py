@@ -9,7 +9,13 @@ import pytest
 import pytest_asyncio
 import requests
 
-from reduct import Client, Bucket, ReplicationSettings
+from reduct import (
+    Client,
+    Bucket,
+    ReductError,
+    ReplicationSettings,
+    LifecycleSettings,
+)
 from reduct.http import _extract_api_version
 
 
@@ -67,6 +73,10 @@ async def _make_client(url, api_token, random_prefix):
     for replication in await client.get_replications():
         if replication.name.startswith(random_prefix):
             await client.delete_replication(replication.name)
+
+    for lifecycle in await client.get_lifecycles():
+        if lifecycle.name.startswith(random_prefix):
+            await client.delete_lifecycle(lifecycle.name)
 
     yield client
 
@@ -145,3 +155,49 @@ async def _temporary_replication(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
+    await client.delete_replication(replication_name)
+
+
+@pytest_asyncio.fixture(name="lifecycle_1")
+async def _lifecycle_1(client, bucket_1, random_prefix) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-lifecycle-1"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="1h",
+        interval="10m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    await client.delete_lifecycle(lifecycle_name)
+
+
+@pytest_asyncio.fixture(name="lifecycle_2")
+async def _lifecycle_2(client, bucket_1, random_prefix) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-lifecycle-2"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="2h",
+        interval="20m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    await client.delete_lifecycle(lifecycle_name)
+
+
+@pytest_asyncio.fixture(name="temporary_lifecycle")
+async def _temporary_lifecycle(
+    client, bucket_1, random_prefix
+) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-temp-lifecycle"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="1h",
+        interval="10m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    try:
+        await client.delete_lifecycle(lifecycle_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
