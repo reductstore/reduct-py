@@ -17,6 +17,13 @@ from reduct.msg.replication import (
     ReplicationSettings,
     ReplicationInfo,
 )
+from reduct.msg.lifecycle import (
+    LifecycleMode,
+    LifecycleList,
+    LifecycleDetailInfo,
+    LifecycleSettings,
+    LifecycleInfo,
+)
 from reduct.msg.server import ServerInfo, BucketList
 from reduct.msg.token import (
     TokenCreateRequest,
@@ -322,3 +329,83 @@ class Client:
             ReductError: if there is an HTTP error
         """
         await self._http.request_all("DELETE", f"/replications/{replication_name}")
+
+    async def get_lifecycles(self) -> list[LifecycleInfo]:
+        """
+        Get a list of lifecycle policies
+        Returns:
+            List[LifecycleInfo]: List of lifecycle policies with their statuses
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        body, _ = await self._http.request_all("GET", "/lifecycles")
+        return LifecycleList.model_validate_json(body).lifecycles
+
+    async def get_lifecycle_detail(self, lifecycle_name: str) -> LifecycleDetailInfo:
+        """
+        Get detailed information about a lifecycle policy
+        Args:
+            lifecycle_name: Name of the lifecycle policy to show details
+        Returns:
+            LifecycleDetailInfo: Detailed information about the lifecycle policy
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        body, _ = await self._http.request_all("GET", f"/lifecycles/{lifecycle_name}")
+        return LifecycleDetailInfo.model_validate_json(body)
+
+    async def create_lifecycle(
+        self, lifecycle_name: str, settings: LifecycleSettings
+    ) -> None:
+        """
+        Create a new lifecycle policy
+        Args:
+            lifecycle_name: Name of the new lifecycle policy
+            settings: Settings for the new lifecycle policy
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = settings.model_dump_json()
+        await self._http.request_all("POST", f"/lifecycles/{lifecycle_name}", data=data)
+
+    async def update_lifecycle(
+        self, lifecycle_name: str, settings: LifecycleSettings
+    ) -> None:
+        """
+        Update an existing lifecycle policy
+        Args:
+            lifecycle_name: Name of the lifecycle policy to update
+            settings: New settings for the lifecycle policy
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = settings.model_dump_json()
+        await self._http.request_all("PUT", f"/lifecycles/{lifecycle_name}", data=data)
+
+    async def set_lifecycle_mode(
+        self, lifecycle_name: str, mode: LifecycleMode
+    ) -> None:
+        """
+        Update mode for an existing lifecycle policy without overriding settings
+        Args:
+            lifecycle_name: Name of the lifecycle policy to update
+            mode: New lifecycle mode
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        data = json.dumps(
+            {"mode": mode.value if isinstance(mode, LifecycleMode) else str(mode)}
+        )
+        await self._http.request_all(
+            "PATCH", f"/lifecycles/{lifecycle_name}/mode", data=data
+        )
+
+    async def delete_lifecycle(self, lifecycle_name: str) -> None:
+        """
+        Delete a lifecycle policy
+        Args:
+            lifecycle_name: Name of the lifecycle policy to delete
+        Raises:
+            ReductError: if there is an HTTP error
+        """
+        await self._http.request_all("DELETE", f"/lifecycles/{lifecycle_name}")
