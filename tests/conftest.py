@@ -31,6 +31,16 @@ def _supports_api(version: str) -> bool:
     )
 
 
+async def _remove_bucket_if_possible(bucket: Bucket) -> None:
+    try:
+        await bucket.remove()
+    except ReductError as err:
+        # 404: already removed, 409: async deletion still in progress.
+        if err.status_code in (404, 409):
+            return
+        raise
+
+
 def requires_env(key):
     """Skip test if environment variable is not set"""
     env = os.environ.get(key)
@@ -74,7 +84,7 @@ async def _make_client(url, api_token, random_prefix):
     for info in buckets:
         if info.name.startswith(random_prefix):
             bucket = await client.get_bucket(info.name)
-            await bucket.remove()
+            await _remove_bucket_if_possible(bucket)
 
     for token in await client.get_token_list():
         if token.name != "init-token" and token.name.startswith(random_prefix):
@@ -112,7 +122,7 @@ async def _bucket_1(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
     )
 
     yield bucket
-    await bucket.remove()
+    await _remove_bucket_if_possible(bucket)
 
 
 @pytest_asyncio.fixture(name="bucket_2")
@@ -121,7 +131,7 @@ async def _bucket_2(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
     await bucket.write("entry-1", b"some-data-1", timestamp=5_000_000)
     await bucket.write("entry-1", b"some-data-2", timestamp=6_000_000)
     yield bucket
-    await bucket.remove()
+    await _remove_bucket_if_possible(bucket)
 
 
 @pytest_asyncio.fixture(name="replication_1")
