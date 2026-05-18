@@ -35,7 +35,7 @@ from reduct.msg.token import (
 )
 
 
-class Client:
+class Client:  # pylint: disable=too-many-public-methods
     """HTTP Client for Reduct Storage HTTP API"""
 
     def __init__(
