@@ -125,7 +125,11 @@ async def _replication_1(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
-    await client.delete_replication(replication_name)
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
 
 
 @pytest_asyncio.fixture(name="replication_2")
@@ -140,7 +144,11 @@ async def _replication_2(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
-    await client.delete_replication(replication_name)
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
 
 
 @pytest_asyncio.fixture(name="temporary_replication")
@@ -155,7 +163,11 @@ async def _temporary_replication(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
-    await client.delete_replication(replication_name)
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
 
 
 @pytest_asyncio.fixture(name="lifecycle_1")
