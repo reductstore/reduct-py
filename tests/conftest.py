@@ -19,6 +19,18 @@ from reduct import (
 from reduct.http import _extract_api_version
 
 
+def _get_api_version() -> str:
+    return requests.get("http://127.0.0.1:8383/api/v1/info", timeout=1.0).headers[
+        "x-reduct-api"
+    ]
+
+
+def _supports_api(version: str) -> bool:
+    return (
+        _extract_api_version(version)[1] <= _extract_api_version(_get_api_version())[1]
+    )
+
+
 def requires_env(key):
     """Skip test if environment variable is not set"""
     env = os.environ.get(key)
@@ -31,11 +43,9 @@ def requires_env(key):
 
 def requires_api(version):
     """Skip test if API version is not supported"""
-    current_version = requests.get(
-        "http://127.0.0.1:8383/api/v1/info", timeout=1.0
-    ).headers["x-reduct-api"]
+    current_version = _get_api_version()
     return pytest.mark.skipif(
-        _extract_api_version(version)[1] > _extract_api_version(current_version)[1],
+        not _supports_api(version),
         reason=f"Not suitable API version {current_version} for current test",
     )
 
@@ -74,9 +84,10 @@ async def _make_client(url, api_token, random_prefix):
         if replication.name.startswith(random_prefix):
             await client.delete_replication(replication.name)
 
-    for lifecycle in await client.get_lifecycles():
-        if lifecycle.name.startswith(random_prefix):
-            await client.delete_lifecycle(lifecycle.name)
+    if _supports_api("1.20"):
+        for lifecycle in await client.get_lifecycles():
+            if lifecycle.name.startswith(random_prefix):
+                await client.delete_lifecycle(lifecycle.name)
 
     yield client
 
