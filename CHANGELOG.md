@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Add lifecycle policy API support, [PR-176](https://github.com/reductstore/reduct-py/pull/176)
 - Pin third-party GitHub Actions in CI workflows to immutable commit SHAs for SSDLC hardening, [PR-174](https://github.com/reductstore/reduct-py/pull/174)
 
 ## 1.19.1 - 2026-04-20

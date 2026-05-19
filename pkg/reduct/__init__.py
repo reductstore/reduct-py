@@ -19,6 +19,14 @@ from reduct.msg.replication import (
     ReplicationMode,
 )
 
+from reduct.msg.lifecycle import (
+    LifecycleInfo,
+    LifecycleDetailInfo,
+    LifecycleSettings,
+    LifecycleMode,
+    LifecycleType,
+)
+
 from reduct.msg.token import (
     Token,
     Permissions,

@@ -9,8 +9,36 @@ import pytest
 import pytest_asyncio
 import requests
 
-from reduct import Client, Bucket, ReplicationSettings
+from reduct import (
+    Client,
+    Bucket,
+    ReductError,
+    ReplicationSettings,
+    LifecycleSettings,
+)
 from reduct.http import _extract_api_version
+
+
+def _get_api_version() -> str:
+    return requests.get("http://127.0.0.1:8383/api/v1/info", timeout=1.0).headers[
+        "x-reduct-api"
+    ]
+
+
+def _supports_api(version: str) -> bool:
+    return (
+        _extract_api_version(version)[1] <= _extract_api_version(_get_api_version())[1]
+    )
+
+
+async def _remove_bucket_if_possible(bucket: Bucket) -> None:
+    try:
+        await bucket.remove()
+    except ReductError as err:
+        # 404: already removed, 409: async deletion still in progress.
+        if err.status_code in (404, 409):
+            return
+        raise
 
 
 def requires_env(key):
@@ -25,11 +53,9 @@ def requires_env(key):
 
 def requires_api(version):
     """Skip test if API version is not supported"""
-    current_version = requests.get(
-        "http://127.0.0.1:8383/api/v1/info", timeout=1.0
-    ).headers["x-reduct-api"]
+    current_version = _get_api_version()
     return pytest.mark.skipif(
-        _extract_api_version(version)[1] > _extract_api_version(current_version)[1],
+        not _supports_api(version),
         reason=f"Not suitable API version {current_version} for current test",
     )
 
@@ -58,7 +84,7 @@ async def _make_client(url, api_token, random_prefix):
     for info in buckets:
         if info.name.startswith(random_prefix):
             bucket = await client.get_bucket(info.name)
-            await bucket.remove()
+            await _remove_bucket_if_possible(bucket)
 
     for token in await client.get_token_list():
         if token.name != "init-token" and token.name.startswith(random_prefix):
@@ -67,6 +93,11 @@ async def _make_client(url, api_token, random_prefix):
     for replication in await client.get_replications():
         if replication.name.startswith(random_prefix):
             await client.delete_replication(replication.name)
+
+    if _supports_api("1.20"):
+        for lifecycle in await client.get_lifecycles():
+            if lifecycle.name.startswith(random_prefix):
+                await client.delete_lifecycle(lifecycle.name)
 
     yield client
 
@@ -91,7 +122,7 @@ async def _bucket_1(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
     )
 
     yield bucket
-    await bucket.remove()
+    await _remove_bucket_if_possible(bucket)
 
 
 @pytest_asyncio.fixture(name="bucket_2")
@@ -100,7 +131,7 @@ async def _bucket_2(client, random_prefix) -> AsyncGenerator[Bucket, Any]:
     await bucket.write("entry-1", b"some-data-1", timestamp=5_000_000)
     await bucket.write("entry-1", b"some-data-2", timestamp=6_000_000)
     yield bucket
-    await bucket.remove()
+    await _remove_bucket_if_possible(bucket)
 
 
 @pytest_asyncio.fixture(name="replication_1")
@@ -115,7 +146,11 @@ async def _replication_1(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
-    await client.delete_replication(replication_name)
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
 
 
 @pytest_asyncio.fixture(name="replication_2")
@@ -130,7 +165,11 @@ async def _replication_2(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
-    await client.delete_replication(replication_name)
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
 
 
 @pytest_asyncio.fixture(name="temporary_replication")
@@ -145,3 +184,53 @@ async def _temporary_replication(
     )
     await client.create_replication(replication_name, replication_settings)
     yield replication_name
+    try:
+        await client.delete_replication(replication_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
+
+
+@pytest_asyncio.fixture(name="lifecycle_1")
+async def _lifecycle_1(client, bucket_1, random_prefix) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-lifecycle-1"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="1h",
+        interval="10m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    await client.delete_lifecycle(lifecycle_name)
+
+
+@pytest_asyncio.fixture(name="lifecycle_2")
+async def _lifecycle_2(client, bucket_1, random_prefix) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-lifecycle-2"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="2h",
+        interval="20m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    await client.delete_lifecycle(lifecycle_name)
+
+
+@pytest_asyncio.fixture(name="temporary_lifecycle")
+async def _temporary_lifecycle(
+    client, bucket_1, random_prefix
+) -> AsyncGenerator[str, Any]:
+    lifecycle_name = f"{random_prefix}-temp-lifecycle"
+    lifecycle_settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        max_age="1h",
+        interval="10m",
+    )
+    await client.create_lifecycle(lifecycle_name, lifecycle_settings)
+    yield lifecycle_name
+    try:
+        await client.delete_lifecycle(lifecycle_name)
+    except ReductError as err:
+        if err.status_code != 404:
+            raise
