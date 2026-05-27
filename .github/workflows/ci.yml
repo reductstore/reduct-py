@@ -147,6 +147,8 @@ jobs:
     name: Upload if release
     needs: [ pylint, test, run_examples ]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     defaults:
       run:
         working-directory: ./python
@@ -160,7 +162,4 @@ jobs:
           name: package
           path: ./dist
 
-      - uses: pypa/gh-action-pypi-publish@717ba43cfbb0387f6ce311b169a825772f54d295 # v1.5.0
-        with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
+      - uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
