@@ -7,6 +7,7 @@ from reduct import (
     LifecycleInfo,
     LifecycleMode,
     LifecycleSettings,
+    LifecycleType,
 )
 from tests.conftest import requires_api
 
@@ -42,7 +43,7 @@ async def test__update_lifecycle(client, lifecycle_1, bucket_1):
     """Test updating an existing lifecycle policy"""
     new_settings = LifecycleSettings(
         bucket=bucket_1.name,
-        max_age="2h",
+        older_than="2h",
         interval="20m",
         entries=["entry-1", "entry-2"],
         when={"&number": {"$gt": 1}},
@@ -50,7 +51,7 @@ async def test__update_lifecycle(client, lifecycle_1, bucket_1):
     await client.update_lifecycle(lifecycle_1, new_settings)
     lifecycle_detail = await client.get_lifecycle_detail(lifecycle_1)
     assert lifecycle_detail.settings.bucket == new_settings.bucket
-    assert lifecycle_detail.settings.max_age == new_settings.max_age
+    assert lifecycle_detail.settings.older_than == new_settings.older_than
     assert lifecycle_detail.settings.interval == new_settings.interval
 
 
@@ -76,7 +77,7 @@ async def test__lifecycle_with_when(client, random_prefix, bucket_1):
     lifecycle_name = f"{random_prefix}-lifecycle-when"
     settings = LifecycleSettings(
         bucket=bucket_1.name,
-        max_age="1h",
+        older_than="1h",
         interval="10m",
         when={"&number": {"$gt": 1}},
     )
@@ -97,3 +98,15 @@ async def test__set_lifecycle_mode(client, lifecycle_1):
 
     assert lifecycle_detail.info.mode == LifecycleMode.DRY_RUN
     assert lifecycle_detail.settings.mode == LifecycleMode.DRY_RUN
+
+
+def test__lifecycle_settings_support_compress_type():
+    """Test lifecycle compress action is exposed by the SDK."""
+    settings = LifecycleSettings(
+        bucket="bucket-1",
+        older_than="1h",
+        type=LifecycleType.COMPRESS,
+    )
+
+    assert settings.type == LifecycleType.COMPRESS
+    assert settings.model_dump()["type"] == LifecycleType.COMPRESS
