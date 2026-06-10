@@ -196,7 +196,7 @@ async def _lifecycle_1(client, bucket_1, random_prefix) -> AsyncGenerator[str, A
     lifecycle_name = f"{random_prefix}-lifecycle-1"
     lifecycle_settings = LifecycleSettings(
         bucket=bucket_1.name,
-        max_age="1h",
+        older_than="1h",
         interval="10m",
     )
     await client.create_lifecycle(lifecycle_name, lifecycle_settings)
@@ -209,7 +209,7 @@ async def _lifecycle_2(client, bucket_1, random_prefix) -> AsyncGenerator[str, A
     lifecycle_name = f"{random_prefix}-lifecycle-2"
     lifecycle_settings = LifecycleSettings(
         bucket=bucket_1.name,
-        max_age="2h",
+        older_than="2h",
         interval="20m",
     )
     await client.create_lifecycle(lifecycle_name, lifecycle_settings)
@@ -224,7 +224,7 @@ async def _temporary_lifecycle(
     lifecycle_name = f"{random_prefix}-temp-lifecycle"
     lifecycle_settings = LifecycleSettings(
         bucket=bucket_1.name,
-        max_age="1h",
+        older_than="1h",
         interval="10m",
     )
     await client.create_lifecycle(lifecycle_name, lifecycle_settings)

@@ -10,6 +10,7 @@ class LifecycleType(str, Enum):
     """Lifecycle action type"""
 
     DELETE = "delete"
+    COMPRESS = "compress"
 
 
 class LifecycleMode(str, Enum):
@@ -47,10 +48,10 @@ class LifecycleSettings(BaseModel):
     """lifecycle action type"""
     bucket: str
     """bucket to apply lifecycle policy"""
-    entries: List[str] = Field([])
+    entries: List[str] = Field(default_factory=list)
     """list of entries to process. If empty, all matching entries are used"""
-    max_age: str
-    """maximum record age"""
+    older_than: str
+    """process records older than this duration"""
     interval: Optional[str] = None
     """interval between lifecycle runs"""
     when: Optional[Dict] = None

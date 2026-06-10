@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Align lifecycle policy API with server-side `compress` action support and the `older_than` field rename, [PR-180](https://github.com/reductstore/reduct-py/pull/180)
 - Switch PyPI publishing workflow to Trusted Publishers (OIDC) and drop static credential inputs, [PR-178](https://github.com/reductstore/reduct-py/pull/178)
 - Add lifecycle policy API support, [PR-176](https://github.com/reductstore/reduct-py/pull/176)
 - Pin third-party GitHub Actions in CI workflows to immutable commit SHAs for SSDLC hardening, [PR-174](https://github.com/reductstore/reduct-py/pull/174)
