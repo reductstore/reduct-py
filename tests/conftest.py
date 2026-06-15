@@ -15,6 +15,7 @@ from reduct import (
     ReductError,
     ReplicationSettings,
     LifecycleSettings,
+    LifecycleType,
 )
 from reduct.http import _extract_api_version
 
@@ -211,6 +212,7 @@ async def _lifecycle_2(client, bucket_1, random_prefix) -> AsyncGenerator[str, A
         bucket=bucket_1.name,
         older_than="2h",
         interval="20m",
+        type=LifecycleType.COMPRESS,
     )
     await client.create_lifecycle(lifecycle_name, lifecycle_settings)
     yield lifecycle_name
