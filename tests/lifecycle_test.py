@@ -21,15 +21,20 @@ async def test__get_lifecycles(client, lifecycle_1, lifecycle_2):
     """Test getting a list of lifecycle policies"""
     lifecycles = await client.get_lifecycles()
     assert isinstance(lifecycles, list)
-    for lifecycle in [lifecycle_1, lifecycle_2]:
-        assert lifecycle in [item.name for item in lifecycles]
-        assert all(isinstance(item, LifecycleInfo) for item in lifecycles)
-        assert all(isinstance(item.type, LifecycleType) for item in lifecycles)
-        assert all(item.mode in LifecycleMode for item in lifecycles)
-        assert all(
-            item.last_run is None or isinstance(item.last_run, datetime)
-            for item in lifecycles
-        )
+    assert [item.name for item in lifecycles] and lifecycle_1 in [
+        item.name for item in lifecycles
+    ]
+    assert lifecycle_2 in [item.name for item in lifecycles]
+    assert all(isinstance(item, LifecycleInfo) for item in lifecycles)
+    assert all(item.mode in LifecycleMode for item in lifecycles)
+    assert all(
+        item.last_run is None or isinstance(item.last_run, datetime)
+        for item in lifecycles
+    )
+
+    lifecycle_map = {item.name: item for item in lifecycles}
+    assert lifecycle_map[lifecycle_1].type == LifecycleType.DELETE
+    assert lifecycle_map[lifecycle_2].type == LifecycleType.COMPRESS
 
 
 @pytest.mark.asyncio
