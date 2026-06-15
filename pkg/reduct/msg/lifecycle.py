@@ -1,5 +1,6 @@
 """Message types for the Lifecycle API"""
 
+from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -30,8 +31,12 @@ class LifecycleInfo(BaseModel):
     """lifecycle policy is provisioned and can't be deleted or changed"""
     is_running: bool
     """lifecycle worker is running"""
+    type: LifecycleType = LifecycleType.DELETE
+    """lifecycle action type"""
     mode: LifecycleMode = LifecycleMode.ENABLED
     """current lifecycle mode"""
+    last_run: datetime | None = None
+    """timestamp of the last lifecycle run"""
 
 
 class LifecycleList(BaseModel):
