@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.20.0 - 2026-06-16
+
 ### Changed
 
 - Support `LifecycleInfo.type` and `LifecycleInfo.last_run` as a `datetime`, [PR-181](https://github.com/reductstore/reduct-py/pull/181)
@@ -362,7 +364,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Implement Reduct Storage HTTP API v0.4, [PR-16](https://github.com/reduct-storage/reduct-py/pull/16)
 
-[Unreleased]: https://github.com/reduct-storage/reduct-py/compare/v1.17.1...HEAD
+[Unreleased]: https://github.com/reductstore/reduct-py/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/reductstore/reduct-py/compare/v1.19.1...v1.20.0
 
 [1.17.1]: https://github.com/reduct-storage/reduct-py/compare/v1.17.0...v1.17.1
 
