@@ -1,5 +1,8 @@
 """Tests for replication endpoints"""
 
+import json
+from contextlib import suppress
+
 import pytest
 from reduct import (
     ReductError,
@@ -8,7 +11,60 @@ from reduct import (
     ReplicationMode,
     ReplicationSettings,
 )
+from reduct.client import _replication_settings_to_json
 from tests.conftest import requires_api
+
+
+async def _delete_replication_if_exists(client, replication_name):
+    with suppress(ReductError):
+        await client.delete_replication(replication_name)
+
+
+def test__replication_settings_prefix_serialization():
+    """Test serializing replication settings with prefix"""
+    settings = ReplicationSettings(
+        src_bucket="src",
+        dst_bucket="dst",
+        dst_host="http://127.0.0.1:8383",
+        dst_prefix="robot-1",
+    )
+    payload = json.loads(_replication_settings_to_json(settings))
+
+    assert payload["dst_prefix"] == "robot-1"
+
+
+def test__replication_settings_omits_empty_prefix():
+    """Test omitting empty prefix from replication settings payload"""
+    settings = ReplicationSettings(
+        src_bucket="src",
+        dst_bucket="dst",
+        dst_host="http://127.0.0.1:8383",
+    )
+    payload = json.loads(_replication_settings_to_json(settings))
+
+    assert "dst_prefix" not in payload
+
+
+def test__replication_settings_prefix_deserialization():
+    """Test parsing replication settings with and without prefix"""
+    settings = ReplicationSettings.model_validate(
+        {
+            "src_bucket": "src",
+            "dst_bucket": "dst",
+            "dst_host": "http://127.0.0.1:8383",
+            "dst_prefix": "robot-1",
+        }
+    )
+    older_settings = ReplicationSettings.model_validate(
+        {
+            "src_bucket": "src",
+            "dst_bucket": "dst",
+            "dst_host": "http://127.0.0.1:8383",
+        }
+    )
+
+    assert settings.dst_prefix == "robot-1"
+    assert older_settings.dst_prefix == ""
 
 
 @pytest.mark.asyncio
@@ -77,6 +133,33 @@ async def test__replication_with_when(client, random_prefix, bucket_1, bucket_2)
     replication = await client.get_replication_detail(replication_name)
 
     assert replication.settings.when == {"&number": {"$gt": 1}}
+
+
+@pytest.mark.asyncio
+@requires_api("1.21")
+async def test__replication_with_prefix(client, random_prefix, bucket_1, bucket_2):
+    """Test creating and updating a replication with destination prefix"""
+    replication_name = f"{random_prefix}-replication-prefix"
+    settings = ReplicationSettings(
+        src_bucket=bucket_1.name,
+        dst_bucket=bucket_2.name,
+        dst_host="http://127.0.0.1:8383",
+        dst_prefix="robot-1",
+    )
+
+    try:
+        await client.create_replication(replication_name, settings)
+        replication = await client.get_replication_detail(replication_name)
+
+        assert replication.settings.dst_prefix == "robot-1"
+
+        settings.dst_prefix = "line-a"
+        await client.update_replication(replication_name, settings)
+        replication = await client.get_replication_detail(replication_name)
+
+        assert replication.settings.dst_prefix == "line-a"
+    finally:
+        await _delete_replication_if_exists(client, replication_name)
 
 
 @pytest.mark.asyncio

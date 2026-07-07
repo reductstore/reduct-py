@@ -35,6 +35,13 @@ from reduct.msg.token import (
 )
 
 
+def _replication_settings_to_json(settings: ReplicationSettings) -> str:
+    if settings.dst_prefix == "":
+        return settings.model_dump_json(exclude={"dst_prefix"})
+
+    return settings.model_dump_json()
+
+
 class Client:  # pylint: disable=too-many-public-methods
     """HTTP Client for Reduct Storage HTTP API"""
 
@@ -281,7 +288,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Raises:
             ReductError: if there is an HTTP error
         """
-        data = settings.model_dump_json()
+        data = _replication_settings_to_json(settings)
         await self._http.request_all(
             "POST", f"/replications/{replication_name}", data=data
         )
@@ -297,7 +304,7 @@ class Client:  # pylint: disable=too-many-public-methods
         Raises:
             ReductError: if there is an HTTP error
         """
-        data = settings.model_dump_json()
+        data = _replication_settings_to_json(settings)
         await self._http.request_all(
             "PUT", f"/replications/{replication_name}", data=data
         )
