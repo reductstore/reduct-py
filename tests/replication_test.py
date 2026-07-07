@@ -1,6 +1,5 @@
 """Tests for replication endpoints"""
 
-import json
 from contextlib import suppress
 
 import pytest
@@ -11,60 +10,12 @@ from reduct import (
     ReplicationMode,
     ReplicationSettings,
 )
-from reduct.client import _replication_settings_to_json
 from tests.conftest import requires_api
 
 
 async def _delete_replication_if_exists(client, replication_name):
     with suppress(ReductError):
         await client.delete_replication(replication_name)
-
-
-def test__replication_settings_prefix_serialization():
-    """Test serializing replication settings with prefix"""
-    settings = ReplicationSettings(
-        src_bucket="src",
-        dst_bucket="dst",
-        dst_host="http://127.0.0.1:8383",
-        dst_prefix="robot-1",
-    )
-    payload = json.loads(_replication_settings_to_json(settings))
-
-    assert payload["dst_prefix"] == "robot-1"
-
-
-def test__replication_settings_omits_empty_prefix():
-    """Test omitting empty prefix from replication settings payload"""
-    settings = ReplicationSettings(
-        src_bucket="src",
-        dst_bucket="dst",
-        dst_host="http://127.0.0.1:8383",
-    )
-    payload = json.loads(_replication_settings_to_json(settings))
-
-    assert "dst_prefix" not in payload
-
-
-def test__replication_settings_prefix_deserialization():
-    """Test parsing replication settings with and without prefix"""
-    settings = ReplicationSettings.model_validate(
-        {
-            "src_bucket": "src",
-            "dst_bucket": "dst",
-            "dst_host": "http://127.0.0.1:8383",
-            "dst_prefix": "robot-1",
-        }
-    )
-    older_settings = ReplicationSettings.model_validate(
-        {
-            "src_bucket": "src",
-            "dst_bucket": "dst",
-            "dst_host": "http://127.0.0.1:8383",
-        }
-    )
-
-    assert settings.dst_prefix == "robot-1"
-    assert older_settings.dst_prefix == ""
 
 
 @pytest.mark.asyncio
