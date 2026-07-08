@@ -77,6 +77,8 @@ class ReplicationSettings(BaseModel):
     entries: List[str] = Field([])
     """list of entries to replicate. If empty, all entries are replicated.
     Wildcards are supported"""
+    dst_prefix: str = ""
+    """prefix to add to destination entry names"""
     when: Optional[Dict] = None
     """replication schedule in cron format"""
     mode: ReplicationMode = ReplicationMode.ENABLED
