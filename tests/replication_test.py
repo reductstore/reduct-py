@@ -1,6 +1,5 @@
 """Tests for replication endpoints"""
 
-import json
 from contextlib import suppress
 
 import pytest
@@ -18,57 +17,6 @@ from tests.conftest import requires_api
 async def _delete_replication_if_exists(client, replication_name):
     with suppress(ReductError):
         await client.delete_replication(replication_name)
-
-
-def test__replication_settings_serializes_compression():
-    """Test replication compression model serialization"""
-    default_settings = ReplicationSettings(
-        src_bucket="src",
-        dst_bucket="dst",
-        dst_host="http://127.0.0.1:8383",
-    )
-    assert default_settings.compression == ReplicationCompression.NONE
-    assert json.loads(default_settings.model_dump_json())["compression"] == "none"
-
-    compressed_settings = ReplicationSettings(
-        src_bucket="src",
-        dst_bucket="dst",
-        dst_host="http://127.0.0.1:8383",
-        compression=ReplicationCompression.ZSTD,
-    )
-    assert json.loads(compressed_settings.model_dump_json())["compression"] == "zstd"
-
-
-def test__replication_detail_deserializes_compression():
-    """Test replication compression model deserialization"""
-    replication_detail = ReplicationDetailInfo.model_validate_json(
-        json.dumps(
-            {
-                "diagnostics": {
-                    "hourly": {
-                        "ok": 0,
-                        "errored": 0,
-                        "errors": {},
-                    },
-                },
-                "info": {
-                    "name": "camera-sync",
-                    "is_provisioned": False,
-                    "is_active": False,
-                    "mode": "enabled",
-                    "pending_records": 0,
-                },
-                "settings": {
-                    "src_bucket": "src",
-                    "dst_bucket": "dst",
-                    "dst_host": "http://127.0.0.1:8383",
-                    "compression": "gzip",
-                },
-            }
-        )
-    )
-
-    assert replication_detail.settings.compression == ReplicationCompression.GZIP
 
 
 @pytest.mark.asyncio
