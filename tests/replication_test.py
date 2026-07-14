@@ -1,10 +1,12 @@
 """Tests for replication endpoints"""
 
+import json
 from contextlib import suppress
 
 import pytest
 from reduct import (
     ReductError,
+    ReplicationCompression,
     ReplicationDetailInfo,
     ReplicationInfo,
     ReplicationMode,
@@ -16,6 +18,57 @@ from tests.conftest import requires_api
 async def _delete_replication_if_exists(client, replication_name):
     with suppress(ReductError):
         await client.delete_replication(replication_name)
+
+
+def test__replication_settings_serializes_compression():
+    """Test replication compression model serialization"""
+    default_settings = ReplicationSettings(
+        src_bucket="src",
+        dst_bucket="dst",
+        dst_host="http://127.0.0.1:8383",
+    )
+    assert default_settings.compression == ReplicationCompression.NONE
+    assert json.loads(default_settings.model_dump_json())["compression"] == "none"
+
+    compressed_settings = ReplicationSettings(
+        src_bucket="src",
+        dst_bucket="dst",
+        dst_host="http://127.0.0.1:8383",
+        compression=ReplicationCompression.ZSTD,
+    )
+    assert json.loads(compressed_settings.model_dump_json())["compression"] == "zstd"
+
+
+def test__replication_detail_deserializes_compression():
+    """Test replication compression model deserialization"""
+    replication_detail = ReplicationDetailInfo.model_validate_json(
+        json.dumps(
+            {
+                "diagnostics": {
+                    "hourly": {
+                        "ok": 0,
+                        "errored": 0,
+                        "errors": {},
+                    },
+                },
+                "info": {
+                    "name": "camera-sync",
+                    "is_provisioned": False,
+                    "is_active": False,
+                    "mode": "enabled",
+                    "pending_records": 0,
+                },
+                "settings": {
+                    "src_bucket": "src",
+                    "dst_bucket": "dst",
+                    "dst_host": "http://127.0.0.1:8383",
+                    "compression": "gzip",
+                },
+            }
+        )
+    )
+
+    assert replication_detail.settings.compression == ReplicationCompression.GZIP
 
 
 @pytest.mark.asyncio
@@ -109,6 +162,33 @@ async def test__replication_with_prefix(client, random_prefix, bucket_1, bucket_
         replication = await client.get_replication_detail(replication_name)
 
         assert replication.settings.dst_prefix == "line-a"
+    finally:
+        await _delete_replication_if_exists(client, replication_name)
+
+
+@pytest.mark.asyncio
+@requires_api("1.21")
+async def test__replication_with_compression(client, random_prefix, bucket_1, bucket_2):
+    """Test creating and updating a replication with compression"""
+    replication_name = f"{random_prefix}-replication-compression"
+    settings = ReplicationSettings(
+        src_bucket=bucket_1.name,
+        dst_bucket=bucket_2.name,
+        dst_host="http://127.0.0.1:8383",
+        compression=ReplicationCompression.ZSTD,
+    )
+
+    try:
+        await client.create_replication(replication_name, settings)
+        replication = await client.get_replication_detail(replication_name)
+
+        assert replication.settings.compression == ReplicationCompression.ZSTD
+
+        settings.compression = ReplicationCompression.GZIP
+        await client.update_replication(replication_name, settings)
+        replication = await client.get_replication_detail(replication_name)
+
+        assert replication.settings.compression == ReplicationCompression.GZIP
     finally:
         await _delete_replication_if_exists(client, replication_name)
 

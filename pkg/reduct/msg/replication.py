@@ -14,6 +14,14 @@ class ReplicationMode(str, Enum):
     DISABLED = "disabled"
 
 
+class ReplicationCompression(str, Enum):
+    """Replication batch payload compression"""
+
+    NONE = "none"
+    ZSTD = "zstd"
+    GZIP = "gzip"
+
+
 class ReplicationInfo(BaseModel):
     """Replication information"""
 
@@ -83,6 +91,8 @@ class ReplicationSettings(BaseModel):
     """replication schedule in cron format"""
     mode: ReplicationMode = ReplicationMode.ENABLED
     """replication mode"""
+    compression: ReplicationCompression = ReplicationCompression.NONE
+    """replication batch payload compression"""
 
 
 class ReplicationDetailInfo(BaseModel):

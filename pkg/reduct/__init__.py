@@ -17,6 +17,7 @@ from reduct.msg.replication import (
     ReplicationDetailInfo,
     ReplicationSettings,
     ReplicationMode,
+    ReplicationCompression,
 )
 
 from reduct.msg.lifecycle import (
