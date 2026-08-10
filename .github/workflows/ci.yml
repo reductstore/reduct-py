@@ -78,6 +78,9 @@ jobs:
         python: ["3.10"]
         reductstore_version: ["latest", "main"]
         token: ["", "ACCESS_TOKEN"]
+        exclude:
+          - reductstore_version: "main"
+            token: ""
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@master
