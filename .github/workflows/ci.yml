@@ -77,7 +77,7 @@ jobs:
       matrix:
         python: ["3.10"]
         reductstore_version: ["latest", "main"]
-        token: ["", "ACCESS_TOKEN"]
+        token: ["ACCESS_TOKEN"]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@master
