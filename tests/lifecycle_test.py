@@ -73,6 +73,37 @@ async def test__update_lifecycle(client, lifecycle_1, bucket_1):
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("bucket_1")
+@requires_api("1.21")
+async def test__lifecycle_with_processing_interval(client, random_prefix, bucket_1):
+    """Test creating and updating a lifecycle policy with processing interval"""
+    lifecycle_name = f"{random_prefix}-lifecycle-processing-interval"
+    settings = LifecycleSettings(
+        bucket=bucket_1.name,
+        older_than="1h",
+        interval="10m",
+        processing_interval="6h",
+    )
+
+    await client.create_lifecycle(lifecycle_name, settings)
+    try:
+        lifecycle = await client.get_lifecycle_detail(lifecycle_name)
+        assert lifecycle.settings.processing_interval == "6h"
+
+        new_settings = LifecycleSettings(
+            bucket=bucket_1.name,
+            older_than="2h",
+            interval="20m",
+            processing_interval="12h",
+        )
+        await client.update_lifecycle(lifecycle_name, new_settings)
+        lifecycle = await client.get_lifecycle_detail(lifecycle_name)
+        assert lifecycle.settings.processing_interval == "12h"
+    finally:
+        await client.delete_lifecycle(lifecycle_name)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("bucket_1")
 @requires_api("1.20")
 async def test_delete_lifecycle(client, temporary_lifecycle):
     """Test deleting a lifecycle policy"""

@@ -59,6 +59,8 @@ class LifecycleSettings(BaseModel):
     """process records older than this duration"""
     interval: Optional[str] = None
     """interval between lifecycle runs"""
+    processing_interval: str | None = None
+    """maximum data-time window processed by one lifecycle run"""
     when: Optional[Dict] = None
     """conditional query"""
     mode: LifecycleMode = LifecycleMode.ENABLED
