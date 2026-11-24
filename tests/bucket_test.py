@@ -1,5 +1,7 @@
 """Tests for Bucket"""
 
+# pylint: disable=too-many-lines
+
 import asyncio
 import json
 import time
@@ -200,6 +202,16 @@ async def test__write_with_content_type(bucket_1):
         data = await record.read_all()
         assert data == b"something"
         assert record.content_type == "text/plain"
+
+
+@requires_api("1.22")
+@pytest.mark.asyncio
+async def test__write_sync(bucket_1):
+    """Should synchronously write a record."""
+    await bucket_1.write("entry-3", b"test-data", timestamp=1, sync=True)
+
+    async with bucket_1.read("entry-3", timestamp=1) as record:
+        assert await record.read_all() == b"test-data"
 
 
 # This test is not working see https://github.com/reductstore/reductstore/issues/547
@@ -477,6 +489,19 @@ async def test_batched_write(bucket_1):
     assert batch.last_access == 0
 
 
+@requires_api("1.22")
+@pytest.mark.asyncio
+async def test_batched_write_sync(bucket_1):
+    """Should synchronously write batched records."""
+    batch = Batch()
+    batch.add(1, b"test-data")
+
+    await bucket_1.write_batch("entry-3", batch, sync=True)
+
+    async with bucket_1.read("entry-3", timestamp=1) as record:
+        assert await record.read_all() == b"test-data"
+
+
 @requires_api("1.7")
 @pytest.mark.asyncio
 async def test_batched_write_with_errors(bucket_1):
@@ -528,6 +553,19 @@ async def test_batched_write_v2(bucket_1):
 
     assert content["entry-4"] == b"Hey,"
     assert content["entry-5"] == b"Hello,"
+
+
+@requires_api("1.22")
+@pytest.mark.asyncio
+async def test_batched_write_v2_sync(bucket_1):
+    """Should synchronously write batched records to multiple entries."""
+    batch = RecordBatch()
+    batch.add("entry-3", 1, b"test-data")
+
+    await bucket_1.write_record_batch(batch, sync=True)
+
+    async with bucket_1.read("entry-3", timestamp=1) as record:
+        assert await record.read_all() == b"test-data"
 
 
 @requires_api("1.18")
