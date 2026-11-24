@@ -41,6 +41,8 @@ from reduct.msg.bucket import (
 from reduct.record import Record, parse_record
 from reduct.time import unix_timestamp_from_any, TimestampLike
 
+SYNC_WRITE_HEADER = "x-reduct-sync-write"
+
 
 def _check_deprecated_params(_kwargs):
     # We want to keep the function for future deprecations
@@ -319,6 +321,7 @@ class Bucket:  # pylint: disable=too-many-public-methods
         data: bytes | AsyncIterator[bytes],
         timestamp: TimestampLike | None = None,
         content_length: int | None = None,
+        sync: bool = False,
         **kwargs,
     ):
         """
@@ -332,6 +335,8 @@ class Bucket:  # pylint: disable=too-many-public-methods
                 If None: current time
             content_length: content size in bytes,
                 needed only when the data is an iterator
+            sync: if True, wait for the server to synchronize the completed write
+                before returning. The default is False, which uses buffered writes.
         Keyword Args:
             labels (dict): labels as key-values
             content_type (str): content type of data
@@ -355,6 +360,11 @@ class Bucket:  # pylint: disable=too-many-public-methods
             timestamp if timestamp is not None else int(time.time_ns() / 1000)
         )
         params = {"ts": timestamp}
+        if sync:
+            kwargs["extra_headers"] = {
+                **kwargs.get("extra_headers", {}),
+                SYNC_WRITE_HEADER: "true",
+            }
         await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}",
@@ -365,7 +375,7 @@ class Bucket:  # pylint: disable=too-many-public-methods
         )
 
     async def write_batch(
-        self, entry_name: str, batch: Batch
+        self, entry_name: str, batch: Batch, sync: bool = False
     ) -> dict[int, ReductError]:
         """
         Write a batch of records to entries in a sole request
@@ -373,6 +383,8 @@ class Bucket:  # pylint: disable=too-many-public-methods
         Args:
             entry_name: name of entry in the bucket
             batch: list of records
+            sync: if True, wait for the server to synchronize the completed write
+                before returning. The default is False, which uses buffered writes.
         Returns:
             Dict[int, ReductError]: the dictionary of errors
                 with record timestamps as keys
@@ -385,6 +397,8 @@ class Bucket:  # pylint: disable=too-many-public-methods
                 yield await rec.read_all()
 
         content_length, record_headers = make_headers_v1(batch)
+        if sync:
+            record_headers[SYNC_WRITE_HEADER] = "true"
         _, headers = await self._http.request_all(
             "POST",
             f"/b/{self.name}/{entry_name}/batch",
@@ -396,13 +410,15 @@ class Bucket:  # pylint: disable=too-many-public-methods
         return parse_errors_from_headers_v1(headers)
 
     async def write_record_batch(
-        self, batch: RecordBatch
+        self, batch: RecordBatch, sync: bool = False
     ) -> dict[str, dict[int, ReductError]]:
         """
         Write a batch of records to entries in a sole request (Multi-entry API)
 
         Args:
             batch: list of records
+            sync: if True, wait for the server to synchronize the completed write
+                before returning. The default is False, which uses buffered writes.
         Returns:
             Dict[str, Dict[int, ReductError]]: the dictionary of errors
                 with entry names as keys and dictionaries of record timestamps as keys
@@ -422,6 +438,8 @@ class Bucket:  # pylint: disable=too-many-public-methods
                 yield await rec.read_all()
 
         content_length, record_headers = make_headers_v2(batch)
+        if sync:
+            record_headers[SYNC_WRITE_HEADER] = "true"
         _, headers = await self._http.request_all(
             "POST",
             f"/io/{self.name}/write",
