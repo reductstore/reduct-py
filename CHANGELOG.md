@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add opt-in synchronous write support, [PR-191](https://github.com/reductstore/reduct-py/pull/191)
+
 ## 1.21.0 - 2026-09-17
 
 ### Added
